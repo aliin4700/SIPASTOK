@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Customer;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Hash;
 use App\Helpers\ImageHelper;
@@ -22,6 +23,80 @@ class CustomerController extends Controller
         ]);
     }
 
+    public function login()
+    {
+        return view('auth.login', [
+            'judul' => 'Login Customer',
+        ]);
+    }
+
+    public function authenticate(Request $request)
+    {
+        $credentials = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required'],
+        ]);
+
+        if (Auth::attempt($credentials, $request->boolean('remember'))) {
+            $user = Auth::user();
+
+            if ((int) $user->status === 0 || (string) $user->role !== '2') {
+                Auth::logout();
+
+                return back()
+                    ->withInput($request->only('email', 'remember'))
+                    ->with('error', 'Email atau password customer tidak sesuai.');
+            }
+
+            $request->session()->regenerate();
+
+            return redirect()->intended(route('beranda'));
+        }
+
+        return back()
+            ->withInput($request->only('email', 'remember'))
+            ->with('error', 'Email atau password customer tidak sesuai.');
+    }
+
+    public function register()
+    {
+        return view('auth.register', [
+            'judul' => 'Register Customer',
+        ]);
+    }
+
+    public function storeRegister(Request $request)
+    {
+        $validated = $request->validate([
+            'nama' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:user,email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'hp' => ['nullable', 'string', 'max:13'],
+        ]);
+
+        $user = DB::transaction(function () use ($validated) {
+            $user = User::create([
+                'nama' => $validated['nama'],
+                'email' => $validated['email'],
+                'role' => '2',
+                'status' => 1,
+                'password' => Hash::make($validated['password']),
+                'hp' => $validated['hp'] ?? null,
+            ]);
+
+            Customer::create([
+                'user_id' => $user->id,
+            ]);
+
+            return $user;
+        });
+
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        return redirect()->route('beranda')->with('success', 'Registrasi berhasil. Selamat datang!');
+    }
+
     // Redirect ke Google
     public function redirect()
     {
@@ -34,38 +109,39 @@ class CustomerController extends Controller
         try {
             $socialUser = Socialite::driver('google')->user();
 
-            // Cek apakah email sudah terdaftar
-            $registeredUser = User::where('email', $socialUser->email)->first();
+            $user = DB::transaction(function () use ($socialUser) {
+                $registeredUser = User::where('email', $socialUser->email)->first();
 
-            if (!$registeredUser) {
-                // Buat user baru
-                $user = User::create([
-                    'nama' => $socialUser->name,
-                    'email' => $socialUser->email,
-                    'role' => '2', // Role customer
-                    'status' => 1, // Status aktif
-                    'password' => Hash::make('default_password'), // Password default (opsional)
-                ]);
+                if (!$registeredUser) {
+                    $registeredUser = User::create([
+                        'nama' => $socialUser->name,
+                        'email' => $socialUser->email,
+                        'role' => '2',
+                        'status' => 1,
+                        'password' => Hash::make(str()->random(32)),
+                    ]);
+                }
 
-                // Buat data customer
-                Customer::create([
-                    'user_id' => $user->id,
+                if ((string) $registeredUser->role !== '2') {
+                    throw new \RuntimeException('Akun email ini bukan akun customer.');
+                }
+
+                Customer::updateOrCreate([
+                    'user_id' => $registeredUser->id,
+                ], [
                     'google_id' => $socialUser->id,
-                    'google_token' => $socialUser->token
+                    'google_token' => $socialUser->token,
                 ]);
 
-                // Login pengguna baru
-                Auth::login($user);
-            } else {
-                // Jika email sudah terdaftar, langsung login
-                Auth::login($registeredUser);
-            }
+                return $registeredUser;
+            });
 
-            // Redirect ke halaman utama
-            return redirect()->intended('beranda');
+            Auth::login($user);
+            request()->session()->regenerate();
+
+            return redirect()->intended(route('beranda'));
         } catch (\Exception $e) {
-            // Redirect ke halaman utama jika terjadi kesalahan
-            return redirect('/')->with('error', 'Terjadi kesalahan saat login dengan Google.');
+            return redirect()->route('login')->with('error', 'Terjadi kesalahan saat login dengan Google.');
         }
     }
 

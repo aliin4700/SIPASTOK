@@ -15,9 +15,10 @@ class IsCustomer
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (auth()->check() && auth()->user()->role == 2) {
+        if (auth()->check() && (string) auth()->user()->role === '2') {
             return $next($request);
         }
-        return redirect('/auth/redirect')->with('msgError', 'Anda harus login sebagai customer');
+
+        return redirect()->route('login')->with('msgError', 'Anda harus login sebagai customer');
     }
 }

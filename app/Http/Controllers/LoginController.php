@@ -22,10 +22,18 @@ class LoginController extends Controller
         ]);
 
         if (Auth::attempt($credentials)) {
-            if (Auth::user()->status == 0) {
+            $user = Auth::user();
+
+            if ((int) $user->status === 0) {
                 Auth::logout();
                 return back()->with('error', 'User belum aktif');
             }
+
+            if (!in_array((string) $user->role, ['0', '1'], true)) {
+                Auth::logout();
+                return back()->with('error', 'Akun ini tidak memiliki akses admin');
+            }
+
             $request->session()->regenerate();
             return redirect()->intended(route('backend.beranda'));
         }

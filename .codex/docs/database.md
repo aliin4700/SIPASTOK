@@ -48,3 +48,19 @@ order_id
 product_id
 qty
 price
+
+# banners
+
+id
+title
+subtitle
+image
+button_text
+button_link
+banner_type
+position
+is_active
+start_date
+end_date
+created_at
+updated_at
