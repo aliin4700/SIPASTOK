@@ -1,0 +1,72 @@
+@startuml
+
+entity users {
+    * id : bigint
+    --
+    name : varchar
+    email : varchar
+    password : varchar
+    role : enum
+}
+
+entity categories {
+    * id : bigint
+    --
+    name : varchar
+    slug : varchar
+}
+
+entity products {
+    * id : bigint
+    --
+    category_id : bigint
+    name : varchar
+    price : decimal
+    stock : int
+    image : varchar
+}
+
+entity carts {
+    * id : bigint
+    --
+    user_id : bigint
+}
+
+entity cart_items {
+    * id : bigint
+    --
+    cart_id : bigint
+    product_id : bigint
+    qty : int
+}
+
+entity orders {
+    * id : bigint
+    --
+    user_id : bigint
+    total_price : decimal
+    status : varchar
+}
+
+entity order_items {
+    * id : bigint
+    --
+    order_id : bigint
+    product_id : bigint
+    qty : int
+    price : decimal
+}
+
+users ||--o{ carts
+users ||--o{ orders
+
+categories ||--o{ products
+
+products ||--o{ cart_items
+products ||--o{ order_items
+
+carts ||--o{ cart_items
+
+orders ||--o{ order_items
+
+@enduml

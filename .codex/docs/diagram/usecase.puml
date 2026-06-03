@@ -1,0 +1,40 @@
+@startuml
+left to right direction
+
+actor Customer
+actor Admin
+
+rectangle "BreadLab Bakery System" {
+
+  usecase "Register" as UC1
+  usecase "Login" as UC2
+  usecase "Browse Produk" as UC3
+  usecase "Cari Produk" as UC4
+  usecase "Tambah ke Keranjang" as UC5
+  usecase "Checkout" as UC6
+  usecase "Lihat Riwayat Pesanan" as UC7
+
+  usecase "Kelola Produk" as UC8
+  usecase "Kelola Kategori" as UC9
+  usecase "Kelola Banner" as UC10
+  usecase "Kelola Pesanan" as UC11
+  usecase "Lihat Laporan" as UC12
+
+}
+
+Customer --> UC1
+Customer --> UC2
+Customer --> UC3
+Customer --> UC4
+Customer --> UC5
+Customer --> UC6
+Customer --> UC7
+
+Admin --> UC2
+Admin --> UC8
+Admin --> UC9
+Admin --> UC10
+Admin --> UC11
+Admin --> UC12
+
+@enduml

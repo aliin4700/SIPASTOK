@@ -1,0 +1,31 @@
+@startuml
+
+start
+
+:Register/Login;
+
+:Browse Produk;
+
+:Melihat Detail Produk;
+
+if (Tambah ke Keranjang?) then (Ya)
+
+:Add Cart;
+
+endif
+
+if (Checkout?) then (Ya)
+
+:Isi Alamat;
+
+:Pilih Metode Pembayaran;
+
+:Konfirmasi Pesanan;
+
+:Pesanan Dibuat;
+
+endif
+
+stop
+
+@enduml

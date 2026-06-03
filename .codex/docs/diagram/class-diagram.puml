@@ -1,0 +1,53 @@
+@startuml
+
+class User {
+    +id
+    +name
+    +email
+    +role
+}
+
+class Category {
+    +id
+    +name
+}
+
+class Product {
+    +id
+    +name
+    +price
+    +stock
+}
+
+class Cart {
+    +id
+}
+
+class CartItem {
+    +qty
+}
+
+class Order {
+    +totalPrice
+    +status
+}
+
+class OrderItem {
+    +qty
+    +price
+}
+
+User "1" -- "*" Cart
+User "1" -- "*" Order
+
+Category "1" -- "*" Product
+
+Cart "1" -- "*" CartItem
+
+Product "1" -- "*" CartItem
+
+Order "1" -- "*" OrderItem
+
+Product "1" -- "*" OrderItem
+
+@enduml
