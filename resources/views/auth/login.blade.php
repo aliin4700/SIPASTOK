@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $judul ?? 'Login Customer' }} - BreadLab</title>
+    <title>{{ $judul ?? 'Login BreadLab' }} - BreadLab</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 
@@ -17,8 +17,8 @@
                         <div class="card-body p-4 p-md-5">
                             <div class="mb-4 text-center">
                                 <img src="{{ asset('breadlab/logo.png') }}" alt="BreadLab Bakery" class="img-fluid mb-3" style="max-height: 72px;">
-                                <h1 class="h4 mb-1">Login Customer</h1>
-                                <p class="text-muted mb-0">Masuk untuk belanja dan melihat akun Anda.</p>
+                                <h1 class="h4 mb-1">Login BreadLab</h1>
+                                <p class="text-muted mb-0">Masuk ke akun BreadLab Anda.</p>
                             </div>
 
                             @if(session('error'))

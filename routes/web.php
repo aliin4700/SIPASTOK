@@ -27,15 +27,15 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [CustomerController::class, 'storeRegister'])->name('register.store');
     Route::get('/auth/redirect', [CustomerController::class, 'redirect'])->name('auth.redirect');
 
-    Route::get('backend/login', [LoginController::class, 'loginBackend'])->name('backend.login');
-    Route::post('backend/login', [LoginController::class, 'authenticateBackend'])->name('backend.login');
+    Route::get('backend/login', fn () => redirect()->route('login'))->name('backend.login');
 });
 
 Route::get('/auth/google/callback', [CustomerController::class, 'callback'])->name('auth.callback');
 Route::post('/logout', [CustomerController::class, 'logout'])->name('logout')->middleware('auth');
 
 Route::middleware(['auth', 'is.admin'])->group(function () {
-    Route::get('backend/beranda', [BerandaController::class, 'berandaBackend'])->name('backend.beranda');
+    Route::get('/admin', [BerandaController::class, 'berandaBackend'])->name('backend.beranda');
+    Route::get('backend/beranda', fn () => redirect()->route('backend.beranda'));
     Route::post('backend/logout', [LoginController::class, 'logoutBackend'])->name('backend.logout');
 
     // Route untuk User

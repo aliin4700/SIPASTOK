@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Helpers\ImageHelper;
 
@@ -26,6 +27,8 @@ class UserController extends Controller
      */
     public function create()
     {
+        abort_unless((string) Auth::user()->role === '1', 403, 'Hanya SuperAdmin yang dapat membuat user admin.');
+
         return view('backend.v_user.create', [
             'judul' => 'User',
             'sub' => 'Tambah User'
@@ -37,12 +40,14 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
+        abort_unless((string) Auth::user()->role === '1', 403, 'Hanya SuperAdmin yang dapat membuat user admin.');
+
         //ddd($request);
         //dd($request);
         $validatedData = $request->validate([
             'nama' => 'required|max:255',
             'email' => 'required|max:255|email|unique:user',
-            'role' => 'required',
+            'role' => 'required|in:0,1',
             'hp' => 'required|min:10|max:13',
             'password' => 'required|min:4|confirmed',
             'foto' => 'image|mimes:jpeg,jpg,png,gif|file|max:1024',
@@ -105,13 +110,19 @@ class UserController extends Controller
     {
         //ddd($request);
         $user = User::findOrFail($id);
+        $isSuperAdmin = (string) Auth::user()->role === '1';
+
         $rules = [
             'nama' => 'required|max:255',
-            'role' => 'required',
-            'status' => 'required',
             'hp' => 'required|min:10|max:13',
             'foto' => 'image|mimes:jpeg,jpg,png,gif|file|max:1024',
         ];
+
+        if ($isSuperAdmin) {
+            $rules['role'] = 'required|in:0,1';
+            $rules['status'] = 'required|in:0,1';
+        }
+
         $messages = [
             'foto.image' => 'Format gambar gunakan file dengan ekstensi jpeg, jpg, png, atau gif.',
             'foto.max' => 'Ukuran file gambar Maksimal adalah 1024 KB.'
@@ -121,6 +132,10 @@ class UserController extends Controller
             $rules['email'] = 'required|max:255|email|unique:user';
         }
         $validatedData = $request->validate($rules, $messages);
+
+        if (!$isSuperAdmin) {
+            unset($validatedData['role'], $validatedData['status']);
+        }
 
         // menggunakan ImageHelper
         if ($request->file('foto')) {

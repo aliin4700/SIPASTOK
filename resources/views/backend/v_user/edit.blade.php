@@ -32,38 +32,40 @@
                                 </div>
                             </div>
                             <div class="col-md-8">
-                                <div class="form-group">
-                                    <label>Hak Ases</label>
-                                    <select name="role" class="form-control @error('role') is-invalid @enderror">
-                                        <option value="" {{ old('role', $edit->role) == '' ? 'selected' : '' }}> -
-                                            Pilih Hak Akses -</option>
-                                        <option value="1" {{ old('role', $edit->role) == '1' ? 'selected' : '' }}>
-                                            Super Admin</option>
-                                        <option value="0" {{ old('role', $edit->role) == '0' ? 'selected' : '' }}>
-                                            Admin</option>
-                                    </select>
-                                    @error('role')
-                                    <span class="invalid-feedback alert-danger" role="alert">
-                                        {{ $message }}
-                                    </span>
-                                    @enderror
-                                </div>
-                                <div class="form-group">
-                                    <label>Status</label>
-                                    <select name="status" class="form-control @error('status') is-invalid @enderror">
-                                        <option value="" {{ old('status', $edit->status) == '' ? 'selected' : '' }}> -
-                                            Pilih Hak Akses -</option>
-                                        <option value="1" {{ old('status', $edit->status) == '1' ? 'selected' : '' }}>
-                                            Aktif</option>
-                                        <option value="0" {{ old('status', $edit->status) == '0' ? 'selected' : '' }}>
-                                            NonAktif</option>
-                                    </select>
-                                    @error('status')
-                                    <span class="invalid-feedback alert-danger" role="alert">
-                                        {{ $message }}
-                                    </span>
-                                    @enderror
-                                </div>
+                                @if ((string) Auth::user()->role === '1')
+                                    <div class="form-group">
+                                        <label>Hak Ases</label>
+                                        <select name="role" class="form-control @error('role') is-invalid @enderror">
+                                            <option value="" {{ old('role', $edit->role) == '' ? 'selected' : '' }}> -
+                                                Pilih Hak Akses -</option>
+                                            <option value="1" {{ old('role', $edit->role) == '1' ? 'selected' : '' }}>
+                                                Super Admin</option>
+                                            <option value="0" {{ old('role', $edit->role) == '0' ? 'selected' : '' }}>
+                                                Admin</option>
+                                        </select>
+                                        @error('role')
+                                        <span class="invalid-feedback alert-danger" role="alert">
+                                            {{ $message }}
+                                        </span>
+                                        @enderror
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Status</label>
+                                        <select name="status" class="form-control @error('status') is-invalid @enderror">
+                                            <option value="" {{ old('status', $edit->status) == '' ? 'selected' : '' }}> -
+                                                Pilih Status -</option>
+                                            <option value="1" {{ old('status', $edit->status) == '1' ? 'selected' : '' }}>
+                                                Aktif</option>
+                                            <option value="0" {{ old('status', $edit->status) == '0' ? 'selected' : '' }}>
+                                                NonAktif</option>
+                                        </select>
+                                        @error('status')
+                                        <span class="invalid-feedback alert-danger" role="alert">
+                                            {{ $message }}
+                                        </span>
+                                        @enderror
+                                    </div>
+                                @endif
 
                                 <div class="form-group">
                                     <label>Nama</label>

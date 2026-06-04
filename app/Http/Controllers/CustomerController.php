@@ -26,7 +26,7 @@ class CustomerController extends Controller
     public function login()
     {
         return view('auth.login', [
-            'judul' => 'Login Customer',
+            'judul' => 'Login BreadLab',
         ]);
     }
 
@@ -40,22 +40,34 @@ class CustomerController extends Controller
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $user = Auth::user();
 
-            if ((int) $user->status === 0 || (string) $user->role !== '2') {
+            if ((int) $user->status === 0) {
                 Auth::logout();
 
                 return back()
                     ->withInput($request->only('email', 'remember'))
-                    ->with('error', 'Email atau password customer tidak sesuai.');
+                    ->with('error', 'Akun belum aktif.');
             }
 
             $request->session()->regenerate();
 
-            return redirect()->intended(route('beranda'));
+            if (in_array((string) $user->role, ['0', '1'], true)) {
+                return redirect('/admin');
+            }
+
+            if ((string) $user->role === '2') {
+                return redirect('/beranda');
+            }
+
+            Auth::logout();
+
+            return back()
+                ->withInput($request->only('email', 'remember'))
+                ->with('error', 'Role akun tidak dikenali.');
         }
 
         return back()
             ->withInput($request->only('email', 'remember'))
-            ->with('error', 'Email atau password customer tidak sesuai.');
+            ->with('error', 'Email atau password tidak sesuai.');
     }
 
     public function register()
@@ -123,7 +135,7 @@ class CustomerController extends Controller
                 }
 
                 if ((string) $registeredUser->role !== '2') {
-                    throw new \RuntimeException('Akun email ini bukan akun customer.');
+                    throw new \RuntimeException('Google login hanya untuk akun customer.');
                 }
 
                 Customer::updateOrCreate([

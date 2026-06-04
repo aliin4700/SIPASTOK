@@ -5,9 +5,11 @@
 <div class="row">
 
     <div class="col-12">
-        <a href="{{ route('backend.user.create') }}">
-            <button type="button" class="btn btn-primary"><i class="fas fa-plus"></i> Tambah</button>
-        </a>
+        @if ((string) Auth::user()->role === '1')
+            <a href="{{ route('backend.user.create') }}">
+                <button type="button" class="btn btn-primary"><i class="fas fa-plus"></i> Tambah</button>
+            </a>
+        @endif
         <div class="card">
             <div class="card-body">
                 <h5 class="card-title"> {{$judul}} </h5>
