@@ -8,9 +8,9 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\CustomerController;
-use App\Http\Controllers\ShippingController;
 
 Route::get('/', function () {
     // return view('welcome');
@@ -56,9 +56,10 @@ Route::middleware(['auth', 'is.admin'])->group(function () {
     Route::get('backend/reports/products', fn () => redirect()->route('backend.product.index'))->name('backend.report.product.index');
     Route::post('backend/reports/products/print', fn () => redirect()->route('backend.product.index'))->name('backend.report.product.print');
 
-    Route::get('/admin/orders', [AdminOrderController::class, 'index'])->name('admin.orders.index');
-    Route::get('/admin/orders/{order}', [AdminOrderController::class, 'show'])->name('admin.orders.show');
-    Route::patch('/admin/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('admin.orders.update-status');
+    Route::get('backend/orders', [AdminOrderController::class, 'index'])->name('backend.order.index');
+    Route::get('backend/orders/{order}', [AdminOrderController::class, 'show'])->name('backend.order.show');
+    Route::patch('backend/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('backend.order.updateStatus');
+    Route::patch('backend/orders/{order}/tracking', [AdminOrderController::class, 'updateTracking'])->name('backend.order.updateTracking');
 });
 
 // Frontend
@@ -83,11 +84,8 @@ Route::middleware(['auth', 'is.customer'])->group(function () {
     Route::patch('cart/items/{cartItem}', [CartController::class, 'update'])->name('cart.update');
     Route::delete('cart/items/{cartItem}', [CartController::class, 'remove'])->name('cart.remove');
     Route::delete('cart/clear', [CartController::class, 'clear'])->name('cart.clear');
-    Route::get('checkout', [CheckoutController::class, 'create'])->name('checkout.create');
-    Route::post('checkout', [CheckoutController::class, 'store'])->name('checkout.store');
-    Route::get('checkout/shipping/provinces', [ShippingController::class, 'provinces'])->name('checkout.shipping.provinces');
-    Route::get('checkout/shipping/cities', [ShippingController::class, 'cities'])->name('checkout.shipping.cities');
-    Route::post('checkout/shipping/costs', [ShippingController::class, 'costs'])->name('checkout.shipping.costs');
-    Route::get('checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
-    Route::get('orders/history', [CheckoutController::class, 'history'])->name('orders.history');
+    Route::get('checkout', [CheckoutController::class, 'index'])->name('checkout.index');
+    Route::post('checkout', [CheckoutController::class, 'process'])->name('checkout.process');
+    Route::get('orders', [OrderController::class, 'history'])->name('order.history');
+    Route::get('orders/{order}', [OrderController::class, 'detail'])->name('order.detail');
 });

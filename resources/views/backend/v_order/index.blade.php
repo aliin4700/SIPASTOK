@@ -21,7 +21,7 @@
 
     .status-pending, .status-waiting_payment { background: #fff3cd; color: #8a6400; }
     .status-paid, .status-processing, .status-ready_for_pickup, .status-delivering, .status-shipped, .status-completed { background: #d1e7dd; color: #0f5132; }
-    .status-cancelled { background: #f8d7da; color: #842029; }
+    .status-cancelled, .status-failed, .status-rejected { background: #f8d7da; color: #842029; }
 </style>
 
 <div class="breadlab-admin-panel">
@@ -40,12 +40,13 @@
         <table class="table table-hover align-middle">
             <thead class="table-light">
                 <tr>
-                    <th>Order ID</th>
+                    <th>Order Number</th>
                     <th>Customer</th>
                     <th>Transaction</th>
-                    <th>Total Price</th>
+                    <th>Payment Method</th>
                     <th>Payment Status</th>
                     <th>Order Status</th>
+                    <th>Total Price</th>
                     <th>Created Date</th>
                     <th>Action</th>
                 </tr>
@@ -53,28 +54,29 @@
             <tbody>
                 @forelse($orders as $order)
                 <tr>
-                    <td class="fw-bold">#{{ $order->id }}</td>
-                    <td>{{ $order->user->nama ?? $order->user->name ?? '-' }}</td>
-                    <td>{{ ucwords(str_replace('_', ' ', $order->transaction_method ?? 'shipping')) }}</td>
-                    <td>Rp {{ number_format($order->total_price, 0, ',', '.') }}</td>
+                    <td class="fw-bold">{{ $order->order_number }}</td>
+                    <td>{{ $order->customer->user->name ?? '-' }}</td>
+                    <td>{{ ucwords(str_replace('_', ' ', $order->transaction_method)) }}</td>
+                    <td>{{ ucwords(str_replace('_', ' ', $order->payment_method)) }}</td>
                     <td>
                         <span class="status-badge status-{{ $order->paymentStatus() }}">
-                            {{ $order->paymentStatus() }}
+                            {{ str_replace('_', ' ', $order->paymentStatus()) }}
                         </span>
                     </td>
                     <td>
                         <span class="status-badge status-{{ $order->normalizedStatus() }}">
-                            {{ $order->normalizedStatus() }}
+                            {{ str_replace('_', ' ', $order->normalizedStatus()) }}
                         </span>
                     </td>
+                    <td>Rp {{ number_format($order->total_price, 0, ',', '.') }}</td>
                     <td>{{ $order->created_at->format('d M Y H:i') }}</td>
                     <td>
-                        <a href="{{ route('admin.orders.show', $order) }}" class="btn btn-primary btn-sm">Detail</a>
+                        <a href="{{ route('backend.order.show', $order) }}" class="btn btn-primary btn-sm">Detail</a>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="text-center text-muted py-4">Belum ada pesanan.</td>
+                    <td colspan="9" class="text-center text-muted py-4">Belum ada pesanan.</td>
                 </tr>
                 @endforelse
             </tbody>

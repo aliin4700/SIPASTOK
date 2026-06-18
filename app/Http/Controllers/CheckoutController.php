@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cart;
+use App\Models\CartItem;
 use App\Models\Customer;
 use App\Models\Order;
-use App\Services\RajaOngkirService;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -14,49 +15,46 @@ use RuntimeException;
 
 class CheckoutController extends Controller
 {
-    public function __construct(private RajaOngkirService $rajaOngkir)
-    {
-    }
+    private const LOCAL_DELIVERY_FEE = 10000;
 
-    public function create()
+    public function index()
     {
-        $cart = $this->cart()->load('items.product');
+        $cart = $this->cart()->load('items.product.category');
 
         if ($cart->items->isEmpty()) {
             return redirect()->route('cart.index')->with('error', 'Keranjang masih kosong.');
         }
 
-        return view('checkout.create', [
+        return view('v_checkout.index', [
             'judul' => 'Checkout',
             'cart' => $cart,
-            'couriers' => RajaOngkirService::COURIERS,
-            'totalWeight' => $this->cartWeight($cart),
-            'midtransAvailable' => true,
+            'subtotal' => $this->subtotal($cart),
+            'totalWeight' => $this->totalWeight($cart),
+            'localDeliveryFee' => self::LOCAL_DELIVERY_FEE,
         ]);
     }
 
-    public function store(Request $request)
+    public function process(Request $request)
     {
-        $transactionMethod = $request->input('transaction_method');
-        $allowedPayments = match ($transactionMethod) {
-            'pickup' => ['cash_pickup', 'bank_transfer'],
-            'delivery' => ['cash_delivery', 'bank_transfer'],
-            'shipping' => ['bank_transfer', 'midtrans'],
-            default => [],
-        };
-
         $validated = $request->validate([
-            'transaction_method' => ['required', Rule::in(['pickup', 'delivery', 'shipping'])],
-            'payment_method' => ['required', Rule::in($allowedPayments)],
-            'shipping_address' => ['required_if:transaction_method,delivery,shipping', 'nullable', 'string', 'max:1000'],
-            'shipping_postal_code' => ['required_if:transaction_method,delivery,shipping', 'nullable', 'string', 'max:20'],
-            'shipping_province_id' => ['required_if:transaction_method,shipping', 'nullable', 'integer'],
-            'shipping_province' => ['required_if:transaction_method,shipping', 'nullable', 'string', 'max:100'],
-            'shipping_city_id' => ['required_if:transaction_method,shipping', 'nullable', 'integer'],
-            'shipping_city' => ['required_if:transaction_method,shipping', 'nullable', 'string', 'max:150'],
-            'shipping_courier' => ['required_if:transaction_method,shipping', 'nullable', 'in:jne,jnt,sicepat,pos'],
-            'shipping_service' => ['required_if:transaction_method,shipping', 'nullable', 'string', 'max:100'],
+            'transaction_method' => ['required', Rule::in(['pickup', 'local_delivery', 'shipping'])],
+            'payment_method' => ['required', Rule::in(['cash', 'bank_transfer', 'midtrans'])],
+            'address' => ['nullable', 'required_if:transaction_method,shipping', 'string', 'max:1000'],
+            'postal_code' => ['nullable', 'required_if:transaction_method,shipping', 'string', 'max:20'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+            'delivery_address' => ['nullable', 'required_if:transaction_method,local_delivery', 'string', 'max:1000'],
+            'delivery_note' => ['nullable', 'string', 'max:1000'],
+            'courier' => ['nullable', 'required_if:transaction_method,shipping', 'string', 'max:50'],
+            'service' => ['nullable', 'required_if:transaction_method,shipping', 'string', 'max:100'],
+            'shipping_cost' => ['nullable', 'required_if:transaction_method,shipping', 'numeric', 'min:0'],
+            'estimated_delivery' => ['nullable', 'string', 'max:100'],
         ]);
+
+        if ($validated['payment_method'] === 'cash' && ! in_array($validated['transaction_method'], ['pickup', 'local_delivery'], true)) {
+            return back()
+                ->withInput()
+                ->with('error', 'Cash hanya tersedia untuk pickup dan local delivery.');
+        }
 
         $cart = $this->cart()->load('items.product');
 
@@ -65,122 +63,90 @@ class CheckoutController extends Controller
         }
 
         foreach ($cart->items as $item) {
-            if ($item->qty > $item->product->stock) {
+            if ((int) $item->quantity > (int) $item->product->stock) {
                 return redirect()->route('cart.index')
                     ->with('error', 'Stok ' . $item->product->name . ' tidak mencukupi.');
             }
         }
 
-        $shipping = null;
-        $shippingCost = 0;
+        try {
+            $order = DB::transaction(function () use ($cart, $validated) {
+                $cart->load('items.product');
+                $subtotal = $this->subtotal($cart);
+                $totalWeight = $this->totalWeight($cart);
+                $shippingCost = $this->shippingCost($validated);
+                $paymentStatus = 'pending';
+                $orderStatus = $validated['payment_method'] === 'cash' ? 'pending' : 'waiting_payment';
 
-        if ($validated['transaction_method'] === 'shipping') {
-            try {
-                $shipping = $this->rajaOngkir->findService(
-                    $validated['shipping_city_id'],
-                    $validated['shipping_courier'],
-                    $validated['shipping_service'],
-                    $this->cartWeight($cart)
-                );
-            } catch (RuntimeException $exception) {
-                return back()
-                    ->withInput()
-                    ->with('error', $exception->getMessage());
-            }
-
-            if (! $shipping) {
-                return back()
-                    ->withInput()
-                    ->with('error', RajaOngkirService::UNAVAILABLE_MESSAGE);
-            }
-
-            $shippingCost = $shipping['cost'];
-        }
-
-        $totalWeight = $this->cartWeight($cart);
-
-        $order = DB::transaction(function () use ($cart, $validated, $shipping, $shippingCost, $totalWeight) {
-            $transactionMethod = $validated['transaction_method'] === 'delivery'
-                ? 'local_delivery'
-                : $validated['transaction_method'];
-            $paymentMethod = str_starts_with($validated['payment_method'], 'cash')
-                ? 'cash'
-                : $validated['payment_method'];
-            $subtotal = $cart->total();
-
-            $order = Order::create([
-                'customer_id' => $this->customer()->id,
-                'order_number' => 'BRD-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(4)),
-                'subtotal' => $subtotal,
-                'total_price' => $subtotal + $shippingCost,
-                'status' => in_array($validated['payment_method'], ['bank_transfer', 'midtrans'], true) ? 'waiting_payment' : 'pending',
-                'transaction_method' => $transactionMethod,
-                'payment_method' => $paymentMethod,
-                'payment_status' => in_array($paymentMethod, ['bank_transfer', 'midtrans'], true) ? 'pending' : 'pending',
-                'shipping_cost' => $shippingCost,
-                'total_weight' => $totalWeight,
-                'address' => $validated['shipping_address'] ?? null,
-                'postal_code' => $validated['shipping_postal_code'] ?? null,
-            ]);
-
-            $order->shipment()->create([
-                'shipping_type' => $transactionMethod,
-                'courier' => $shipping['courier_name'] ?? ($transactionMethod === 'local_delivery' ? 'Local Delivery' : null),
-                'service' => $shipping['service'] ?? ($transactionMethod === 'local_delivery' ? 'BreadLab Delivery' : null),
-                'shipping_cost' => $shippingCost,
-                'estimated_delivery' => $shipping['estimation'] ?? ($transactionMethod === 'local_delivery' ? 'Hari yang sama' : null),
-                'delivery_address' => $validated['shipping_address'] ?? null,
-            ]);
-
-            $order->payment()->create([
-                'payment_method' => $paymentMethod,
-                'payment_status' => 'pending',
-                'midtrans_order_id' => $paymentMethod === 'midtrans'
-                    ? 'MIDTRANS-' . now()->format('YmdHis') . '-' . auth()->id()
-                    : null,
-            ]);
-
-            foreach ($cart->items as $item) {
-                $order->items()->create([
-                    'product_id' => $item->product_id,
-                    'product_name' => $item->product->name,
-                    'quantity' => $item->qty,
-                    'price' => $item->product->price,
-                    'subtotal' => $item->subtotal(),
+                $order = Order::create([
+                    'customer_id' => $this->customer()->id,
+                    'order_number' => $this->orderNumber(),
+                    'status' => $orderStatus,
+                    'transaction_method' => $validated['transaction_method'],
+                    'payment_method' => $validated['payment_method'],
+                    'payment_status' => $paymentStatus,
+                    'subtotal' => $subtotal,
+                    'shipping_cost' => $shippingCost,
+                    'total_weight' => $totalWeight,
+                    'total_price' => $subtotal + $shippingCost,
+                    'address' => $validated['address'] ?? $validated['delivery_address'] ?? null,
+                    'postal_code' => $validated['postal_code'] ?? null,
+                    'notes' => $validated['notes'] ?? null,
                 ]);
 
-                $item->product->decrement('stock', $item->qty);
-            }
+                foreach ($cart->items as $item) {
+                    $product = Product::whereKey($item->product_id)->lockForUpdate()->firstOrFail();
 
-            $cart->items()->delete();
+                    if ((int) $item->quantity > (int) $product->stock) {
+                        throw new RuntimeException('Stok ' . $product->name . ' tidak mencukupi.');
+                    }
 
-            return $order;
-        });
+                    $price = (float) ($item->price ?: $product->price);
 
-        return redirect()->route('checkout.success', $order)->with('success', 'Pesanan berhasil dibuat.');
-    }
+                    $order->items()->create([
+                        'product_id' => $product->id,
+                        'product_name' => $product->name,
+                        'quantity' => $item->quantity,
+                        'price' => $price,
+                        'subtotal' => $price * $item->quantity,
+                    ]);
 
-    public function success(Order $order)
-    {
-        abort_unless((int) $order->customer?->user_id === auth()->id(), 403);
+                    $product->decrement('stock', $item->quantity);
+                }
 
-        return view('checkout.success', [
-            'judul' => 'Pesanan Dibuat',
-            'order' => $order->load('items.product', 'payment', 'shipment'),
-        ]);
-    }
+                $order->payment()->create([
+                    'payment_method' => $validated['payment_method'],
+                    'payment_status' => $paymentStatus,
+                    'payment_proof' => null,
+                    'midtrans_order_id' => null,
+                    'midtrans_transaction_id' => null,
+                    'midtrans_snap_token' => null,
+                    'paid_at' => null,
+                ]);
 
-    public function history()
-    {
-        $orders = Order::with('items.product', 'payment', 'shipment')
-            ->where('customer_id', $this->customer()->id)
-            ->latest()
-            ->paginate(10);
+                $order->shipment()->create([
+                    'shipping_type' => $validated['transaction_method'],
+                    'courier' => $validated['transaction_method'] === 'shipping' ? ($validated['courier'] ?? null) : null,
+                    'service' => $validated['transaction_method'] === 'shipping' ? ($validated['service'] ?? null) : null,
+                    'tracking_number' => null,
+                    'shipping_cost' => $shippingCost,
+                    'estimated_delivery' => $validated['transaction_method'] === 'shipping' ? ($validated['estimated_delivery'] ?? null) : null,
+                    'delivery_latitude' => null,
+                    'delivery_longitude' => null,
+                    'delivery_address' => $validated['transaction_method'] === 'local_delivery' ? ($validated['delivery_address'] ?? null) : null,
+                    'delivery_note' => $validated['transaction_method'] === 'local_delivery' ? ($validated['delivery_note'] ?? null) : null,
+                    'delivery_distance' => null,
+                ]);
 
-        return view('checkout.history', [
-            'judul' => 'Riwayat Pesanan',
-            'orders' => $orders,
-        ]);
+                $cart->items()->delete();
+
+                return $order;
+            });
+        } catch (RuntimeException $exception) {
+            return redirect()->route('cart.index')->with('error', $exception->getMessage());
+        }
+
+        return redirect()->route('order.detail', $order)->with('success', 'Pesanan ' . $order->order_number . ' berhasil dibuat.');
     }
 
     private function cart(): Cart
@@ -197,12 +163,31 @@ class CheckoutController extends Controller
         ]);
     }
 
-    private function cartWeight(Cart $cart): int
+    private function subtotal(Cart $cart): float
     {
-        return max(1, (int) $cart->items->sum(function ($item) {
-            $weight = (int) ($item->product->getAttribute('weight') ?: 250);
+        return (float) $cart->items->sum(fn (CartItem $item) => $item->subtotal());
+    }
 
-            return $weight * $item->qty;
-        }));
+    private function totalWeight(Cart $cart): int
+    {
+        return (int) $cart->items->sum(fn (CartItem $item) => (int) ($item->product->weight ?? 0) * $item->quantity);
+    }
+
+    private function shippingCost(array $validated): float
+    {
+        return match ($validated['transaction_method']) {
+            'pickup' => 0,
+            'local_delivery' => self::LOCAL_DELIVERY_FEE,
+            'shipping' => (float) ($validated['shipping_cost'] ?? 0),
+        };
+    }
+
+    private function orderNumber(): string
+    {
+        do {
+            $number = 'BRD-' . now()->format('Ymd') . '-' . Str::upper(Str::random(4));
+        } while (Order::where('order_number', $number)->exists());
+
+        return $number;
     }
 }

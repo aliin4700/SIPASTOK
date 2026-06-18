@@ -87,7 +87,7 @@
                         <span>Total Harga</span>
                         <strong>Rp {{ number_format($subtotal, 0, ',', '.') }}</strong>
                     </div>
-                    <a href="{{ route('checkout.create') }}" class="btn btn-bread w-100 @if($cart->items->isEmpty()) disabled @endif">Checkout</a>
+                    <a href="{{ route('checkout.index') }}" class="btn btn-bread w-100 @if($cart->items->isEmpty()) disabled @endif">Checkout</a>
                     @if($cart->items->isNotEmpty())
                     <form action="{{ route('cart.clear') }}" method="post" class="mt-3">
                         @csrf
