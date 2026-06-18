@@ -43,18 +43,19 @@
                         <img src="{{ $item->product->image_url }}" alt="{{ $item->product->name }}" class="item-img">
                         <div class="flex-grow-1">
                             <h2 class="h6 mb-1">{{ $item->product->name }}</h2>
-                            <p class="text-muted small mb-2">{{ $item->product->category->nama_kategori ?? 'BreadLab' }}</p>
-                            <strong>Rp {{ number_format($item->product->price, 0, ',', '.') }}</strong>
+                            <p class="text-muted small mb-2">{{ $item->product->category->name ?? 'BreadLab' }}</p>
+                            <strong>Rp {{ number_format($item->price, 0, ',', '.') }}</strong>
+                            <div class="text-muted small">Berat: {{ number_format($item->product->weight ?? 0, 0, ',', '.') }} gram</div>
                         </div>
                         <form action="{{ route('cart.update', $item) }}" method="post" class="d-flex align-items-center gap-2">
                             @csrf
                             @method('patch')
-                            <input type="number" name="qty" value="{{ $item->qty }}" min="1" max="{{ max(1, $item->product->stock) }}" class="form-control" style="width: 86px;">
+                            <input type="number" name="quantity" value="{{ $item->quantity }}" min="1" max="{{ max(1, $item->product->stock) }}" class="form-control" style="width: 86px;">
                             <button class="btn btn-outline-secondary btn-sm" type="submit">Update</button>
                         </form>
                         <div class="text-end" style="min-width: 130px;">
                             <div class="fw-semibold">Rp {{ number_format($item->subtotal(), 0, ',', '.') }}</div>
-                            <form action="{{ route('cart.destroy', $item) }}" method="post" class="mt-2">
+                            <form action="{{ route('cart.remove', $item) }}" method="post" class="mt-2">
                                 @csrf
                                 @method('delete')
                                 <button class="btn btn-link text-danger p-0" type="submit">Hapus</button>
@@ -76,13 +77,24 @@
                     <h2 class="h5 mb-3">Ringkasan</h2>
                     <div class="d-flex justify-content-between mb-2">
                         <span>Total Item</span>
-                        <strong>{{ $cart->items->sum('qty') }}</strong>
+                        <strong>{{ $cart->items->sum('quantity') }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total Berat</span>
+                        <strong>{{ number_format($totalWeight, 0, ',', '.') }} gram</strong>
                     </div>
                     <div class="d-flex justify-content-between mb-4">
                         <span>Total Harga</span>
-                        <strong>Rp {{ number_format($cart->total(), 0, ',', '.') }}</strong>
+                        <strong>Rp {{ number_format($subtotal, 0, ',', '.') }}</strong>
                     </div>
                     <a href="{{ route('checkout.create') }}" class="btn btn-bread w-100 @if($cart->items->isEmpty()) disabled @endif">Checkout</a>
+                    @if($cart->items->isNotEmpty())
+                    <form action="{{ route('cart.clear') }}" method="post" class="mt-3">
+                        @csrf
+                        @method('delete')
+                        <button class="btn btn-outline-danger w-100" type="submit">Kosongkan Keranjang</button>
+                    </form>
+                    @endif
                 </div>
             </aside>
         </div>

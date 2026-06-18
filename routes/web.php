@@ -68,7 +68,7 @@ Route::get('/products/category/{category:slug}', [ProductController::class, 'cat
 Route::get('/products/{product}', [ProductController::class, 'detail'])->name('product.detail');
 
 // Group route untuk customer
-Route::middleware('is.customer')->group(function () {
+Route::middleware(['auth', 'is.customer'])->group(function () {
     // Route untuk menampilkan halaman akun customer
     Route::get('/customer/account', [CustomerController::class, 'account'])
         ->name('customer.account');
@@ -79,9 +79,10 @@ Route::middleware('is.customer')->group(function () {
 
 
     Route::get('cart', [CartController::class, 'index'])->name('cart.index');
-    Route::post('cart/{product}', [CartController::class, 'store'])->name('cart.store');
-    Route::patch('cart/item/{item}', [CartController::class, 'update'])->name('cart.update');
-    Route::delete('cart/item/{item}', [CartController::class, 'destroy'])->name('cart.destroy');
+    Route::post('cart/add/{product}', [CartController::class, 'add'])->name('cart.add');
+    Route::patch('cart/items/{cartItem}', [CartController::class, 'update'])->name('cart.update');
+    Route::delete('cart/items/{cartItem}', [CartController::class, 'remove'])->name('cart.remove');
+    Route::delete('cart/clear', [CartController::class, 'clear'])->name('cart.clear');
     Route::get('checkout', [CheckoutController::class, 'create'])->name('checkout.create');
     Route::post('checkout', [CheckoutController::class, 'store'])->name('checkout.store');
     Route::get('checkout/shipping/provinces', [ShippingController::class, 'provinces'])->name('checkout.shipping.provinces');

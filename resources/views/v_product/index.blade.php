@@ -128,7 +128,7 @@
                                     <div class="d-flex gap-2">
                                         @auth
                                         @if((string) Auth::user()->role === 'customer')
-                                        <form action="{{ route('cart.store', $product) }}" method="post">
+                                        <form action="{{ route('cart.add', $product) }}" method="post">
                                             @csrf
                                             <button class="btn btn-sm btn-outline-dark" type="submit" @disabled($product->stock < 1)>Cart</button>
                                         </form>

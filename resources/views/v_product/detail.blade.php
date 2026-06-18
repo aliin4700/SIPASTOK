@@ -91,9 +91,9 @@
 
                     @auth
                     @if((string) Auth::user()->role === 'customer')
-                    <form action="{{ route('cart.store', $product) }}" method="post" class="d-flex gap-2">
+                    <form action="{{ route('cart.add', $product) }}" method="post" class="d-flex gap-2">
                         @csrf
-                        <input type="number" name="qty" value="1" min="1" max="{{ max(1, $product->stock) }}" class="form-control form-control-lg" style="max-width: 110px;">
+                        <input type="number" name="quantity" value="1" min="1" max="{{ max(1, $product->stock) }}" class="form-control form-control-lg" style="max-width: 110px;">
                         <button type="submit" class="btn btn-bread btn-lg" @disabled($product->stock < 1)>Tambah ke Keranjang</button>
                     </form>
                     @else
