@@ -5,7 +5,7 @@
 <div class="row">
 
     <div class="col-12">
-        <a href="{{ route('backend.kategori.create') }}">
+        <a href="{{ route('backend.category.create') }}">
             <button type="button" class="btn btn-primary"><i class="fas fa-plus"></i> Tambah</button>
         </a>
         <div class="card">
@@ -17,6 +17,7 @@
                             <tr>
                                 <th>No</th>
                                 <th>Nama Kategori</th>
+                                <th>Status</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
@@ -25,16 +26,17 @@
                             @foreach ($index as $row)
                             <tr>
                                 <td> {{ $loop->iteration }} </td>
-                                <td> {{$row->nama_kategori}} </td>
+                                <td> {{$row->name}} </td>
+                                <td> {{$row->status}} </td>
                                 <td>
-                                    <a href="{{ route('backend.kategori.edit', $row->id) }}" title="Ubah Data">
+                                    <a href="{{ route('backend.category.edit', $row->id) }}" title="Ubah Data">
                                         <button type="button" class="btn btn-cyan btn-sm"><i class="far fa-edit"></i> Ubah</button>
                                     </a>
 
-                                    <form method="POST" action="{{ route('backend.kategori.destroy', $row->id) }}" style="display: inline-block;">
+                                    <form method="POST" action="{{ route('backend.category.destroy', $row->id) }}" style="display: inline-block;">
                                         @method('delete')
                                         @csrf
-                                        <button type="submit" class="btn btn-danger btn-sm show_confirm" data-konf-delete="{{ $row->nama_kategori}}" title='Hapus Data'>
+                                        <button type="submit" class="btn btn-danger btn-sm show_confirm" data-konf-delete="{{ $row->name}}" title='Hapus Data'>
                                             <i class="fas fa-trash"></i> Hapus</button>
                                     </form>
                                 </td>

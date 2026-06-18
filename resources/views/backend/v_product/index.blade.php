@@ -29,7 +29,7 @@
 <div class="breadlab-admin-card">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h3 class="mb-0">{{ $judul }}</h3>
-        <a href="{{ route('backend.produk.create') }}" class="btn btn-primary">Tambah Produk</a>
+        <a href="{{ route('backend.product.create') }}" class="btn btn-primary">Tambah Produk</a>
     </div>
 
     @if(session('success'))
@@ -61,8 +61,9 @@
                     <td>Rp {{ number_format($product->price, 0, ',', '.') }}</td>
                     <td><span class="breadlab-badge">{{ $product->stock }}</span></td>
                     <td>
-                        <a href="{{ route('backend.produk.edit', $product) }}" class="btn btn-warning btn-sm">Edit</a>
-                        <form action="{{ route('backend.produk.destroy', $product) }}" method="post" class="d-inline">
+                        <a href="{{ route('backend.product.show', $product) }}" class="btn btn-info btn-sm">Detail</a>
+                        <a href="{{ route('backend.product.edit', $product) }}" class="btn btn-warning btn-sm">Edit</a>
+                        <form action="{{ route('backend.product.destroy', $product) }}" method="post" class="d-inline">
                             @csrf
                             @method('delete')
                             <button type="submit" class="btn btn-danger btn-sm show_confirm" data-konf-delete="{{ $product->name }}">Hapus</button>

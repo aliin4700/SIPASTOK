@@ -72,7 +72,7 @@
             </div>
 
             <div class="mt-4 d-flex gap-2">
-                <a href="{{ route('produk.all') }}" class="btn btn-bread">Belanja Lagi</a>
+                <a href="{{ route('product.index') }}" class="btn btn-bread">Belanja Lagi</a>
                 <a href="{{ route('beranda') }}" class="btn btn-outline-dark">Beranda</a>
             </div>
         </div>

@@ -2,9 +2,9 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BerandaController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\KategoriController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
@@ -44,19 +44,17 @@ Route::middleware(['auth', 'is.admin'])->group(function () {
     Route::post('backend/laporan/cetakuser', [UserController::class, 'cetakUser'])->name('backend.laporan.cetakuser');
 
     // Route untuk customer
-    Route::resource('backend/customer', CustomerController::class, ['as' => 'backend']);
+    Route::get('backend/customers', [CustomerController::class, 'index'])->name('backend.customer.index');
+    Route::get('backend/customers/{customer}', [CustomerController::class, 'show'])->name('backend.customer.show');
 
-    // Route untuk Kategori
-    Route::resource('backend/kategori', KategoriController::class, ['as' => 'backend']);
-
-    // Route untuk Produk
-    Route::resource('backend/produk', ProductController::class, ['as' => 'backend']);
-    Route::post('foto-produk/store', fn () => back()->with('error', 'Manajemen foto produk akan dirapikan pada refactor product berikutnya.'))->name('backend.foto_produk.store');
-    Route::delete('foto-produk/{id}', fn () => back()->with('error', 'Manajemen foto produk akan dirapikan pada refactor product berikutnya.'))->name('backend.foto_produk.destroy');
+    Route::resource('backend/categories', CategoryController::class)->except(['show'])->names('backend.category');
+    Route::resource('backend/products', ProductController::class)->names('backend.product');
+    Route::post('backend/products/{product}/photos', [ProductController::class, 'storePhoto'])->name('backend.product.photo.store');
+    Route::delete('backend/product-photos/{photo}', [ProductController::class, 'destroyPhoto'])->name('backend.product.photo.destroy');
 
     // Route untuk laporan produk
-    Route::get('backend/laporan/formproduk', fn () => redirect()->route('backend.produk.index'))->name('backend.laporan.formproduk');
-    Route::post('backend/laporan/cetakproduk', fn () => redirect()->route('backend.produk.index'))->name('backend.laporan.cetakproduk');
+    Route::get('backend/reports/products', fn () => redirect()->route('backend.product.index'))->name('backend.report.product.index');
+    Route::post('backend/reports/products/print', fn () => redirect()->route('backend.product.index'))->name('backend.report.product.print');
 
     Route::get('/admin/orders', [AdminOrderController::class, 'index'])->name('admin.orders.index');
     Route::get('/admin/orders/{order}', [AdminOrderController::class, 'show'])->name('admin.orders.show');
@@ -65,19 +63,19 @@ Route::middleware(['auth', 'is.admin'])->group(function () {
 
 // Frontend
 Route::get('/beranda', [BerandaController::class, 'index'])->name('beranda');
-Route::get('/produk/detail/{product}', [ProductController::class, 'detail'])->name('produk.detail');
-Route::get('/produk/kategori/{id}', [ProductController::class, 'category'])->name('produk.kategori');
-Route::get('/produk/all', [ProductController::class, 'catalog'])->name('produk.all');
+Route::get('/products', [ProductController::class, 'catalog'])->name('product.index');
+Route::get('/products/category/{category:slug}', [ProductController::class, 'category'])->name('product.category');
+Route::get('/products/{product}', [ProductController::class, 'detail'])->name('product.detail');
 
 // Group route untuk customer
 Route::middleware('is.customer')->group(function () {
     // Route untuk menampilkan halaman akun customer
-    Route::get('/customer/akun/{id}', [CustomerController::class, 'akun'])
-        ->name('customer.akun');
+    Route::get('/customer/account', [CustomerController::class, 'account'])
+        ->name('customer.account');
 
     // Route untuk mengupdate data akun customer
-    Route::put('/customer/updateakun/{id}', [CustomerController::class, 'updateAkun'])
-        ->name('customer.updateakun');
+    Route::put('/customer/account', [CustomerController::class, 'updateAccount'])
+        ->name('customer.account.update');
 
 
     Route::get('cart', [CartController::class, 'index'])->name('cart.index');

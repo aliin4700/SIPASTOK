@@ -20,7 +20,7 @@
 <div class="breadlab-admin-card">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h3 class="mb-0">{{ $judul }}</h3>
-        <a href="{{ route('backend.produk.index') }}" class="btn btn-secondary">Kembali</a>
+        <a href="{{ route('backend.product.index') }}" class="btn btn-secondary">Kembali</a>
     </div>
 
     <form action="{{ $action }}" method="post" enctype="multipart/form-data">
@@ -78,7 +78,29 @@
                     <div class="form-group col-md-6">
                         <label>Stok</label>
                         <input type="number" name="stock" value="{{ old('stock', $product->stock) }}" min="0" class="form-control @error('stock') is-invalid @enderror" placeholder="45">
-                        @error('stock')
+                    @error('stock')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label>Berat (gram)</label>
+                        <input type="number" name="weight" value="{{ old('weight', $product->weight ?? 250) }}" min="1" class="form-control @error('weight') is-invalid @enderror" placeholder="250">
+                        @error('weight')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="form-group col-md-6">
+                        <label>Status</label>
+                        <select name="status" class="form-control @error('status') is-invalid @enderror">
+                            <option value="draft" @selected(old('status', $product->status ?? 'published') === 'draft')>Draft</option>
+                            <option value="published" @selected(old('status', $product->status ?? 'published') === 'published')>Published</option>
+                            <option value="inactive" @selected(old('status', $product->status ?? 'published') === 'inactive')>Inactive</option>
+                        </select>
+                        @error('status')
                         <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>

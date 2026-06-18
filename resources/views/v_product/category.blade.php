@@ -62,23 +62,23 @@
     @include('partials.breadlab-nav')
 
     <main class="container py-4">
-        <form action="{{ route('produk.all') }}" method="get" class="d-flex mb-4">
+        <form action="{{ route('product.index') }}" method="get" class="d-flex mb-4">
             <input type="search" name="search" value="{{ request('search') }}" class="form-control form-control-lg" placeholder="Cari roti, cake, pastry, cookies...">
             <button class="btn btn-bread ms-2 px-4" type="submit">Cari</button>
         </form>
 
         <div class="row g-4">
             <aside class="col-lg-3">
-                <form action="{{ route('produk.all') }}" method="get" class="filter-panel p-3">
+                <form action="{{ route('product.index') }}" method="get" class="filter-panel p-3">
                     <input type="hidden" name="search" value="{{ request('search') }}">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h2 class="h6 mb-0">Kategori</h2>
-                        <a href="{{ route('produk.all') }}" class="small text-decoration-none">Reset</a>
+                        <a href="{{ route('product.index') }}" class="small text-decoration-none">Reset</a>
                     </div>
 
                     @foreach($categories as $category)
                     <div class="form-check mb-2">
-                        <input class="form-check-input" type="radio" name="category" value="{{ $category->id }}" id="category-{{ $category->id }}" @checked((string) request('category') === (string) $category->id)>
+                        <input class="form-check-input" type="radio" name="category" value="{{ $category->id }}" id="category-{{ $category->id }}" @checked((string) ($selectedCategory->id ?? request('category')) === (string) $category->id)>
                         <label class="form-check-label" for="category-{{ $category->id }}">{{ $category->nama_kategori }}</label>
                     </div>
                     @endforeach
@@ -102,7 +102,7 @@
             <section class="col-lg-9">
                 <div class="d-flex flex-wrap justify-content-between align-items-end mb-3 gap-2">
                     <div>
-                        <h1 class="h3 mb-1">Katalog Produk</h1>
+                        <h1 class="h3 mb-1">Produk {{ $selectedCategory->name ?? 'Kategori' }}</h1>
                         <p class="text-muted mb-0">{{ $products->total() }} produk ditemukan</p>
                     </div>
                 </div>
@@ -111,7 +111,7 @@
                     @forelse($products as $product)
                     <div class="col-sm-6 col-xl-4">
                         <article class="product-card h-100 overflow-hidden">
-                            <a href="{{ route('produk.detail', $product->slug) }}">
+                            <a href="{{ route('product.detail', $product->slug) }}">
                                 <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="product-image">
                             </a>
                             <div class="p-3">
@@ -120,7 +120,7 @@
                                     <span class="text-muted small">Stok {{ $product->stock }}</span>
                                 </div>
                                 <h2 class="h6 mb-2">
-                                    <a href="{{ route('produk.detail', $product->slug) }}" class="text-dark text-decoration-none">{{ $product->name }}</a>
+                                    <a href="{{ route('product.detail', $product->slug) }}" class="text-dark text-decoration-none">{{ $product->name }}</a>
                                 </h2>
                                 <p class="small text-muted mb-3">{{ \Illuminate\Support\Str::limit(strip_tags($product->description), 76) }}</p>
                                 <div class="d-flex justify-content-between align-items-center">
@@ -134,7 +134,7 @@
                                         </form>
                                         @endif
                                         @endauth
-                                        <a href="{{ route('produk.detail', $product->slug) }}" class="btn btn-sm btn-bread">Detail</a>
+                                        <a href="{{ route('product.detail', $product->slug) }}" class="btn btn-sm btn-bread">Detail</a>
                                     </div>
                                 </div>
                             </div>

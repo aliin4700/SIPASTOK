@@ -17,6 +17,8 @@
                                 <th>No</th>
                                 <th>Nama</th>
                                 <th>Email</th>
+                                <th>HP</th>
+                                <th>Alamat</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
@@ -24,22 +26,14 @@
                             @foreach ($index as $row)
                             <tr>
                                 <td> {{ $loop->iteration }} </td>
-                                <td> {{$row->user->nama}} </td>
-                                <td> {{$row->user->email}} </td>
+                                <td> {{ $row->user->name ?? '-' }} </td>
+                                <td> {{ $row->user->email ?? '-' }} </td>
+                                <td> {{ $row->user->phone ?? '-' }} </td>
+                                <td> {{ $row->address ?? '-' }} </td>
                                 <td>
-                                    <a href="#" title="Ubah Data">
+                                    <a href="{{ route('backend.customer.show', $row) }}" title="Detail Data">
                                         <button type="button" class="btn btn-warning btn-sm"><i class="fas fa-eye"></i> Detail</button>
                                     </a>
-                                    <a href="#" title="Ubah Data">
-                                        <button type="button" class="btn btn-cyan btn-sm"><i class="far fa-edit"></i> Ubah</button>
-                                    </a>
-
-                                    <form method="POST" action="#" style="display: inline-block;">
-                                        @method('delete')
-                                        @csrf
-                                        <button type="submit" class="btn btn-danger btn-sm show_confirm" data-konf-delete="{{ $row->nama}}" title='Hapus Data'>
-                                            <i class="fas fa-trash"></i> Hapus</button>
-                                    </form>
                                 </td>
                             </tr>
                             @endforeach

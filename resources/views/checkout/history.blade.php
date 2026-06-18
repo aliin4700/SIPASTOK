@@ -24,7 +24,7 @@
                 <h1 class="h3 mb-1">Riwayat Pesanan</h1>
                 <p class="text-muted mb-0">Pantau pesanan BreadLab yang pernah Anda buat.</p>
             </div>
-            <a href="{{ route('produk.all') }}" class="btn btn-bread">Belanja Lagi</a>
+            <a href="{{ route('product.index') }}" class="btn btn-bread">Belanja Lagi</a>
         </div>
 
         <div class="panel p-3 p-lg-4">
@@ -55,7 +55,7 @@
             <div class="text-center py-5">
                 <h2 class="h5">Belum ada pesanan</h2>
                 <p class="text-muted">Mulai belanja dari katalog BreadLab.</p>
-                <a href="{{ route('produk.all') }}" class="btn btn-bread">Buka Katalog</a>
+                <a href="{{ route('product.index') }}" class="btn btn-bread">Buka Katalog</a>
             </div>
             @endforelse
 

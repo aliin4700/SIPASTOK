@@ -43,19 +43,21 @@
         @foreach ($cetak as $row)
         <tr>
             <td> {{ $loop->iteration }} </td>
-            <td> {{$row->nama}} </td>
-            <td> {{$row->email}} </td>
+            <td> {{ $row->email }} </td>
+            <td> {{ $row->name }} </td>
             <td>
-                @if ($row->role == 1)
+                @if ((string) $row->role === 'super_admin')
                 Super Admin
-                @elseif($row->role == 0)
+                @elseif((string) $row->role === 'admin')
                 Admin
+                @elseif((string) $row->role === 'customer')
+                Customer
                 @endif
             </td>
             <td>
-                @if ($row->status ==1)
+                @if ((string) $row->status === 'active')
                 Aktif
-                @elseif($row->status ==0)
+                @elseif((string) $row->status === 'inactive')
                 NonAktif
                 @endif
             </td>

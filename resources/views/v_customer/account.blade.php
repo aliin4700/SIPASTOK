@@ -2,6 +2,14 @@
 @section('content')
 <!-- template -->
 
+@php
+    $user = $customer->user;
+    $photo = $user->photo;
+    $photoUrl = $photo
+        ? (str_contains($photo, '/') ? asset('storage/' . $photo) : asset('storage/img-customer/' . $photo))
+        : asset('storage/img-user/img-default.jpg');
+@endphp
+
 <div class="row">
     <div class="col-md-12">
         <div class=" billing-details">
@@ -27,7 +35,7 @@
                     @endif
                     <!-- end msgError -->
                 </div>
-                <form action="{{ route('customer.updateakun', $edit->user->id) }}" method="post" enctype="multipart/form-data">
+                <form action="{{ route('customer.account.update') }}" method="post" enctype="multipart/form-data">
                     @method('put')
                     @csrf
 
@@ -35,16 +43,11 @@
                         <div class="form-group">
                             <label>Foto</label>
                             {{-- view image --}}
-                            @if ($edit->user->foto)
-                            <img src="{{ asset('storage/img-customer/' . $edit->user->foto) }}" class="foto-preview" width="100%">
+                            <img src="{{ $photoUrl }}" class="foto-preview" width="100%">
                             <p></p>
-                            @else
-                            <img src="{{ asset('storage/img-user/img-default.jpg') }}" class="foto-preview" width="100%">
-                            <p></p>
-                            @endif
                             {{-- file foto --}}
-                            <input type="file" name="foto" class="form-control @error('foto') is-invalid @enderror" onchange="previewFoto()">
-                            @error('foto')
+                            <input type="file" name="photo" class="form-control @error('photo') is-invalid @enderror" onchange="previewFoto()">
+                            @error('photo')
                             <div class="invalid-feedback alert-danger">{{ $message }}</div>
                             @enderror
                         </div>
@@ -53,8 +56,8 @@
 
                         <div class="form-group">
                             <label>Nama</label>
-                            <input type="text" name="nama" value="{{ old('nama', $edit->user->nama) }}" class="form-control @error('nama') is-invalid @enderror" placeholder="Masukkan Nama">
-                            @error('nama')
+                            <input type="text" name="name" value="{{ old('name', $user->name) }}" class="form-control @error('name') is-invalid @enderror" placeholder="Masukkan Nama">
+                            @error('name')
                             <span class="invalid-feedback alert-danger" role="alert">
                                 {{ $message }}
                             </span>
@@ -63,7 +66,7 @@
 
                         <div class="form-group">
                             <label>Email</label>
-                            <input type="text" name="email" value="{{ old('email', $edit->user->email) }}" class="form-control @error('email') is-invalid @enderror" placeholder="Masukkan Email">
+                            <input type="text" name="email" value="{{ old('email', $user->email) }}" class="form-control @error('email') is-invalid @enderror" placeholder="Masukkan Email">
                             @error('email')
                             <span class="invalid-feedback alert-danger" role="alert">
                                 {{ $message }}
@@ -73,8 +76,8 @@
 
                         <div class="form-group">
                             <label>HP</label>
-                            <input type="text" onkeypress="return hanyaAngka(event)" name="hp" value="{{ old('hp', $edit->user->hp) }}" class="form-control @error('hp') is-invalid @enderror" placeholder="Masukkan Nomor HP">
-                            @error('hp')
+                            <input type="text" onkeypress="return hanyaAngka(event)" name="phone" value="{{ old('phone', $user->phone) }}" class="form-control @error('phone') is-invalid @enderror" placeholder="Masukkan Nomor HP">
+                            @error('phone')
                             <span class="invalid-feedback alert-danger" role="alert">
                                 {{ $message }}
                             </span>
@@ -82,8 +85,8 @@
                         </div>
                         <div class="form-group">
                             <label>Alamat</label><br>
-                            <textarea name="alamat" class="form-control @error('alamat') is-invalid @enderror">{{ old('alamat',$edit->alamat) }}</textarea>
-                            @error('alamat')
+                            <textarea name="address" class="form-control @error('address') is-invalid @enderror">{{ old('address', $customer->address) }}</textarea>
+                            @error('address')
                             <span class="invalid-feedback alert-danger" role="alert">
                                 {{ $message }}
                             </span>
@@ -92,8 +95,8 @@
 
                         <div class="form-group">
                             <label>Kode Pos</label>
-                            <input type="text" name="pos" value="{{ old('pos', $edit->pos) }}" class="form-control @error('pos') is-invalid @enderror" placeholder="Masukkan Nomor Resi">
-                            @error('pos')
+                            <input type="text" name="postal_code" value="{{ old('postal_code', $customer->postal_code) }}" class="form-control @error('postal_code') is-invalid @enderror" placeholder="Masukkan Kode Pos">
+                            @error('postal_code')
                             <span class="invalid-feedback alert-danger" role="alert">
                                 {{ $message }}
                             </span>
@@ -117,4 +120,28 @@
 </div>
 
 <!-- end template-->
+<script>
+    function previewFoto() {
+        const foto = document.querySelector('input[name="photo"]');
+        const fotoPreview = document.querySelector('.foto-preview');
+
+        if (!foto.files.length) {
+            return;
+        }
+
+        fotoPreview.style.display = 'block';
+        const fotoReader = new FileReader();
+        fotoReader.readAsDataURL(foto.files[0]);
+        fotoReader.onload = function(fotoEvent) {
+            fotoPreview.src = fotoEvent.target.result;
+            fotoPreview.style.width = '100%';
+        }
+    }
+
+    function hanyaAngka(event) {
+        const angka = event.which ? event.which : event.keyCode;
+
+        return !(angka > 31 && (angka < 48 || angka > 57));
+    }
+</script>
 @endsection

@@ -25,7 +25,7 @@
                 <h1 class="h3 mb-1">Keranjang</h1>
                 <p class="text-muted mb-0">Periksa produk sebelum checkout.</p>
             </div>
-            <a href="{{ route('produk.all') }}" class="btn btn-outline-dark">Lanjut Belanja</a>
+            <a href="{{ route('product.index') }}" class="btn btn-outline-dark">Lanjut Belanja</a>
         </div>
 
         @if(session('success'))
@@ -65,7 +65,7 @@
                     <div class="text-center py-5">
                         <h2 class="h5">Keranjang masih kosong</h2>
                         <p class="text-muted">Pilih produk dari katalog untuk mulai checkout.</p>
-                        <a href="{{ route('produk.all') }}" class="btn btn-bread">Buka Katalog</a>
+                        <a href="{{ route('product.index') }}" class="btn btn-bread">Buka Katalog</a>
                     </div>
                     @endforelse
                 </div>

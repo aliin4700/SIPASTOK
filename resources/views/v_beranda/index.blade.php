@@ -93,7 +93,7 @@
                 <h1 class="display-3 fw-bold mb-3">BreadLab Bakery</h1>
                 <p class="lead mb-4">Roti, pastry, cake, dan cookies segar untuk momen harian yang terasa lebih hangat.</p>
                 <div class="d-flex flex-wrap gap-3">
-                    <a href="{{ route('produk.all') }}" class="btn btn-bread btn-lg px-4">Belanja Produk</a>
+                    <a href="{{ route('product.index') }}" class="btn btn-bread btn-lg px-4">Belanja Produk</a>
                     <a href="#kategori" class="btn btn-outline-light btn-lg px-4">Lihat Kategori</a>
                 </div>
             </div>
@@ -131,14 +131,14 @@
                         <p class="text-uppercase fw-bold text-muted mb-1">Kategori</p>
                         <h2 class="section-title h1 mb-0">Pilihan Bakery</h2>
                     </div>
-                    <a href="{{ route('produk.all') }}" class="btn btn-outline-dark">Semua Produk</a>
+                    <a href="{{ route('product.index') }}" class="btn btn-outline-dark">Semua Produk</a>
                 </div>
                 <div class="d-flex flex-wrap gap-3">
                     @forelse($categories as $category)
-                    <a class="category-chip" href="{{ route('produk.kategori', $category->id) }}">{{ $category->nama_kategori }}</a>
+                    <a class="category-chip" href="{{ route('product.category', $category->slug) }}">{{ $category->nama_kategori }}</a>
                     @empty
                     @foreach(['Bread', 'Cake', 'Pastry', 'Cookies'] as $category)
-                    <a class="category-chip" href="{{ route('produk.all') }}">{{ $category }}</a>
+                    <a class="category-chip" href="{{ route('product.index') }}">{{ $category }}</a>
                     @endforeach
                     @endforelse
                 </div>
@@ -151,14 +151,14 @@
                     <p class="text-uppercase fw-bold text-muted mb-1">Best Seller</p>
                     <h2 class="section-title h1 mb-0">Produk Favorit</h2>
                 </div>
-                <a href="{{ route('produk.all') }}" class="btn btn-bread">Buka Katalog</a>
+                <a href="{{ route('product.index') }}" class="btn btn-bread">Buka Katalog</a>
             </div>
 
             <div class="row g-4">
                 @forelse($products as $product)
                 <div class="col-md-6 col-xl-4">
                     <article class="product-card h-100 overflow-hidden">
-                        <a href="{{ route('produk.detail', $product->slug) }}">
+                        <a href="{{ route('product.detail', $product->slug) }}">
                             <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="product-img">
                         </a>
                         <div class="p-4">
@@ -167,7 +167,7 @@
                             <p class="text-muted">{{ \Illuminate\Support\Str::limit(strip_tags($product->description), 90) }}</p>
                             <div class="d-flex justify-content-between align-items-center">
                                 <strong>Rp {{ number_format($product->price, 0, ',', '.') }}</strong>
-                                <a href="{{ route('produk.detail', $product->slug) }}" class="btn btn-sm btn-bread">Detail</a>
+                                <a href="{{ route('product.detail', $product->slug) }}" class="btn btn-sm btn-bread">Detail</a>
                             </div>
                         </div>
                     </article>
@@ -190,7 +190,7 @@
                     <h2 class="h1 section-title mb-2">Paket sarapan hangat untuk keluarga</h2>
                     <p class="text-muted mb-0">Pilih roti favorit, tambahkan pastry, lalu checkout dalam satu alur cepat.</p>
                 </div>
-                <a href="{{ route('produk.all') }}" class="btn btn-bread btn-lg px-4">Pesan Sekarang</a>
+                <a href="{{ route('product.index') }}" class="btn btn-bread btn-lg px-4">Pesan Sekarang</a>
             </div>
         </section>
     </main>

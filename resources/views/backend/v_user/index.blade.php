@@ -30,22 +30,25 @@
                             @foreach ($index as $row)
                             <tr>
                                 <td> {{ $loop->iteration }} </td>
-                                <td> {{$row->nama}} </td>
-                                <td> {{$row->email}} </td>
+                                <td> {{ $row->email }} </td>
+                                <td> {{ $row->name }} </td>
                                 <td>
-                                    @if ($row->role == 1)
+                                    @if ((string) $row->role === 'super_admin')
                                     <span class="badge badge-success"></i>
                                         Super Admin</span>
-                                    @elseif($row->role == 0)
+                                    @elseif((string) $row->role === 'admin')
                                     <span class="badge badge-primary"></i>
                                         Admin</span>
+                                    @elseif((string) $row->role === 'customer')
+                                    <span class="badge badge-info"></i>
+                                        Customer</span>
                                     @endif
                                 </td>
                                 <td>
-                                    @if ($row->status ==1)
+                                    @if ((string) $row->status === 'active')
                                     <span class="badge badge-success"></i>
                                         Aktif</span>
-                                    @elseif($row->status ==0)
+                                    @elseif((string) $row->status === 'inactive')
                                     <span class="badge badge-secondary"></i>
                                         NonAktif</span>
                                     @endif
@@ -58,7 +61,7 @@
                                     <form method="POST" action="{{ route('backend.user.destroy', $row->id) }}" style="display: inline-block;">
                                         @method('delete')
                                         @csrf
-                                        <button type="submit" class="btn btn-danger btn-sm show_confirm" data-konf-delete="{{ $row->nama }}" title='Hapus Data'>
+                                        <button type="submit" class="btn btn-danger btn-sm show_confirm" data-konf-delete="{{ $row->name }}" title='Hapus Data'>
                                             <i class="fas fa-trash"></i> Hapus</button>
                                     </form>
                                 </td>

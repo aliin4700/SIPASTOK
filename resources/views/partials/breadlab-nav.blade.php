@@ -10,16 +10,16 @@
         <div class="collapse navbar-collapse" id="breadlabNav">
             <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
                 <li class="nav-item"><a class="nav-link" href="{{ route('beranda') }}">Beranda</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ route('produk.all') }}">Produk</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ route('product.index') }}">Produk</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ route('beranda') }}#kategori">Kategori</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ route('cart.index') }}">Keranjang</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ Auth::check() && (string) Auth::user()->role === 'customer' ? route('orders.history') : route('login') }}">Riwayat Pesanan</a></li>
                 @auth
                 @if((string) Auth::user()->role === 'customer')
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle fw-semibold" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">{{ Auth::user()->nama }}</a>
+                    <a class="nav-link dropdown-toggle fw-semibold" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">{{ Auth::user()->name }}</a>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="{{ route('customer.akun', Auth::user()->id) }}">Akun Saya</a></li>
+                        <li><a class="dropdown-item" href="{{ route('customer.account') }}">Akun Saya</a></li>
                         <li><a class="dropdown-item" href="{{ route('orders.history') }}">Riwayat Pesanan</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li>

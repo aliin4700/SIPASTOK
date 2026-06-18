@@ -24,9 +24,9 @@
                             <form action="{{ route('register.store') }}" method="post">
                                 @csrf
                                 <div class="mb-3">
-                                    <label for="nama" class="form-label">Nama</label>
-                                    <input type="text" class="form-control @error('nama') is-invalid @enderror" id="nama" name="nama" value="{{ old('nama') }}" required autofocus>
-                                    @error('nama')
+                                    <label for="name" class="form-label">Nama</label>
+                                    <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" name="name" value="{{ old('name') }}" required autofocus>
+                                    @error('name')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -40,9 +40,9 @@
                                 </div>
 
                                 <div class="mb-3">
-                                    <label for="hp" class="form-label">Nomor HP</label>
-                                    <input type="text" class="form-control @error('hp') is-invalid @enderror" id="hp" name="hp" value="{{ old('hp') }}" maxlength="13">
-                                    @error('hp')
+                                    <label for="phone" class="form-label">Nomor HP</label>
+                                    <input type="text" class="form-control @error('phone') is-invalid @enderror" id="phone" name="phone" value="{{ old('phone') }}" maxlength="20">
+                                    @error('phone')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>

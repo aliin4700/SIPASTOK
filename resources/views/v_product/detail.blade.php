@@ -34,6 +34,13 @@
             width: 100%;
         }
 
+        .detail-thumb {
+            width: 76px;
+            height: 76px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
         .btn-bread {
             background: var(--bread-primary);
             border-color: var(--bread-primary);
@@ -61,12 +68,19 @@
     @include('partials.breadlab-nav')
 
     <main class="container py-5">
-        <a href="{{ route('produk.all') }}" class="text-decoration-none">&larr; Kembali ke katalog</a>
+        <a href="{{ route('product.index') }}" class="text-decoration-none">&larr; Kembali ke katalog</a>
 
         <div class="detail-card p-4 p-lg-5 mt-3">
             <div class="row g-4 align-items-center">
                 <div class="col-lg-6">
                     <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="detail-image">
+                    @if($product->photos->isNotEmpty())
+                    <div class="d-flex flex-wrap gap-2 mt-3">
+                        @foreach($product->photos as $photo)
+                        <img src="{{ asset('storage/' . $photo->photo) }}" alt="{{ $product->name }}" class="detail-thumb">
+                        @endforeach
+                    </div>
+                    @endif
                 </div>
                 <div class="col-lg-6">
                     <span class="category-pill mb-3">{{ $product->category->nama_kategori ?? 'BreadLab' }}</span>
@@ -83,7 +97,7 @@
                         <button type="submit" class="btn btn-bread btn-lg" @disabled($product->stock < 1)>Tambah ke Keranjang</button>
                     </form>
                     @else
-                    <a href="{{ route('backend.produk.index') }}" class="btn btn-bread btn-lg">Kelola Produk</a>
+                    <a href="{{ route('backend.product.index') }}" class="btn btn-bread btn-lg">Kelola Produk</a>
                     @endif
                     @else
                     <a href="{{ route('login') }}" class="btn btn-bread btn-lg">Login untuk Belanja</a>

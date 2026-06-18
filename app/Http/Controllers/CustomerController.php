@@ -9,17 +9,30 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use App\Helpers\ImageHelper;
 
 class CustomerController extends Controller
 {
     public function index()
     {
-        $customer = Customer::orderBy('id', 'desc')->get();
+        $customer = Customer::with('user')->orderBy('id', 'desc')->get();
+
         return view('backend.v_customer.index', [
             'judul' => 'Customer',
             'sub' => 'Halaman Customer',
             'index' => $customer
+        ]);
+    }
+
+    public function show(Customer $customer)
+    {
+        $customer->load(['user', 'orders']);
+
+        return view('backend.v_customer.show', [
+            'judul' => 'Customer',
+            'sub' => 'Detail Customer',
+            'show' => $customer,
         ]);
     }
 
@@ -80,20 +93,20 @@ class CustomerController extends Controller
     public function storeRegister(Request $request)
     {
         $validated = $request->validate([
-            'nama' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'hp' => ['nullable', 'string', 'max:13'],
+            'phone' => ['nullable', 'string', 'max:20'],
         ]);
 
         $user = DB::transaction(function () use ($validated) {
             $user = User::create([
-                'name' => $validated['nama'],
+                'name' => $validated['name'],
                 'email' => $validated['email'],
                 'role' => 'customer',
                 'status' => 'active',
                 'password' => Hash::make($validated['password']),
-                'phone' => $validated['hp'] ?? null,
+                'phone' => $validated['phone'] ?? null,
             ]);
 
             Customer::create([
@@ -166,71 +179,70 @@ class CustomerController extends Controller
         return redirect('/')->with('success', 'Anda telah berhasil logout.');
     }
 
-    public function akun($id)
+    public function account(Request $request)
     {
-        $loggedInCustomerId = Auth::user()->id;
-        // Cek apakah ID yang diberikan sama dengan ID customer yang sedang login
-        if ($id != $loggedInCustomerId) {
-            // Redirect atau tampilkan pesan error
-            return redirect()->route('customer.akun', ['id' => $loggedInCustomerId])->with('msgError', 'Anda tidak berhak mengakses akun ini.');
-        }
-        $customer = Customer::where('user_id', $id)->firstOrFail();
-        return view('v_customer.edit', [
+        $customer = Customer::firstOrCreate([
+            'user_id' => $request->user()->id,
+        ]);
+
+        return view('v_customer.account', [
             'judul' => 'Customer',
             'subJudul' => 'Akun Customer',
-            'edit' => $customer
+            'customer' => $customer,
         ]);
     }
 
-    public function updateAkun(Request $request, $id)
+    public function updateAccount(Request $request)
     {
-        $customer = Customer::where('user_id', $id)->firstOrFail();
-        $rules = [
-            'nama' => 'required|max:255',
-            'hp' => 'required|min:10|max:13',
-            'foto' => 'image|mimes:jpeg,jpg,png,gif|file|max:1024',
-        ];
-        $messages = [
-            'foto.image' => 'Format gambar gunakan file dengan ekstensi jpeg, jpg, png, atau gif.',
-            'foto.max' => 'Ukuran file gambar Maksimal adalah 1024 KB.'
-        ];
+        $user = $request->user();
+        $customer = Customer::firstOrCreate([
+            'user_id' => $user->id,
+        ]);
 
-        if ($request->email != $customer->user->email) {
-            $rules['email'] = 'required|max:255|email|unique:users,email,' . $customer->user_id;
-        }
-        if ($request->alamat != $customer->alamat) {
-            $rules['alamat'] = 'required';
-        }
-        if ($request->pos != $customer->pos) {
-            $rules['pos'] = 'required';
-        }
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'phone' => ['nullable', 'string', 'min:10', 'max:20'],
+            'photo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'file', 'max:2048'],
+            'address' => ['nullable', 'string', 'max:1000'],
+            'postal_code' => ['nullable', 'string', 'max:20'],
+        ], [
+            'photo.image' => 'Format gambar gunakan file dengan ekstensi jpeg, jpg, png, gif, atau webp.',
+            'photo.max' => 'Ukuran file gambar maksimal adalah 2048 KB.',
+        ]);
 
-        $validatedData = $request->validate($rules, $messages);
-        // menggunakan ImageHelper
-        if ($request->file('foto')) {
-            //hapus gambar lama
-            if ($customer->user->foto) {
-                $oldImagePath = public_path('storage/img-customer/') . $customer->user->foto;
+        if ($request->file('photo')) {
+            if ($user->photo) {
+                $oldPhoto = $user->photo;
+                $oldImagePath = str_contains($oldPhoto, '/')
+                    ? public_path('storage/' . $oldPhoto)
+                    : public_path('storage/img-customer/' . $oldPhoto);
+
                 if (file_exists($oldImagePath)) {
                     unlink($oldImagePath);
                 }
             }
-            $file = $request->file('foto');
+
+            $file = $request->file('photo');
             $extension = $file->getClientOriginalExtension();
             $originalFileName = date('YmdHis') . '_' . uniqid() . '.' . $extension;
             $directory = 'storage/img-customer/';
-            // Simpan gambar dengan ukuran yang ditentukan
-            ImageHelper::uploadAndResize($file, $directory, $originalFileName, 385, 400); // null (jika tinggi otomatis)
-            // Simpan nama file asli di database
-            $validatedData['foto'] = $originalFileName;
+            ImageHelper::uploadAndResize($file, $directory, $originalFileName, 385, 400);
+            $validated['photo'] = 'img-customer/' . $originalFileName;
         }
 
-        $customer->user->update($validatedData);
+        $user->update([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'] ?? null,
+            'photo' => $validated['photo'] ?? $user->photo,
+        ]);
 
         $customer->update([
-            'alamat' => $request->input('alamat'),
-            'pos' => $request->input('pos'),
+            'address' => $validated['address'] ?? null,
+            'postal_code' => $validated['postal_code'] ?? null,
         ]);
-        return redirect()->route('customer.akun', $id)->with('success', 'Data berhasil diperbarui');
+
+        return redirect()->route('customer.account')->with('success', 'Data berhasil diperbarui');
     }
 }

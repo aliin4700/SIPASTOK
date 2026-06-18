@@ -6,7 +6,7 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <form action="{{ route('backend.kategori.update', $edit->id) }}" method="post">
+                <form action="{{ route('backend.category.update', $edit->id) }}" method="post">
                     @method('put')
                     @csrf
 
@@ -14,8 +14,20 @@
                         <h4 class="card-title"> {{$judul}} </h4>
                         <div class="form-group">
                             <label>Nama Kategori</label>
-                            <input type="text" name="nama_kategori" value="{{ old('nama_kategori', $edit->nama_kategori) }}" class="form-control @error('nama_kategori') is-invalid @enderror" placeholder="Masukkan Nama Kategori">
-                            @error('nama_kategori')
+                            <input type="text" name="name" value="{{ old('name', $edit->name) }}" class="form-control @error('name') is-invalid @enderror" placeholder="Masukkan Nama Kategori">
+                            @error('name')
+                            <span class="invalid-feedback alert-danger" role="alert">
+                                {{ $message }}
+                            </span>
+                            @enderror
+                        </div>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select name="status" class="form-control @error('status') is-invalid @enderror">
+                                <option value="active" @selected(old('status', $edit->status) === 'active')>Active</option>
+                                <option value="inactive" @selected(old('status', $edit->status) === 'inactive')>Inactive</option>
+                            </select>
+                            @error('status')
                             <span class="invalid-feedback alert-danger" role="alert">
                                 {{ $message }}
                             </span>
@@ -26,7 +38,7 @@
                     <div class="border-top">
                         <div class="card-body">
                             <button type="submit" class="btn btn-primary">Perbaharui</button>
-                            <a href="{{ route('backend.kategori.index') }}">
+                            <a href="{{ route('backend.category.index') }}">
                                 <button type="button" class="btn btn-secondary">Kembali</button>
                             </a>
                         </div>
