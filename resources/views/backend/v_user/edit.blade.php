@@ -32,15 +32,15 @@
                                 </div>
                             </div>
                             <div class="col-md-8">
-                                @if ((string) Auth::user()->role === '1')
+                                @if ((string) Auth::user()->role === 'super_admin')
                                     <div class="form-group">
                                         <label>Hak Ases</label>
                                         <select name="role" class="form-control @error('role') is-invalid @enderror">
                                             <option value="" {{ old('role', $edit->role) == '' ? 'selected' : '' }}> -
                                                 Pilih Hak Akses -</option>
-                                            <option value="1" {{ old('role', $edit->role) == '1' ? 'selected' : '' }}>
+                                            <option value="super_admin" {{ old('role', $edit->role) == 'super_admin' ? 'selected' : '' }}>
                                                 Super Admin</option>
-                                            <option value="0" {{ old('role', $edit->role) == '0' ? 'selected' : '' }}>
+                                            <option value="admin" {{ old('role', $edit->role) == 'admin' ? 'selected' : '' }}>
                                                 Admin</option>
                                         </select>
                                         @error('role')
@@ -54,9 +54,9 @@
                                         <select name="status" class="form-control @error('status') is-invalid @enderror">
                                             <option value="" {{ old('status', $edit->status) == '' ? 'selected' : '' }}> -
                                                 Pilih Status -</option>
-                                            <option value="1" {{ old('status', $edit->status) == '1' ? 'selected' : '' }}>
+                                            <option value="active" {{ old('status', $edit->status) == 'active' ? 'selected' : '' }}>
                                                 Aktif</option>
-                                            <option value="0" {{ old('status', $edit->status) == '0' ? 'selected' : '' }}>
+                                            <option value="inactive" {{ old('status', $edit->status) == 'inactive' ? 'selected' : '' }}>
                                                 NonAktif</option>
                                         </select>
                                         @error('status')

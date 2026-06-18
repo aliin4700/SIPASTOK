@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Kategori;
+use App\Models\Category;
 use App\Models\Product;
 
 class BerandaController extends Controller
@@ -18,7 +18,7 @@ class BerandaController extends Controller
     public function index()
     {
         $products = Product::with('category')->latest()->take(6)->get();
-        $categories = Kategori::orderBy('nama_kategori')->take(6)->get();
+        $categories = Category::orderBy('name')->take(6)->get();
 
         return view('v_beranda.index', [
             'judul' => 'BreadLab Bakery',

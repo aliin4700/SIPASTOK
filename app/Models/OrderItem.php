@@ -7,23 +7,43 @@ use Illuminate\Database\Eloquent\Model;
 
 class OrderItem extends Model
 {
-    public $timestamps = true;
-    protected $table = "order_item";
-    protected $fillable = ['order_id', 'produk_id', 'quantity', 'harga'];
+    protected $fillable = [
+        'order_id',
+        'product_id',
+        'product_name',
+        'quantity',
+        'price',
+        'subtotal',
+    ];
+
+    protected $casts = [
+        'quantity' => 'integer',
+        'price' => 'decimal:2',
+        'subtotal' => 'decimal:2',
+    ];
 
     public function order()
     {
         return $this->belongsTo(Order::class);
     }
 
-    public function produk()
+    public function product()
     {
-        return $this->belongsTo(Produk::class);
+        return $this->belongsTo(Product::class);
     }
 
-    public function kategori()
+    public function getQtyAttribute(): int
     {
-        return $this->belongsTo(Kategori::class);
+        return (int) $this->quantity;
+    }
+
+    public function setQtyAttribute(int $value): void
+    {
+        $this->attributes['quantity'] = $value;
+    }
+
+    public function getHargaAttribute(): string
+    {
+        return $this->price;
     }
 }
-

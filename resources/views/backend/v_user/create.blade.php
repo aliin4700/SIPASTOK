@@ -30,8 +30,8 @@
                                         <option value="" {{ old('role') == '' ? 'selected' : '' }}> - Pilih Hak Akses
                                             -
                                         </option>
-                                        <option value="1" {{ old('role') == '1' ? 'selected' : '' }}> Super Admin</option>
-                                        <option value="0" {{ old('role') == '0' ? 'selected' : '' }}> Admin
+                                        <option value="super_admin" {{ old('role') == 'super_admin' ? 'selected' : '' }}> Super Admin</option>
+                                        <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}> Admin
                                         </option>
                                     </select>
                                     @error('role')

@@ -11,9 +11,9 @@
                     <h4 class="alert-heading"> Selamat Datang, {{ Auth::user()->nama }}</h4>
                     Dashboard BreadLab Bakery dengan hak akses yang anda miliki sebagai
                     <b>
-                        @if (Auth::user()->role ==1)
+                        @if (Auth::user()->role === 'super_admin')
                         Super Admin
-                        @elseif(Auth::user()->role ==0)
+                        @elseif(Auth::user()->role === 'admin')
                         Admin
                         @endif
                     </b>

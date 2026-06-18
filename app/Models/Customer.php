@@ -3,28 +3,20 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Model;
 
-class Customer extends Authenticatable
+class Customer extends Model
 {
-    use HasFactory, Notifiable;
-
-    protected $table = 'customer';
+    use HasFactory;
 
     protected $fillable = [
         'user_id',
-        'nama',
-        'email',
-        'status',
-        'role',
-        'password',
-        'hp',
-        'alamat',
-        'pos',
-        'foto',
         'google_id',
         'google_token',
+        'address',
+        'alamat',
+        'postal_code',
+        'pos',
     ];
 
     public function user()
@@ -32,24 +24,38 @@ class Customer extends Authenticatable
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
-    public static function boot()
+    public function carts()
     {
-        parent::boot();
-
-        static::deleting(function ($customer) {
-            // Hapus user yang terkait ketika customer dihapus
-            if ($customer->user) {
-                $customer->user->delete();
-            }
-        });
+        return $this->hasMany(Cart::class);
     }
 
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
 
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-    ];
+    public function conversations()
+    {
+        return $this->hasMany(Conversation::class);
+    }
+
+    public function getAlamatAttribute(): ?string
+    {
+        return $this->address;
+    }
+
+    public function setAlamatAttribute(?string $value): void
+    {
+        $this->attributes['address'] = $value;
+    }
+
+    public function getPosAttribute(): ?string
+    {
+        return $this->postal_code;
+    }
+
+    public function setPosAttribute(?string $value): void
+    {
+        $this->attributes['postal_code'] = $value;
+    }
 }

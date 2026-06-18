@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CheckoutOrder;
+use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -10,30 +10,30 @@ class AdminOrderController extends Controller
 {
     public function index()
     {
-        $orders = CheckoutOrder::with('user')
+        $orders = Order::with('customer.user', 'payment')
             ->latest()
             ->paginate(15);
 
         return view('backend.orders.index', [
             'judul' => 'Pesanan',
             'orders' => $orders,
-            'statuses' => CheckoutOrder::STATUSES,
+            'statuses' => Order::STATUSES,
         ]);
     }
 
-    public function show(CheckoutOrder $order)
+    public function show(Order $order)
     {
         return view('backend.orders.show', [
             'judul' => 'Detail Pesanan',
-            'order' => $order->load('user', 'items.product.category'),
-            'statuses' => CheckoutOrder::STATUSES,
+            'order' => $order->load('customer.user', 'items.product.category', 'payment', 'shipment'),
+            'statuses' => Order::STATUSES,
         ]);
     }
 
-    public function updateStatus(Request $request, CheckoutOrder $order)
+    public function updateStatus(Request $request, Order $order)
     {
         $validated = $request->validate([
-            'status' => ['required', Rule::in(CheckoutOrder::STATUSES)],
+            'status' => ['required', Rule::in(Order::STATUSES)],
         ]);
 
         $order->update([

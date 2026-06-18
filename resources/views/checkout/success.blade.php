@@ -27,25 +27,45 @@
                     <p class="text-muted">Pesanan #{{ $order->id }} masuk ke alur pembayaran dan menunggu konfirmasi.</p>
 
                     <dl class="row mb-0">
+                        <dt class="col-sm-4">Metode Transaksi</dt>
+                        <dd class="col-sm-8">{{ ucwords(str_replace('_', ' ', $order->transaction_method ?? 'shipping')) }}</dd>
                         <dt class="col-sm-4">Metode Bayar</dt>
-                        <dd class="col-sm-8">{{ str_replace('_', ' ', $order->payment_method) }}</dd>
+                        <dd class="col-sm-8">{{ ucwords(str_replace('_', ' ', $order->payment_method)) }}</dd>
                         <dt class="col-sm-4">Referensi</dt>
                         <dd class="col-sm-8">{{ $order->payment_reference ?? '-' }}</dd>
                         <dt class="col-sm-4">Alamat</dt>
-                        <dd class="col-sm-8">{{ $order->shipping_address }}</dd>
+                        <dd class="col-sm-8">{{ $order->shipping_address ?? '-' }}</dd>
+                        <dt class="col-sm-4">Kota</dt>
+                        <dd class="col-sm-8">{{ $order->shipping_city ?? '-' }}, {{ $order->shipping_province ?? '-' }}</dd>
+                        <dt class="col-sm-4">Kode Pos</dt>
+                        <dd class="col-sm-8">{{ $order->shipping_postal_code ?? '-' }}</dd>
+                        <dt class="col-sm-4">Kurir</dt>
+                        <dd class="col-sm-8">{{ $order->shipping_courier ?? '-' }} {{ $order->shipping_service ? '- ' . $order->shipping_service : '' }}</dd>
+                        <dt class="col-sm-4">Estimasi</dt>
+                        <dd class="col-sm-8">{{ $order->shipping_estimation ? $order->shipping_estimation . ' hari' : '-' }}</dd>
                     </dl>
                 </div>
 
                 <div class="col-lg-5">
                     <h2 class="h5 mb-3">Detail Pesanan</h2>
+                    @php($productTotal = 0)
                     @foreach($order->items as $item)
+                    @php($productTotal += $item->price * $item->qty)
                     <div class="d-flex justify-content-between border-bottom py-2">
                         <span>{{ $item->product->name }} x {{ $item->qty }}</span>
                         <strong>Rp {{ number_format($item->price * $item->qty, 0, ',', '.') }}</strong>
                     </div>
                     @endforeach
                     <div class="d-flex justify-content-between mt-3">
-                        <span>Total</span>
+                        <span>Subtotal Produk</span>
+                        <strong>Rp {{ number_format($productTotal, 0, ',', '.') }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2">
+                        <span>Ongkir</span>
+                        <strong>Rp {{ number_format($order->shipping_cost ?? 0, 0, ',', '.') }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mt-3">
+                        <span>Total Bayar</span>
                         <strong>Rp {{ number_format($order->total_price, 0, ',', '.') }}</strong>
                     </div>
                 </div>

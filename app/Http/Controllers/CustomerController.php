@@ -40,7 +40,7 @@ class CustomerController extends Controller
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $user = Auth::user();
 
-            if ((int) $user->status === 0) {
+            if ((string) $user->status !== 'active') {
                 Auth::logout();
 
                 return back()
@@ -50,11 +50,11 @@ class CustomerController extends Controller
 
             $request->session()->regenerate();
 
-            if (in_array((string) $user->role, ['0', '1'], true)) {
+            if (in_array((string) $user->role, ['admin', 'super_admin'], true)) {
                 return redirect('/admin');
             }
 
-            if ((string) $user->role === '2') {
+            if ((string) $user->role === 'customer') {
                 return redirect('/beranda');
             }
 
@@ -81,19 +81,19 @@ class CustomerController extends Controller
     {
         $validated = $request->validate([
             'nama' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:user,email'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'hp' => ['nullable', 'string', 'max:13'],
         ]);
 
         $user = DB::transaction(function () use ($validated) {
             $user = User::create([
-                'nama' => $validated['nama'],
+                'name' => $validated['nama'],
                 'email' => $validated['email'],
-                'role' => '2',
-                'status' => 1,
+                'role' => 'customer',
+                'status' => 'active',
                 'password' => Hash::make($validated['password']),
-                'hp' => $validated['hp'] ?? null,
+                'phone' => $validated['hp'] ?? null,
             ]);
 
             Customer::create([
@@ -126,15 +126,15 @@ class CustomerController extends Controller
 
                 if (!$registeredUser) {
                     $registeredUser = User::create([
-                        'nama' => $socialUser->name,
+                        'name' => $socialUser->name,
                         'email' => $socialUser->email,
-                        'role' => '2',
-                        'status' => 1,
+                        'role' => 'customer',
+                        'status' => 'active',
                         'password' => Hash::make(str()->random(32)),
                     ]);
                 }
 
-                if ((string) $registeredUser->role !== '2') {
+                if ((string) $registeredUser->role !== 'customer') {
                     throw new \RuntimeException('Google login hanya untuk akun customer.');
                 }
 
@@ -196,7 +196,7 @@ class CustomerController extends Controller
         ];
 
         if ($request->email != $customer->user->email) {
-            $rules['email'] = 'required|max:255|email|unique:customer';
+            $rules['email'] = 'required|max:255|email|unique:users,email,' . $customer->user_id;
         }
         if ($request->alamat != $customer->alamat) {
             $rules['alamat'] = 'required';

@@ -22,7 +22,7 @@ class RedirectIfAuthenticated
             if (Auth::guard($guard)->check()) {
                 $user = Auth::guard($guard)->user();
 
-                if (in_array((string) $user->role, ['0', '1'], true)) {
+                if (in_array((string) $user->role, ['admin', 'super_admin'], true)) {
                     return redirect()->route('backend.beranda');
                 }
 

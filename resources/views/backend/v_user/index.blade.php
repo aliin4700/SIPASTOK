@@ -5,7 +5,7 @@
 <div class="row">
 
     <div class="col-12">
-        @if ((string) Auth::user()->role === '1')
+        @if ((string) Auth::user()->role === 'super_admin')
             <a href="{{ route('backend.user.create') }}">
                 <button type="button" class="btn btn-primary"><i class="fas fa-plus"></i> Tambah</button>
             </a>

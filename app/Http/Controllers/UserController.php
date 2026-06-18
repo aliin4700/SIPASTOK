@@ -27,7 +27,7 @@ class UserController extends Controller
      */
     public function create()
     {
-        abort_unless((string) Auth::user()->role === '1', 403, 'Hanya SuperAdmin yang dapat membuat user admin.');
+        abort_unless((string) Auth::user()->role === 'super_admin', 403, 'Hanya SuperAdmin yang dapat membuat user admin.');
 
         return view('backend.v_user.create', [
             'judul' => 'User',
@@ -40,14 +40,14 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        abort_unless((string) Auth::user()->role === '1', 403, 'Hanya SuperAdmin yang dapat membuat user admin.');
+        abort_unless((string) Auth::user()->role === 'super_admin', 403, 'Hanya SuperAdmin yang dapat membuat user admin.');
 
         //ddd($request);
         //dd($request);
         $validatedData = $request->validate([
             'nama' => 'required|max:255',
-            'email' => 'required|max:255|email|unique:user',
-            'role' => 'required|in:0,1',
+            'email' => 'required|max:255|email|unique:users,email',
+            'role' => 'required|in:admin,super_admin',
             'hp' => 'required|min:10|max:13',
             'password' => 'required|min:4|confirmed',
             'foto' => 'image|mimes:jpeg,jpg,png,gif|file|max:1024',
@@ -55,7 +55,7 @@ class UserController extends Controller
             'foto.image' => 'Format gambar gunakan file dengan ekstensi jpeg, jpg, png, atau gif.',
             'foto.max' => 'Ukuran file gambar Maksimal adalah 1024 KB.'
         ]);
-        $validatedData['status'] = 0;
+        $validatedData['status'] = 'inactive';
 
         // menggunakan ImageHelper
         if ($request->file('foto')) {
@@ -110,7 +110,7 @@ class UserController extends Controller
     {
         //ddd($request);
         $user = User::findOrFail($id);
-        $isSuperAdmin = (string) Auth::user()->role === '1';
+        $isSuperAdmin = (string) Auth::user()->role === 'super_admin';
 
         $rules = [
             'nama' => 'required|max:255',
@@ -119,8 +119,8 @@ class UserController extends Controller
         ];
 
         if ($isSuperAdmin) {
-            $rules['role'] = 'required|in:0,1';
-            $rules['status'] = 'required|in:0,1';
+            $rules['role'] = 'required|in:admin,super_admin';
+            $rules['status'] = 'required|in:active,inactive,blocked';
         }
 
         $messages = [
@@ -129,7 +129,7 @@ class UserController extends Controller
         ];
 
         if ($request->email != $user->email) {
-            $rules['email'] = 'required|max:255|email|unique:user';
+            $rules['email'] = 'required|max:255|email|unique:users,email,' . $id;
         }
         $validatedData = $request->validate($rules, $messages);
 
@@ -166,7 +166,7 @@ class UserController extends Controller
      */
     public function destroy(string $id)
     {
-        $user = user::findOrFail($id);
+        $user = User::findOrFail($id);
         if ($user->foto) {
             $oldImagePath = public_path('storage/img-user/') . $user->foto;
             if (file_exists($oldImagePath)) {

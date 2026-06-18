@@ -76,7 +76,7 @@
                     <div class="mb-4">{!! nl2br(e($product->description)) !!}</div>
 
                     @auth
-                    @if((string) Auth::user()->role === '2')
+                    @if((string) Auth::user()->role === 'customer')
                     <form action="{{ route('cart.store', $product) }}" method="post" class="d-flex gap-2">
                         @csrf
                         <input type="number" name="qty" value="1" min="1" max="{{ max(1, $product->stock) }}" class="form-control form-control-lg" style="max-width: 110px;">

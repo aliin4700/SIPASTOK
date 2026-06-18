@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cart;
+use App\Models\Customer;
 use App\Models\Product;
 use Illuminate\Http\Request;
 
@@ -35,6 +36,7 @@ class CartController extends Controller
         ]);
 
         $item->qty = min(($item->exists ? $item->qty : 0) + $qty, $product->stock);
+        $item->price = $product->price;
         $item->save();
 
         return redirect()->route('cart.index')->with('success', 'Produk berhasil ditambahkan ke keranjang.');
@@ -65,6 +67,13 @@ class CartController extends Controller
     private function cart(): Cart
     {
         return Cart::firstOrCreate([
+            'customer_id' => $this->customer()->id,
+        ]);
+    }
+
+    private function customer(): Customer
+    {
+        return Customer::firstOrCreate([
             'user_id' => auth()->id(),
         ]);
     }

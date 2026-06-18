@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Kategori;
+use App\Models\Category;
+use Illuminate\Support\Str;
 
 class KategoriController extends Controller
 {
@@ -12,7 +13,7 @@ class KategoriController extends Controller
      */
     public function index()
     {
-        $kategori = Kategori::orderBy('nama_kategori', 'asc')->get();
+        $kategori = Category::orderBy('name', 'asc')->get();
         return view('backend.v_kategori.index', [
             'judul' => 'Data Kategori',
             'index' => $kategori
@@ -36,9 +37,13 @@ class KategoriController extends Controller
     {
         // dd($request);
         $validatedData = $request->validate([
-            'nama_kategori' => 'required|max:255|unique:kategori',
+            'nama_kategori' => 'required|max:255|unique:categories,name',
         ]);
-        Kategori::create($validatedData);
+        Category::create([
+            'name' => $validatedData['nama_kategori'],
+            'slug' => Str::slug($validatedData['nama_kategori']),
+            'status' => 'active',
+        ]);
         return redirect()->route('backend.kategori.index')->with('success', 'Data berhasil tersimpan');
     }
 
@@ -55,7 +60,7 @@ class KategoriController extends Controller
      */
     public function edit(string $id)
     {
-        $kategori = Kategori::find($id);
+        $kategori = Category::find($id);
         return view('backend.v_kategori.edit', [
             'judul' => 'Kategori',
             'edit' => $kategori
@@ -68,10 +73,13 @@ class KategoriController extends Controller
     public function update(Request $request, string $id)
     {
         $rules = [
-            'nama_kategori' => 'required|max:255|unique:kategori,nama_kategori,' . $id,
+            'nama_kategori' => 'required|max:255|unique:categories,name,' . $id,
         ];
         $validatedData = $request->validate($rules);
-        Kategori::where('id', $id)->update($validatedData);
+        Category::where('id', $id)->update([
+            'name' => $validatedData['nama_kategori'],
+            'slug' => Str::slug($validatedData['nama_kategori']),
+        ]);
         return redirect()->route('backend.kategori.index')->with('success', 'Data berhasil diperbaharui');
     }
 
@@ -80,7 +88,7 @@ class KategoriController extends Controller
      */
     public function destroy(string $id)
     {
-        $user = kategori::findOrFail($id);
+        $user = Category::findOrFail($id);
         $user->delete();
         return redirect()->route('backend.kategori.index')->with('success', 'Data berhasil dihapus');
     }

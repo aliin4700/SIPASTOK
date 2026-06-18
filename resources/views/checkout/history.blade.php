@@ -34,6 +34,7 @@
                     <div>
                         <div class="fw-bold">Pesanan #{{ $order->id }}</div>
                         <div class="text-muted small">{{ $order->created_at->format('d M Y H:i') }}</div>
+                        <div class="text-muted small">{{ ucwords(str_replace('_', ' ', $order->transaction_method ?? 'shipping')) }} &middot; {{ ucwords(str_replace('_', ' ', $order->payment_method ?? '-')) }}</div>
                         <span class="badge text-bg-warning mt-2">{{ str_replace('_', ' ', $order->status) }}</span>
                     </div>
                     <div class="text-lg-end">

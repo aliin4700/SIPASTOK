@@ -15,7 +15,7 @@ class IsCustomer
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (auth()->check() && (string) auth()->user()->role === '2') {
+        if (auth()->check() && (string) auth()->user()->role === 'customer') {
             return $next($request);
         }
 

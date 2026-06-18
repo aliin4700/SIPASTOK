@@ -127,7 +127,7 @@
                                     <strong>Rp {{ number_format($product->price, 0, ',', '.') }}</strong>
                                     <div class="d-flex gap-2">
                                         @auth
-                                        @if((string) Auth::user()->role === '2')
+                                        @if((string) Auth::user()->role === 'customer')
                                         <form action="{{ route('cart.store', $product) }}" method="post">
                                             @csrf
                                             <button class="btn btn-sm btn-outline-dark" type="submit" @disabled($product->stock < 1)>Cart</button>

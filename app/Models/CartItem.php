@@ -12,11 +12,14 @@ class CartItem extends Model
     protected $fillable = [
         'cart_id',
         'product_id',
+        'quantity',
         'qty',
+        'price',
     ];
 
     protected $casts = [
-        'qty' => 'integer',
+        'quantity' => 'integer',
+        'price' => 'decimal:2',
     ];
 
     public function cart()
@@ -31,6 +34,18 @@ class CartItem extends Model
 
     public function subtotal(): float
     {
-        return (float) $this->qty * (float) $this->product->price;
+        $price = (float) ($this->price ?: $this->product->price);
+
+        return (float) $this->quantity * $price;
+    }
+
+    public function getQtyAttribute(): int
+    {
+        return (int) $this->quantity;
+    }
+
+    public function setQtyAttribute(int $value): void
+    {
+        $this->attributes['quantity'] = $value;
     }
 }

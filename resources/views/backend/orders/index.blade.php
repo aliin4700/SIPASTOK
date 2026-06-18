@@ -19,8 +19,8 @@
         text-transform: capitalize;
     }
 
-    .status-pending { background: #fff3cd; color: #8a6400; }
-    .status-paid, .status-processed, .status-shipped, .status-completed { background: #d1e7dd; color: #0f5132; }
+    .status-pending, .status-waiting_payment { background: #fff3cd; color: #8a6400; }
+    .status-paid, .status-processing, .status-ready_for_pickup, .status-delivering, .status-shipped, .status-completed { background: #d1e7dd; color: #0f5132; }
     .status-cancelled { background: #f8d7da; color: #842029; }
 </style>
 
@@ -42,6 +42,7 @@
                 <tr>
                     <th>Order ID</th>
                     <th>Customer</th>
+                    <th>Transaction</th>
                     <th>Total Price</th>
                     <th>Payment Status</th>
                     <th>Order Status</th>
@@ -54,6 +55,7 @@
                 <tr>
                     <td class="fw-bold">#{{ $order->id }}</td>
                     <td>{{ $order->user->nama ?? $order->user->name ?? '-' }}</td>
+                    <td>{{ ucwords(str_replace('_', ' ', $order->transaction_method ?? 'shipping')) }}</td>
                     <td>Rp {{ number_format($order->total_price, 0, ',', '.') }}</td>
                     <td>
                         <span class="status-badge status-{{ $order->paymentStatus() }}">
@@ -72,7 +74,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="text-center text-muted py-4">Belum ada pesanan.</td>
+                    <td colspan="8" class="text-center text-muted py-4">Belum ada pesanan.</td>
                 </tr>
                 @endforelse
             </tbody>

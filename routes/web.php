@@ -5,14 +5,12 @@ use App\Http\Controllers\BerandaController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\KategoriController;
-use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\CustomerController;
-use App\Http\Controllers\OrderController;
-use App\Http\Controllers\RajaOngkirControllerv2;
+use App\Http\Controllers\ShippingController;
 
 Route::get('/', function () {
     // return view('welcome');
@@ -53,14 +51,12 @@ Route::middleware(['auth', 'is.admin'])->group(function () {
 
     // Route untuk Produk
     Route::resource('backend/produk', ProductController::class, ['as' => 'backend']);
-    // Route untuk menambahkan foto
-    Route::post('foto-produk/store', [ProdukController::class, 'storeFoto'])->name('backend.foto_produk.store');
-    // Route untuk menghapus foto
-    Route::delete('foto-produk/{id}', [ProdukController::class, 'destroyFoto'])->name('backend.foto_produk.destroy');
+    Route::post('foto-produk/store', fn () => back()->with('error', 'Manajemen foto produk akan dirapikan pada refactor product berikutnya.'))->name('backend.foto_produk.store');
+    Route::delete('foto-produk/{id}', fn () => back()->with('error', 'Manajemen foto produk akan dirapikan pada refactor product berikutnya.'))->name('backend.foto_produk.destroy');
 
     // Route untuk laporan produk
-    Route::get('backend/laporan/formproduk', [ProdukController::class, 'formProduk'])->name('backend.laporan.formproduk');
-    Route::post('backend/laporan/cetakproduk', [ProdukController::class, 'cetakProduk'])->name('backend.laporan.cetakproduk');
+    Route::get('backend/laporan/formproduk', fn () => redirect()->route('backend.produk.index'))->name('backend.laporan.formproduk');
+    Route::post('backend/laporan/cetakproduk', fn () => redirect()->route('backend.produk.index'))->name('backend.laporan.cetakproduk');
 
     Route::get('/admin/orders', [AdminOrderController::class, 'index'])->name('admin.orders.index');
     Route::get('/admin/orders/{order}', [AdminOrderController::class, 'show'])->name('admin.orders.show');
@@ -90,6 +86,9 @@ Route::middleware('is.customer')->group(function () {
     Route::delete('cart/item/{item}', [CartController::class, 'destroy'])->name('cart.destroy');
     Route::get('checkout', [CheckoutController::class, 'create'])->name('checkout.create');
     Route::post('checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+    Route::get('checkout/shipping/provinces', [ShippingController::class, 'provinces'])->name('checkout.shipping.provinces');
+    Route::get('checkout/shipping/cities', [ShippingController::class, 'cities'])->name('checkout.shipping.cities');
+    Route::post('checkout/shipping/costs', [ShippingController::class, 'costs'])->name('checkout.shipping.costs');
     Route::get('checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
     Route::get('orders/history', [CheckoutController::class, 'history'])->name('orders.history');
 });

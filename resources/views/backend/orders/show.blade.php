@@ -19,8 +19,8 @@
         text-transform: capitalize;
     }
 
-    .status-pending { background: #fff3cd; color: #8a6400; }
-    .status-paid, .status-processed, .status-shipped, .status-completed { background: #d1e7dd; color: #0f5132; }
+    .status-pending, .status-waiting_payment { background: #fff3cd; color: #8a6400; }
+    .status-paid, .status-processing, .status-ready_for_pickup, .status-delivering, .status-shipped, .status-completed { background: #d1e7dd; color: #0f5132; }
     .status-cancelled { background: #f8d7da; color: #842029; }
     .order-product-img { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; }
 </style>
@@ -50,12 +50,18 @@
                 <dd class="col-sm-8">{{ $order->user->nama ?? $order->user->name ?? '-' }}</dd>
                 <dt class="col-sm-4">Email</dt>
                 <dd class="col-sm-8">{{ $order->user->email ?? '-' }}</dd>
+                <dt class="col-sm-4">Metode Transaksi</dt>
+                <dd class="col-sm-8">{{ ucwords(str_replace('_', ' ', $order->transaction_method ?? 'shipping')) }}</dd>
                 <dt class="col-sm-4">Alamat</dt>
                 <dd class="col-sm-8">{{ $order->shipping_address ?? '-' }}</dd>
+                <dt class="col-sm-4">Provinsi</dt>
+                <dd class="col-sm-8">{{ $order->shipping_province ?? '-' }}</dd>
+                <dt class="col-sm-4">Kota</dt>
+                <dd class="col-sm-8">{{ $order->shipping_city ?? '-' }}</dd>
                 <dt class="col-sm-4">Kode Pos</dt>
                 <dd class="col-sm-8">{{ $order->shipping_postal_code ?? '-' }}</dd>
                 <dt class="col-sm-4">Metode Bayar</dt>
-                <dd class="col-sm-8">{{ str_replace('_', ' ', $order->payment_method ?? '-') }}</dd>
+                <dd class="col-sm-8">{{ ucwords(str_replace('_', ' ', $order->payment_method ?? '-')) }}</dd>
                 <dt class="col-sm-4">Referensi</dt>
                 <dd class="col-sm-8">{{ $order->payment_reference ?? '-' }}</dd>
             </dl>
@@ -79,6 +85,36 @@
                 </div>
                 <button type="submit" class="btn btn-primary">Simpan Status</button>
             </form>
+        </div>
+    </div>
+</div>
+
+<div class="breadlab-admin-panel mb-4">
+    <h4 class="h5 mb-3">Informasi Pengiriman</h4>
+    <div class="row">
+        <div class="col-lg-7">
+            <dl class="row mb-0">
+                <dt class="col-sm-4">Alamat Kirim</dt>
+                <dd class="col-sm-8">{{ $order->shipping_address ?? '-' }}</dd>
+                <dt class="col-sm-4">Tujuan</dt>
+                <dd class="col-sm-8">{{ $order->shipping_city ?? '-' }}, {{ $order->shipping_province ?? '-' }}</dd>
+                <dt class="col-sm-4">Kode Pos</dt>
+                <dd class="col-sm-8">{{ $order->shipping_postal_code ?? '-' }}</dd>
+                <dt class="col-sm-4">Berat Total</dt>
+                <dd class="col-sm-8">{{ number_format($order->shipping_total_weight ?? 0, 0, ',', '.') }} gram</dd>
+            </dl>
+        </div>
+        <div class="col-lg-5">
+            <dl class="row mb-0">
+                <dt class="col-sm-5">Kurir</dt>
+                <dd class="col-sm-7">{{ $order->shipping_courier ?? '-' }}</dd>
+                <dt class="col-sm-5">Layanan</dt>
+                <dd class="col-sm-7">{{ $order->shipping_service ?? '-' }}</dd>
+                <dt class="col-sm-5">Ongkir</dt>
+                <dd class="col-sm-7">Rp {{ number_format($order->shipping_cost ?? 0, 0, ',', '.') }}</dd>
+                <dt class="col-sm-5">Estimasi</dt>
+                <dd class="col-sm-7">{{ $order->shipping_estimation ? $order->shipping_estimation . ' hari' : '-' }}</dd>
+            </dl>
         </div>
     </div>
 </div>
@@ -115,8 +151,17 @@
                 @endforeach
             </tbody>
             <tfoot>
+                @php($productTotal = $order->items->sum(fn ($item) => $item->price * $item->qty))
                 <tr>
-                    <th colspan="4" class="text-end">Total</th>
+                    <th colspan="4" class="text-end">Subtotal Produk</th>
+                    <th>Rp {{ number_format($productTotal, 0, ',', '.') }}</th>
+                </tr>
+                <tr>
+                    <th colspan="4" class="text-end">Ongkir</th>
+                    <th>Rp {{ number_format($order->shipping_cost ?? 0, 0, ',', '.') }}</th>
+                </tr>
+                <tr>
+                    <th colspan="4" class="text-end">Total Bayar</th>
                     <th>Rp {{ number_format($order->total_price, 0, ',', '.') }}</th>
                 </tr>
             </tfoot>

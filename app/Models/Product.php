@@ -17,30 +17,39 @@ class Product extends Model
         'description',
         'price',
         'stock',
+        'weight',
+        'main_photo',
         'image',
+        'status',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
         'stock' => 'integer',
+        'weight' => 'integer',
     ];
 
     public function category()
     {
-        return $this->belongsTo(Kategori::class, 'category_id');
+        return $this->belongsTo(Category::class);
+    }
+
+    public function photos()
+    {
+        return $this->hasMany(ProductPhoto::class);
     }
 
     public function getImageUrlAttribute(): string
     {
-        if (! $this->image) {
+        if (! $this->main_photo) {
             return $this->fallbackImageUrl();
         }
 
-        if (filter_var($this->image, FILTER_VALIDATE_URL)) {
-            return $this->image;
+        if (filter_var($this->main_photo, FILTER_VALIDATE_URL)) {
+            return $this->main_photo;
         }
 
-        $image = trim(str_replace('\\', '/', $this->image), '/');
+        $image = trim(str_replace('\\', '/', $this->main_photo), '/');
         $image = preg_replace('#^(public/)?storage/#', '', $image);
         $paths = str_contains($image, '/')
             ? [$image]
@@ -62,5 +71,15 @@ class Product extends Model
         }
 
         return asset('breadlab/logo.png');
+    }
+
+    public function getImageAttribute(): ?string
+    {
+        return $this->main_photo;
+    }
+
+    public function setImageAttribute(?string $value): void
+    {
+        $this->attributes['main_photo'] = $value;
     }
 }
