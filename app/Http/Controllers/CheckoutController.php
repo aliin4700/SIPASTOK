@@ -7,6 +7,7 @@ use App\Models\CartItem;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Product;
+use App\Services\RajaOngkirService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -15,7 +16,9 @@ use RuntimeException;
 
 class CheckoutController extends Controller
 {
-    private const LOCAL_DELIVERY_FEE = 10000;
+    public function __construct(private RajaOngkirService $rajaOngkir)
+    {
+    }
 
     public function index()
     {
@@ -30,7 +33,9 @@ class CheckoutController extends Controller
             'cart' => $cart,
             'subtotal' => $this->subtotal($cart),
             'totalWeight' => $this->totalWeight($cart),
-            'localDeliveryFee' => self::LOCAL_DELIVERY_FEE,
+            'localDeliveryFee' => $this->localDeliveryFee(),
+            'couriers' => RajaOngkirService::COURIERS,
+            'customerAddresses' => $this->customer()->addresses()->orderByDesc('is_default')->latest()->get(),
         ]);
     }
 
@@ -39,21 +44,67 @@ class CheckoutController extends Controller
         $validated = $request->validate([
             'transaction_method' => ['required', Rule::in(['pickup', 'local_delivery', 'shipping'])],
             'payment_method' => ['required', Rule::in(['cash', 'bank_transfer', 'midtrans'])],
+            'customer_address_id' => ['nullable', 'required_if:transaction_method,shipping', 'integer', 'exists:customer_addresses,id'],
             'address' => ['nullable', 'required_if:transaction_method,shipping', 'string', 'max:1000'],
             'postal_code' => ['nullable', 'required_if:transaction_method,shipping', 'string', 'max:20'],
+            'province_id' => ['nullable', 'string', 'max:50'],
+            'province_name' => ['nullable', 'string', 'max:255'],
+            'city_name' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:1000'],
-            'delivery_address' => ['nullable', 'required_if:transaction_method,local_delivery', 'string', 'max:1000'],
+            'delivery_address' => ['nullable', 'string', 'max:1000'],
             'delivery_note' => ['nullable', 'string', 'max:1000'],
-            'courier' => ['nullable', 'required_if:transaction_method,shipping', 'string', 'max:50'],
+            'delivery_latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'delivery_longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'destination' => ['nullable', 'required_if:transaction_method,shipping', 'integer'],
+            'courier' => ['nullable', 'required_if:transaction_method,shipping', 'string', Rule::in(array_keys(RajaOngkirService::COURIERS))],
             'service' => ['nullable', 'required_if:transaction_method,shipping', 'string', 'max:100'],
-            'shipping_cost' => ['nullable', 'required_if:transaction_method,shipping', 'numeric', 'min:0'],
+            'shipping_cost' => ['nullable', 'required_if:transaction_method,shipping', 'numeric', 'min:1'],
             'estimated_delivery' => ['nullable', 'string', 'max:100'],
         ]);
+
+        if ($validated['transaction_method'] === 'local_delivery' && blank($validated['delivery_address'] ?? null) && blank($validated['delivery_note'] ?? null)) {
+            return back()
+                ->withInput()
+                ->with('error', 'Alamat atau catatan delivery wajib diisi untuk local delivery.');
+        }
 
         if ($validated['payment_method'] === 'cash' && ! in_array($validated['transaction_method'], ['pickup', 'local_delivery'], true)) {
             return back()
                 ->withInput()
                 ->with('error', 'Cash hanya tersedia untuk pickup dan local delivery.');
+        }
+
+        $selectedAddress = null;
+
+        if ($validated['transaction_method'] === 'shipping') {
+            $selectedAddress = $this->customer()->addresses()->whereKey($validated['customer_address_id'])->first();
+
+            if (! $selectedAddress) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'Alamat pengiriman tidak ditemukan atau bukan milik akun Anda.');
+            }
+
+            if (blank($selectedAddress->city_id)) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'Alamat terpilih belum memiliki ID kota RajaOngkir untuk cek ongkir.');
+            }
+
+            if ((string) config('services.rajaongkir.mode', 'starter') === 'komerce' && blank($selectedAddress->district_id)) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'Alamat belum memiliki kecamatan. Edit alamat terlebih dahulu.');
+            }
+
+            $validated['destination'] = (int) ((string) config('services.rajaongkir.mode', 'starter') === 'komerce'
+                ? $selectedAddress->district_id
+                : $selectedAddress->city_id);
+            $validated['address'] = $selectedAddress->snapshotAddress();
+            $validated['postal_code'] = $selectedAddress->postal_code;
+            $validated['province_id'] = $selectedAddress->province_id;
+            $validated['province_name'] = $selectedAddress->province_name;
+            $validated['city_name'] = $selectedAddress->city_name;
         }
 
         $cart = $this->cart()->load('items.product');
@@ -70,11 +121,13 @@ class CheckoutController extends Controller
         }
 
         try {
-            $order = DB::transaction(function () use ($cart, $validated) {
+            $shipmentOption = $this->shipmentOption($validated, $cart);
+
+            $order = DB::transaction(function () use ($cart, $validated, $shipmentOption, $selectedAddress) {
                 $cart->load('items.product');
                 $subtotal = $this->subtotal($cart);
                 $totalWeight = $this->totalWeight($cart);
-                $shippingCost = $this->shippingCost($validated);
+                $shippingCost = $shipmentOption['shipping_cost'];
                 $paymentStatus = 'pending';
                 $orderStatus = $validated['payment_method'] === 'cash' ? 'pending' : 'waiting_payment';
 
@@ -89,7 +142,9 @@ class CheckoutController extends Controller
                     'shipping_cost' => $shippingCost,
                     'total_weight' => $totalWeight,
                     'total_price' => $subtotal + $shippingCost,
-                    'address' => $validated['address'] ?? $validated['delivery_address'] ?? null,
+                    'address' => $validated['transaction_method'] === 'shipping'
+                        ? ($validated['address'] ?? null)
+                        : ($validated['delivery_address'] ?? null),
                     'postal_code' => $validated['postal_code'] ?? null,
                     'notes' => $validated['notes'] ?? null,
                 ]);
@@ -126,15 +181,33 @@ class CheckoutController extends Controller
 
                 $order->shipment()->create([
                     'shipping_type' => $validated['transaction_method'],
-                    'courier' => $validated['transaction_method'] === 'shipping' ? ($validated['courier'] ?? null) : null,
-                    'service' => $validated['transaction_method'] === 'shipping' ? ($validated['service'] ?? null) : null,
+                    'courier' => $shipmentOption['courier'],
+                    'service' => $shipmentOption['service'],
                     'tracking_number' => null,
                     'shipping_cost' => $shippingCost,
-                    'estimated_delivery' => $validated['transaction_method'] === 'shipping' ? ($validated['estimated_delivery'] ?? null) : null,
-                    'delivery_latitude' => null,
-                    'delivery_longitude' => null,
-                    'delivery_address' => $validated['transaction_method'] === 'local_delivery' ? ($validated['delivery_address'] ?? null) : null,
-                    'delivery_note' => $validated['transaction_method'] === 'local_delivery' ? ($validated['delivery_note'] ?? null) : null,
+                    'estimated_delivery' => $shipmentOption['estimated_delivery'],
+                    'delivery_latitude' => match ($validated['transaction_method']) {
+                        'local_delivery' => $validated['delivery_latitude'] ?? null,
+                        'shipping' => $selectedAddress?->latitude,
+                        default => null,
+                    },
+                    'delivery_longitude' => match ($validated['transaction_method']) {
+                        'local_delivery' => $validated['delivery_longitude'] ?? null,
+                        'shipping' => $selectedAddress?->longitude,
+                        default => null,
+                    },
+                    'delivery_address' => match ($validated['transaction_method']) {
+                        'local_delivery' => $validated['delivery_address'] ?? null,
+                        'shipping' => $validated['address'] ?? null,
+                        default => null,
+                    },
+                    'delivery_note' => match ($validated['transaction_method']) {
+                        'local_delivery' => $validated['delivery_note'] ?? null,
+                        'shipping' => $selectedAddress
+                            ? trim(($selectedAddress->receiver_name . ' - ' . $selectedAddress->receiver_phone . ' ' . ($selectedAddress->label ? '(' . $selectedAddress->label . ')' : '')))
+                            : null,
+                        default => null,
+                    },
                     'delivery_distance' => null,
                 ]);
 
@@ -143,7 +216,7 @@ class CheckoutController extends Controller
                 return $order;
             });
         } catch (RuntimeException $exception) {
-            return redirect()->route('cart.index')->with('error', $exception->getMessage());
+            return back()->withInput()->with('error', $exception->getMessage());
         }
 
         return redirect()->route('order.detail', $order)->with('success', 'Pesanan ' . $order->order_number . ' berhasil dibuat.');
@@ -170,16 +243,67 @@ class CheckoutController extends Controller
 
     private function totalWeight(Cart $cart): int
     {
-        return (int) $cart->items->sum(fn (CartItem $item) => (int) ($item->product->weight ?? 0) * $item->quantity);
+        $weight = (int) $cart->items->sum(fn (CartItem $item) => (int) ($item->product->weight ?: $this->defaultWeight()) * $item->quantity);
+
+        return max($this->defaultWeight(), $weight);
     }
 
-    private function shippingCost(array $validated): float
+    private function shipmentOption(array $validated, Cart $cart): array
     {
-        return match ($validated['transaction_method']) {
-            'pickup' => 0,
-            'local_delivery' => self::LOCAL_DELIVERY_FEE,
-            'shipping' => (float) ($validated['shipping_cost'] ?? 0),
-        };
+        if ($validated['transaction_method'] === 'pickup') {
+            return [
+                'shipping_cost' => 0,
+                'courier' => null,
+                'service' => null,
+                'estimated_delivery' => null,
+            ];
+        }
+
+        if ($validated['transaction_method'] === 'local_delivery') {
+            return [
+                'shipping_cost' => $this->localDeliveryFee(),
+                'courier' => null,
+                'service' => null,
+                'estimated_delivery' => null,
+            ];
+        }
+
+        if (config('services.rajaongkir.key') && (string) config('services.rajaongkir.mode', 'starter') !== 'komerce') {
+            $service = $this->rajaOngkir->findService(
+                $validated['destination'],
+                $validated['courier'],
+                $validated['service'],
+                $this->totalWeight($cart)
+            );
+
+            if (! $service) {
+                throw new RuntimeException('Service RajaOngkir yang dipilih tidak valid.');
+            }
+
+            return [
+                'shipping_cost' => (float) $service['cost'],
+                'courier' => $service['courier'],
+                'service' => $service['service'],
+                'estimated_delivery' => $service['estimation'],
+            ];
+        }
+
+        return [
+            'shipping_cost' => (float) ($validated['shipping_cost'] ?? 0),
+            'courier' => $validated['courier'] ?? null,
+            'service' => $validated['service'] ?? null,
+            'estimated_delivery' => $validated['estimated_delivery'] ?? null,
+        ];
+    }
+
+    private function localDeliveryFee(): float
+    {
+        return (float) config('services.local_delivery.fee', 10000);
+    }
+
+    private function defaultWeight(): int
+    {
+        return max(1, (int) config('services.rajaongkir.default_weight', 1000));
     }
 
     private function orderNumber(): string

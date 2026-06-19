@@ -16,6 +16,9 @@
             <div class="section-title">
                 <h3 class="title"> {{$judul}} </h3>
             </div>
+            <div class="mb-3">
+                <a href="{{ route('customer.address.index') }}" class="primary-btn">Daftar Alamat</a>
+            </div>
             <div class="row">
                 <div class="col-md-12">
                     <!-- msgError -->

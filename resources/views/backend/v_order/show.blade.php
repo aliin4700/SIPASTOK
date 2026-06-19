@@ -23,6 +23,7 @@
     .status-paid, .status-processing, .status-ready_for_pickup, .status-delivering, .status-shipped, .status-completed { background: #d1e7dd; color: #0f5132; }
     .status-cancelled, .status-failed, .status-rejected { background: #f8d7da; color: #842029; }
     .order-product-img { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; }
+    .cream-note { background: #fff4e4; border: 1px solid #efd8b6; color: #6d3b12; }
 </style>
 
 <div class="breadlab-admin-panel mb-4">
@@ -91,21 +92,61 @@
         <dt class="col-sm-3">Status Payment</dt>
         <dd class="col-sm-9">{{ str_replace('_', ' ', $order->paymentStatus()) }}</dd>
         <dt class="col-sm-3">Bukti Transfer</dt>
-        <dd class="col-sm-9">{{ $order->payment->payment_proof ?? '-' }}</dd>
+        <dd class="col-sm-9">
+            @if($order->payment?->payment_proof)
+            <a href="{{ asset('storage/' . $order->payment->payment_proof) }}" target="_blank">Lihat bukti pembayaran</a>
+            @else
+            -
+            @endif
+        </dd>
     </dl>
+    @if($order->payment)
+    <a href="{{ route('backend.payment.show', $order->payment) }}" class="btn btn-outline-primary mt-3">Kelola Pembayaran</a>
+    @endif
 </div>
 
 <div class="breadlab-admin-panel mb-4">
     <h4 class="h5 mb-3">Informasi Pengiriman</h4>
+    @php($shipment = $order->shipment)
     <div class="row">
         <div class="col-lg-7">
             <dl class="row mb-0">
                 <dt class="col-sm-4">Tipe</dt>
-                <dd class="col-sm-8">{{ ucwords(str_replace('_', ' ', $order->shipment->shipping_type ?? $order->transaction_method)) }}</dd>
+                <dd class="col-sm-8">{{ ucwords(str_replace('_', ' ', $shipment->shipping_type ?? $order->transaction_method)) }}</dd>
+
+                @if(($shipment->shipping_type ?? $order->transaction_method) === 'pickup')
+                <dt class="col-sm-4">Keterangan</dt>
+                <dd class="col-sm-8">Pesanan diambil customer di toko. Tracking tidak diperlukan.</dd>
+                @elseif(($shipment->shipping_type ?? $order->transaction_method) === 'local_delivery')
                 <dt class="col-sm-4">Alamat</dt>
-                <dd class="col-sm-8">{{ $order->shipment->delivery_address ?? $order->address ?? '-' }}</dd>
+                <dd class="col-sm-8">{{ $shipment->delivery_address ?? $order->address ?? '-' }}</dd>
+                <dt class="col-sm-4">Catatan Delivery</dt>
+                <dd class="col-sm-8">{{ $shipment->delivery_note ?? '-' }}</dd>
+                <dt class="col-sm-4">Koordinat</dt>
+                <dd class="col-sm-8">
+                    @if($shipment?->delivery_latitude && $shipment?->delivery_longitude)
+                    <a href="https://www.openstreetmap.org/?mlat={{ $shipment->delivery_latitude }}&mlon={{ $shipment->delivery_longitude }}#map=16/{{ $shipment->delivery_latitude }}/{{ $shipment->delivery_longitude }}" target="_blank">
+                        {{ $shipment->delivery_latitude }}, {{ $shipment->delivery_longitude }}
+                    </a>
+                    @else
+                    -
+                    @endif
+                </dd>
+                @else
+                <dt class="col-sm-4">Alamat</dt>
+                <dd class="col-sm-8">{{ $order->address ?? '-' }}</dd>
                 <dt class="col-sm-4">Kode Pos</dt>
                 <dd class="col-sm-8">{{ $order->postal_code ?? '-' }}</dd>
+                <dt class="col-sm-4">Kurir</dt>
+                <dd class="col-sm-8">{{ strtoupper($shipment->courier ?? '-') }}</dd>
+                <dt class="col-sm-4">Service</dt>
+                <dd class="col-sm-8">{{ $shipment->service ?? '-' }}</dd>
+                <dt class="col-sm-4">Estimasi</dt>
+                <dd class="col-sm-8">{{ $shipment->estimated_delivery ? $shipment->estimated_delivery . ' hari' : '-' }}</dd>
+                <dt class="col-sm-4">Tracking</dt>
+                <dd class="col-sm-8">{{ $shipment->tracking_number ?? '-' }}</dd>
+                @endif
+
                 <dt class="col-sm-4">Berat Total</dt>
                 <dd class="col-sm-8">{{ number_format($order->total_weight ?? 0, 0, ',', '.') }} gram</dd>
                 <dt class="col-sm-4">Ongkir</dt>
@@ -113,25 +154,39 @@
             </dl>
         </div>
         <div class="col-lg-5">
+            @if(($shipment->shipping_type ?? $order->transaction_method) === 'shipping')
             <form action="{{ route('backend.order.updateTracking', $order) }}" method="post">
                 @csrf
                 @method('patch')
                 <div class="mb-2">
                     <label for="courier" class="form-label">Kurir</label>
-                    <input type="text" name="courier" id="courier" value="{{ old('courier', $order->shipment->courier ?? '') }}" class="form-control">
+                    <input type="text" name="courier" id="courier" value="{{ old('courier', $shipment->courier ?? '') }}" class="form-control">
                 </div>
                 <div class="mb-2">
                     <label for="service" class="form-label">Service</label>
-                    <input type="text" name="service" id="service" value="{{ old('service', $order->shipment->service ?? '') }}" class="form-control">
+                    <input type="text" name="service" id="service" value="{{ old('service', $shipment->service ?? '') }}" class="form-control">
                 </div>
                 <div class="mb-3">
                     <label for="tracking_number" class="form-label">Tracking Number</label>
-                    <input type="text" name="tracking_number" id="tracking_number" value="{{ old('tracking_number', $order->shipment->tracking_number ?? '') }}" class="form-control">
+                    <input type="text" name="tracking_number" id="tracking_number" value="{{ old('tracking_number', $shipment->tracking_number ?? '') }}" class="form-control">
                 </div>
                 <button type="submit" class="btn btn-outline-primary">Simpan Tracking</button>
             </form>
+            @else
+            <div class="cream-note rounded-2 p-3 small">Tracking number hanya digunakan untuk shipping courier.</div>
+            @endif
         </div>
     </div>
+</div>
+
+<div class="breadlab-admin-panel mb-4">
+    <h4 class="h5 mb-3">Chat Customer</h4>
+    @if($order->conversation)
+    <p class="text-muted mb-3">Buka percakapan customer untuk pesanan ini.</p>
+    <a href="{{ route('backend.chat.show', $order->conversation) }}" class="btn btn-outline-primary">Buka Chat</a>
+    @else
+    <p class="text-muted mb-0">Belum ada chat untuk pesanan ini.</p>
+    @endif
 </div>
 
 <div class="breadlab-admin-panel">

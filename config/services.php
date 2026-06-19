@@ -38,9 +38,17 @@ return [
     ],
 
     'rajaongkir' => [
+        'mode' => env('RAJAONGKIR_MODE', 'starter'),
         'key' => env('RAJAONGKIR_API_KEY'),
+        'key_header' => env('RAJAONGKIR_KEY_HEADER', 'key'),
         'base_url' => env('RAJAONGKIR_BASE_URL', 'https://api.rajaongkir.com/starter'),
-        'origin_city_id' => env('RAJAONGKIR_ORIGIN_CITY_ID', 151),
+        'origin_city_id' => env('RAJAONGKIR_ORIGIN_CITY_ID'),
+        'origin_district_id' => env('RAJAONGKIR_ORIGIN_DISTRICT_ID'),
+        'default_weight' => env('RAJAONGKIR_DEFAULT_WEIGHT', 1000),
+    ],
+
+    'local_delivery' => [
+        'fee' => env('LOCAL_DELIVERY_FEE', 10000),
     ],
 
 ];

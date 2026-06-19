@@ -14,10 +14,15 @@ class RajaOngkirService
         'jne' => 'JNE',
         'jnt' => 'J&T',
         'sicepat' => 'SiCepat',
+        'tiki' => 'TIKI',
         'pos' => 'POS Indonesia',
     ];
 
     public const UNAVAILABLE_MESSAGE = 'Layanan ongkir sedang tidak tersedia. Silakan pilih pickup atau delivery lokal.';
+
+    private string $lastFailureReason = 'rajaongkir_unavailable';
+
+    private ?string $lastEndpoint = null;
 
     public function provinces(): array
     {
@@ -37,10 +42,18 @@ class RajaOngkirService
             throw new RuntimeException('Kurir tidak tersedia.');
         }
 
+        $originCityId = config('services.rajaongkir.origin_city_id');
+
+        if (blank($originCityId)) {
+            $this->lastFailureReason = 'missing_origin_city_id';
+            $this->logFailure($this->lastFailureReason, 'post', 'cost');
+            throw new RuntimeException('Konfigurasi RajaOngkir belum lengkap: RAJAONGKIR_ORIGIN_CITY_ID wajib diisi untuk cek ongkir.');
+        }
+
         $results = $this->post('cost', [
-            'origin' => (string) config('services.rajaongkir.origin_city_id'),
+            'origin' => (string) $originCityId,
             'destination' => (string) $destinationCityId,
-            'weight' => max(1, $weight),
+            'weight' => max((int) config('services.rajaongkir.default_weight', 1000), $weight),
             'courier' => $courier,
         ]);
 
@@ -81,13 +94,22 @@ class RajaOngkirService
     private function request(string $method, string $path, array $payload = []): array
     {
         $apiKey = config('services.rajaongkir.key');
+        $baseUrl = $this->baseUrl();
 
-        if (! $apiKey) {
-            $this->logFailure('missing_api_key', $method, $path);
-            throw new RuntimeException(self::UNAVAILABLE_MESSAGE);
+        if (blank($apiKey)) {
+            $this->lastFailureReason = 'missing_api_key';
+            $this->logFailure($this->lastFailureReason, $method, $path);
+            throw new RuntimeException('Konfigurasi RajaOngkir belum lengkap: RAJAONGKIR_API_KEY wajib diisi.');
         }
 
-        $url = rtrim((string) config('services.rajaongkir.base_url'), '/') . '/' . ltrim($path, '/');
+        if (blank($baseUrl)) {
+            $this->lastFailureReason = 'missing_base_url';
+            $this->logFailure($this->lastFailureReason, $method, $path);
+            throw new RuntimeException('Konfigurasi RajaOngkir belum lengkap: RAJAONGKIR_BASE_URL wajib diisi.');
+        }
+
+        $url = $baseUrl . '/' . ltrim($path, '/');
+        $this->lastEndpoint = $url;
 
         try {
             $request = Http::timeout(15)->withHeaders([
@@ -98,35 +120,64 @@ class RajaOngkirService
                 ? $request->asForm()->post($url, $payload)
                 : $request->get($url, $payload);
         } catch (ConnectionException $exception) {
-            $this->logFailure('connection_exception', $method, $path, [
+            $this->lastFailureReason = 'connection_exception';
+            $this->logFailure($this->lastFailureReason, $method, $path, [
                 'exception' => $exception->getMessage(),
             ]);
 
-            throw new RuntimeException(self::UNAVAILABLE_MESSAGE, 0, $exception);
+            throw new RuntimeException('Tidak bisa terhubung ke RajaOngkir. Periksa koneksi internet dan base URL.', 0, $exception);
         }
 
         if ($response->failed()) {
-            $this->logFailure('http_failure', $method, $path, [
+            $this->lastFailureReason = 'http_failure_' . $response->status();
+            $this->logFailure($this->lastFailureReason, $method, $path, [
                 'status' => $response->status(),
-                'body' => $response->body(),
+                'body' => Str::limit($response->body(), 500),
             ]);
 
-            throw new RuntimeException(self::UNAVAILABLE_MESSAGE);
+            throw new RuntimeException('RajaOngkir mengembalikan HTTP ' . $response->status() . '. Periksa API key, base URL, dan jenis akun RajaOngkir.');
         }
 
         $payload = $response->json();
         $statusCode = (int) data_get($payload, 'rajaongkir.status.code', 0);
 
         if ($statusCode !== 200) {
-            $this->logFailure('api_status_failure', $method, $path, [
+            $this->lastFailureReason = 'api_status_' . ($statusCode ?: 'unknown');
+            $this->logFailure($this->lastFailureReason, $method, $path, [
                 'status_code' => $statusCode,
                 'description' => data_get($payload, 'rajaongkir.status.description'),
             ]);
 
-            throw new RuntimeException(self::UNAVAILABLE_MESSAGE);
+            throw new RuntimeException('RajaOngkir menolak request: ' . (data_get($payload, 'rajaongkir.status.description') ?: 'status tidak dikenali') . '.');
         }
 
         return data_get($payload, 'rajaongkir.results', []);
+    }
+
+    public function lastFailureReason(): string
+    {
+        return $this->lastFailureReason;
+    }
+
+    public function lastEndpoint(): ?string
+    {
+        return $this->lastEndpoint;
+    }
+
+    public function endpointFor(string $path): string
+    {
+        return $this->baseUrl() . '/' . ltrim($path, '/');
+    }
+
+    private function baseUrl(): string
+    {
+        $baseUrl = trim((string) config('services.rajaongkir.base_url'));
+
+        if ($baseUrl === '') {
+            return '';
+        }
+
+        return preg_replace('#/(province|city|cost)$#', '', rtrim($baseUrl, '/'));
     }
 
     private function logFailure(string $reason, string $method, string $path, array $context = []): void
@@ -135,6 +186,7 @@ class RajaOngkirService
             'reason' => $reason,
             'method' => $method,
             'path' => $path,
+            'endpoint' => $this->lastEndpoint,
         ], $context));
     }
 }

@@ -10,7 +10,13 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\AdminOrderController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\RajaOngkirController;
+use App\Http\Controllers\ConversationController;
+use App\Http\Controllers\MessageController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\CustomerAddressController;
 
 Route::get('/', function () {
     // return view('welcome');
@@ -31,9 +37,21 @@ Route::middleware('guest')->group(function () {
 Route::get('/auth/google/callback', [CustomerController::class, 'callback'])->name('auth.callback');
 Route::post('/logout', [CustomerController::class, 'logout'])->name('logout')->middleware('auth');
 
+if (config('app.debug')) {
+    Route::get('/debug/rajaongkir/config', [RajaOngkirController::class, 'debugConfig'])
+        ->name('debug.rajaongkir.config');
+    Route::get('/debug/rajaongkir/province', [RajaOngkirController::class, 'debugProvince'])
+        ->name('debug.rajaongkir.province');
+    Route::get('/debug/rajaongkir/cities', [RajaOngkirController::class, 'debugCities'])
+        ->name('debug.rajaongkir.cities');
+    Route::get('/debug/rajaongkir/cost', [RajaOngkirController::class, 'debugCost'])
+        ->name('debug.rajaongkir.cost');
+}
+
 Route::middleware(['auth', 'is.admin'])->group(function () {
-    Route::get('/admin', [BerandaController::class, 'berandaBackend'])->name('backend.beranda');
-    Route::get('backend/beranda', fn () => redirect()->route('backend.beranda'));
+    Route::get('/admin', fn () => redirect()->route('backend.dashboard'))->name('backend.beranda');
+    Route::get('backend/beranda', fn () => redirect()->route('backend.dashboard'));
+    Route::get('backend/dashboard', [DashboardController::class, 'index'])->name('backend.dashboard');
     Route::post('backend/logout', [LoginController::class, 'logoutBackend'])->name('backend.logout');
 
     // Route untuk User
@@ -60,6 +78,17 @@ Route::middleware(['auth', 'is.admin'])->group(function () {
     Route::get('backend/orders/{order}', [AdminOrderController::class, 'show'])->name('backend.order.show');
     Route::patch('backend/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('backend.order.updateStatus');
     Route::patch('backend/orders/{order}/tracking', [AdminOrderController::class, 'updateTracking'])->name('backend.order.updateTracking');
+
+    Route::get('backend/payments', [PaymentController::class, 'index'])->name('backend.payment.index');
+    Route::get('backend/payments/{payment}', [PaymentController::class, 'adminShow'])->name('backend.payment.show');
+    Route::patch('backend/payments/{payment}/verify', [PaymentController::class, 'verify'])->name('backend.payment.verify');
+    Route::patch('backend/payments/{payment}/reject', [PaymentController::class, 'reject'])->name('backend.payment.reject');
+    Route::patch('backend/payments/{payment}/confirm-cash', [PaymentController::class, 'confirmCash'])->name('backend.payment.confirmCash');
+
+    Route::get('backend/chats', [ConversationController::class, 'index'])->name('backend.chat.index');
+    Route::get('backend/chats/{conversation}', [ConversationController::class, 'adminShow'])->name('backend.chat.show');
+    Route::post('backend/chats/{conversation}/messages', [MessageController::class, 'adminSend'])->name('backend.chat.send');
+    Route::get('backend/chats/{conversation}/messages', [MessageController::class, 'adminFetch'])->name('backend.chat.fetch');
 });
 
 // Frontend
@@ -78,6 +107,13 @@ Route::middleware(['auth', 'is.customer'])->group(function () {
     Route::put('/customer/account', [CustomerController::class, 'updateAccount'])
         ->name('customer.account.update');
 
+    Route::get('/customer/addresses', [CustomerAddressController::class, 'index'])->name('customer.address.index');
+    Route::get('/customer/addresses/create', [CustomerAddressController::class, 'create'])->name('customer.address.create');
+    Route::post('/customer/addresses', [CustomerAddressController::class, 'store'])->name('customer.address.store');
+    Route::get('/customer/addresses/{address}/edit', [CustomerAddressController::class, 'edit'])->name('customer.address.edit');
+    Route::put('/customer/addresses/{address}', [CustomerAddressController::class, 'update'])->name('customer.address.update');
+    Route::delete('/customer/addresses/{address}', [CustomerAddressController::class, 'destroy'])->name('customer.address.destroy');
+    Route::patch('/customer/addresses/{address}/default', [CustomerAddressController::class, 'setDefault'])->name('customer.address.setDefault');
 
     Route::get('cart', [CartController::class, 'index'])->name('cart.index');
     Route::post('cart/add/{product}', [CartController::class, 'add'])->name('cart.add');
@@ -86,6 +122,16 @@ Route::middleware(['auth', 'is.customer'])->group(function () {
     Route::delete('cart/clear', [CartController::class, 'clear'])->name('cart.clear');
     Route::get('checkout', [CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('checkout', [CheckoutController::class, 'process'])->name('checkout.process');
+    Route::get('rajaongkir/provinces', [RajaOngkirController::class, 'provinces'])->name('rajaongkir.provinces');
+    Route::get('rajaongkir/cities', [RajaOngkirController::class, 'cities'])->name('rajaongkir.cities');
+    Route::get('rajaongkir/districts', [RajaOngkirController::class, 'districts'])->name('rajaongkir.districts');
+    Route::post('rajaongkir/cost', [RajaOngkirController::class, 'cost'])->name('rajaongkir.cost');
     Route::get('orders', [OrderController::class, 'history'])->name('order.history');
+    Route::get('orders/{order}/chat', [ConversationController::class, 'show'])->name('chat.show');
+    Route::post('orders/{order}/chat/messages', [MessageController::class, 'send'])->name('chat.send');
+    Route::get('orders/{order}/chat/messages', [MessageController::class, 'fetch'])->name('chat.fetch');
     Route::get('orders/{order}', [OrderController::class, 'detail'])->name('order.detail');
+    Route::get('payments/{order}', [PaymentController::class, 'show'])->name('payment.show');
+    Route::get('payments/{order}/upload-proof', [PaymentController::class, 'uploadProof'])->name('payment.uploadProof');
+    Route::post('payments/{order}/upload-proof', [PaymentController::class, 'storeProof'])->name('payment.storeProof');
 });

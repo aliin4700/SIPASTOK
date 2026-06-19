@@ -25,7 +25,7 @@ class AdminOrderController extends Controller
     {
         return view('backend.v_order.show', [
             'judul' => 'Detail Pesanan',
-            'order' => $order->load('customer.user', 'items.product.category', 'payment', 'shipment'),
+            'order' => $order->load('customer.user', 'items.product.category', 'payment', 'shipment', 'conversation'),
             'statuses' => Order::STATUSES,
         ]);
     }
@@ -47,6 +47,12 @@ class AdminOrderController extends Controller
 
     public function updateTracking(Request $request, Order $order)
     {
+        if (($order->shipment?->shipping_type ?? $order->transaction_method) !== 'shipping') {
+            return redirect()
+                ->route('backend.order.show', $order)
+                ->with('success', 'Tracking hanya digunakan untuk shipping courier.');
+        }
+
         $validated = $request->validate([
             'courier' => ['nullable', 'string', 'max:50'],
             'service' => ['nullable', 'string', 'max:100'],

@@ -77,21 +77,55 @@
 
                 <div class="panel p-4">
                     <h2 class="h5 mb-3">Informasi Pengiriman</h2>
+                    @php($shipment = $order->shipment)
                     <dl class="row mb-0">
                         <dt class="col-sm-4">Tipe</dt>
-                        <dd class="col-sm-8">{{ ucwords(str_replace('_', ' ', $order->shipment->shipping_type ?? $order->transaction_method)) }}</dd>
+                        <dd class="col-sm-8">{{ ucwords(str_replace('_', ' ', $shipment->shipping_type ?? $order->transaction_method)) }}</dd>
+
+                        @if(($shipment->shipping_type ?? $order->transaction_method) === 'pickup')
+                        <dt class="col-sm-4">Status</dt>
+                        <dd class="col-sm-8">Pesanan diambil langsung di toko.</dd>
+                        @elseif(($shipment->shipping_type ?? $order->transaction_method) === 'local_delivery')
                         <dt class="col-sm-4">Alamat</dt>
-                        <dd class="col-sm-8">{{ $order->shipment->delivery_address ?? $order->address ?? '-' }}</dd>
+                        <dd class="col-sm-8">{{ $shipment->delivery_address ?? $order->address ?? '-' }}</dd>
+                        <dt class="col-sm-4">Catatan</dt>
+                        <dd class="col-sm-8">{{ $shipment->delivery_note ?? $order->notes ?? '-' }}</dd>
+                        <dt class="col-sm-4">Koordinat</dt>
+                        <dd class="col-sm-8">
+                            @if($shipment?->delivery_latitude && $shipment?->delivery_longitude)
+                            <a href="https://www.openstreetmap.org/?mlat={{ $shipment->delivery_latitude }}&mlon={{ $shipment->delivery_longitude }}#map=16/{{ $shipment->delivery_latitude }}/{{ $shipment->delivery_longitude }}" target="_blank">
+                                {{ $shipment->delivery_latitude }}, {{ $shipment->delivery_longitude }}
+                            </a>
+                            @else
+                            -
+                            @endif
+                        </dd>
+                        @else
+                        <dt class="col-sm-4">Alamat</dt>
+                        <dd class="col-sm-8">{{ $order->address ?? '-' }}</dd>
+                        <dt class="col-sm-4">Penerima</dt>
+                        <dd class="col-sm-8">{{ $shipment->delivery_note ?? '-' }}</dd>
+                        <dt class="col-sm-4">Koordinat</dt>
+                        <dd class="col-sm-8">
+                            @if($shipment?->delivery_latitude && $shipment?->delivery_longitude)
+                            <a href="https://www.openstreetmap.org/?mlat={{ $shipment->delivery_latitude }}&mlon={{ $shipment->delivery_longitude }}#map=16/{{ $shipment->delivery_latitude }}/{{ $shipment->delivery_longitude }}" target="_blank">
+                                {{ $shipment->delivery_latitude }}, {{ $shipment->delivery_longitude }}
+                            </a>
+                            @else
+                            -
+                            @endif
+                        </dd>
                         <dt class="col-sm-4">Kode Pos</dt>
                         <dd class="col-sm-8">{{ $order->postal_code ?? '-' }}</dd>
                         <dt class="col-sm-4">Kurir</dt>
-                        <dd class="col-sm-8">{{ $order->shipment->courier ?? '-' }}</dd>
+                        <dd class="col-sm-8">{{ strtoupper($shipment->courier ?? '-') }}</dd>
                         <dt class="col-sm-4">Service</dt>
-                        <dd class="col-sm-8">{{ $order->shipment->service ?? '-' }}</dd>
+                        <dd class="col-sm-8">{{ $shipment->service ?? '-' }}</dd>
+                        <dt class="col-sm-4">Estimasi</dt>
+                        <dd class="col-sm-8">{{ $shipment->estimated_delivery ? $shipment->estimated_delivery . ' hari' : '-' }}</dd>
                         <dt class="col-sm-4">Tracking</dt>
-                        <dd class="col-sm-8">{{ $order->shipment->tracking_number ?? '-' }}</dd>
-                        <dt class="col-sm-4">Catatan</dt>
-                        <dd class="col-sm-8">{{ $order->shipment->delivery_note ?? $order->notes ?? '-' }}</dd>
+                        <dd class="col-sm-8">{{ $shipment->tracking_number ?? '-' }}</dd>
+                        @endif
                     </dl>
                 </div>
             </section>
@@ -125,9 +159,20 @@
                         <dt class="col-sm-5">Status</dt>
                         <dd class="col-sm-7">{{ str_replace('_', ' ', $order->paymentStatus()) }}</dd>
                     </dl>
-                    @if($order->payment_method === 'bank_transfer')
-                    <button class="btn btn-outline-dark w-100 mt-3" type="button" disabled>Upload Bukti Transfer</button>
+                    <a href="{{ route('payment.show', $order) }}" class="btn btn-outline-dark w-100 mt-3">Lihat Pembayaran</a>
+                    @if($order->payment_method === 'bank_transfer' && $order->paymentStatus() !== 'paid')
+                    <a href="{{ route('payment.uploadProof', $order) }}" class="btn btn-bread w-100 mt-2">Upload Bukti Transfer</a>
+                    @elseif($order->payment_method === 'cash')
+                    <p class="text-muted small mb-0 mt-3">Pembayaran cash akan dikonfirmasi oleh admin.</p>
+                    @elseif($order->payment_method === 'midtrans')
+                    <p class="text-muted small mb-0 mt-3">Midtrans masih placeholder dan akan diaktifkan pada tahap berikutnya.</p>
                     @endif
+                </div>
+
+                <div class="panel p-4 mt-4">
+                    <h2 class="h5 mb-3">Chat Admin</h2>
+                    <p class="text-muted small">Diskusikan pesanan ini langsung dengan admin BreadLab.</p>
+                    <a href="{{ route('chat.show', $order) }}" class="btn btn-bread w-100">Buka Chat</a>
                 </div>
             </aside>
         </div>

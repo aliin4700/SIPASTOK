@@ -20,6 +20,7 @@
                     <a class="nav-link dropdown-toggle fw-semibold" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">{{ Auth::user()->name }}</a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><a class="dropdown-item" href="{{ route('customer.account') }}">Akun Saya</a></li>
+                        <li><a class="dropdown-item" href="{{ route('customer.address.index') }}">Daftar Alamat</a></li>
                         <li><a class="dropdown-item" href="{{ route('order.history') }}">Riwayat Pesanan</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
