@@ -17,6 +17,20 @@ use App\Http\Controllers\MessageController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerAddressController;
+use App\Http\Controllers\Cashier\CashierDashboardController;
+use App\Http\Controllers\Cashier\CashierShiftController;
+use App\Http\Controllers\Cashier\CashierShiftReportController;
+use App\Http\Controllers\Cashier\CashierOrderController;
+use App\Http\Controllers\Cashier\CashFlowController;
+use App\Http\Controllers\Cashier\CashierReceiptController;
+use App\Http\Controllers\Backend\CashierShiftReportController as BackendCashierShiftReportController;
+use App\Http\Controllers\Backend\FinanceDashboardController as BackendFinanceDashboardController;
+use App\Http\Controllers\Backend\SalesTargetController as BackendSalesTargetController;
+use App\Http\Controllers\Backend\OperationalExpenseController as BackendOperationalExpenseController;
+use App\Http\Controllers\Manager\CashierShiftReportController as ManagerCashierShiftReportController;
+use App\Http\Controllers\Manager\FinanceDashboardController as ManagerFinanceDashboardController;
+use App\Http\Controllers\Manager\SalesTargetController as ManagerSalesTargetController;
+use App\Http\Controllers\Manager\OperationalExpenseController as ManagerOperationalExpenseController;
 
 Route::get('/', function () {
     // return view('welcome');
@@ -56,21 +70,32 @@ Route::middleware(['auth', 'role:manager,admin,super_admin'])->group(function ()
         ]);
     })->name('manager.dashboard');
 
-    Route::get('/manager/finance', function () {
-        return view('panel-placeholder', [
-            'title' => 'Finance Monitoring',
-            'message' => 'Area finance hanya untuk manager, admin, dan super admin.',
-        ]);
-    })->middleware('finance.access')->name('manager.finance.index');
+    Route::get('/manager/finance', [ManagerFinanceDashboardController::class, 'dashboard'])->middleware('finance.access')->name('manager.finance.dashboard');
+    Route::get('/manager/sales-targets', [ManagerSalesTargetController::class, 'index'])->middleware('finance.access')->name('manager.sales-targets.index');
+    Route::get('/manager/operational-expenses', [ManagerOperationalExpenseController::class, 'index'])->middleware('finance.access')->name('manager.operational-expenses.index');
+
+    Route::get('/manager/cashier-shifts', [ManagerCashierShiftReportController::class, 'index'])->name('manager.cashier-shifts.index');
+    Route::get('/manager/cashier-shifts/{shift}', [ManagerCashierShiftReportController::class, 'show'])->name('manager.cashier-shifts.show');
 });
 
-Route::middleware(['auth', 'role:cashier,admin,super_admin'])->group(function () {
-    Route::get('/cashier', function () {
-        return view('panel-placeholder', [
-            'title' => 'Cashier POS',
-            'message' => 'Panel cashier/POS sedang disiapkan.',
-        ]);
-    })->name('cashier.index');
+Route::prefix('cashier')->name('cashier.')->middleware(['auth', 'role:cashier,admin,super_admin'])->group(function () {
+    Route::get('/', [CashierDashboardController::class, 'index'])->name('index');
+    Route::get('/shift', [CashierShiftController::class, 'index'])->name('shift.index');
+    Route::get('/shift/report', [CashierShiftReportController::class, 'report'])->name('shift.report');
+    Route::post('/shift/open', [CashierShiftController::class, 'open'])->name('shift.open');
+    Route::post('/shift/close', [CashierShiftController::class, 'close'])->name('shift.close');
+    Route::get('/orders', [CashierOrderController::class, 'index'])->name('orders.index');
+    Route::post('/orders/cart/add', [CashierOrderController::class, 'addToCart'])->name('orders.cart.add');
+    Route::patch('/orders/cart/update', [CashierOrderController::class, 'updateCart'])->name('orders.cart.update');
+    Route::delete('/orders/cart/remove', [CashierOrderController::class, 'removeFromCart'])->name('orders.cart.remove');
+    Route::delete('/orders/cart/clear', [CashierOrderController::class, 'clearCart'])->name('orders.cart.clear');
+    Route::post('/orders/finalize', [CashierOrderController::class, 'finalize'])->name('orders.finalize');
+    Route::get('/orders/history', [CashierOrderController::class, 'history'])->name('orders.history');
+    Route::get('/cash-flow', [CashFlowController::class, 'index'])->name('cash-flow.index');
+    Route::post('/cash-flow', [CashFlowController::class, 'store'])->name('cash-flow.store');
+    Route::get('/receipts', [CashierReceiptController::class, 'index'])->name('receipts.index');
+    Route::get('/receipts/{order}', [CashierReceiptController::class, 'show'])->name('receipts.show');
+    Route::get('/receipts/{order}/print', [CashierReceiptController::class, 'print'])->name('receipts.print');
 });
 
 Route::middleware(['auth', 'role:staff_outlet,admin,super_admin'])->group(function () {
@@ -118,6 +143,14 @@ Route::middleware(['auth', 'is.admin'])->group(function () {
     Route::patch('backend/payments/{payment}/verify', [PaymentController::class, 'verify'])->name('backend.payment.verify');
     Route::patch('backend/payments/{payment}/reject', [PaymentController::class, 'reject'])->name('backend.payment.reject');
     Route::patch('backend/payments/{payment}/confirm-cash', [PaymentController::class, 'confirmCash'])->name('backend.payment.confirmCash');
+
+    Route::get('backend/cashier-shifts', [BackendCashierShiftReportController::class, 'index'])->name('backend.cashier-shifts.index');
+    Route::get('backend/cashier-shifts/{shift}', [BackendCashierShiftReportController::class, 'show'])->name('backend.cashier-shifts.show');
+    Route::patch('backend/cashier-shifts/{shift}/review', [BackendCashierShiftReportController::class, 'review'])->name('backend.cashier-shifts.review');
+
+    Route::get('backend/finance', [BackendFinanceDashboardController::class, 'dashboard'])->middleware('finance.access')->name('backend.finance.dashboard');
+    Route::resource('backend/sales-targets', BackendSalesTargetController::class)->except(['show'])->names('backend.sales-targets');
+    Route::resource('backend/operational-expenses', BackendOperationalExpenseController::class)->except(['show'])->names('backend.operational-expenses');
 
     Route::get('backend/chats', [ConversationController::class, 'index'])->name('backend.chat.index');
     Route::get('backend/chats/{conversation}', [ConversationController::class, 'adminShow'])->name('backend.chat.show');

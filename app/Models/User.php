@@ -74,6 +74,31 @@ class User extends Authenticatable
         return $this->hasMany(UserDivisionAccess::class);
     }
 
+    public function cashierShifts()
+    {
+        return $this->hasMany(CashierShift::class, 'cashier_id');
+    }
+
+    public function cashierCashMovements()
+    {
+        return $this->hasMany(CashierCashMovement::class, 'cashier_id');
+    }
+
+    public function createdSalesTargets()
+    {
+        return $this->hasMany(SalesTarget::class, 'created_by');
+    }
+
+    public function recordedOperationalExpenses()
+    {
+        return $this->hasMany(OperationalExpense::class, 'recorded_by');
+    }
+
+    public function approvedOperationalExpenses()
+    {
+        return $this->hasMany(OperationalExpense::class, 'approved_by');
+    }
+
     public function hasRole(string $role): bool
     {
         return (string) $this->role === $role;

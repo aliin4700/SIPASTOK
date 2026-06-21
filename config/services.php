@@ -51,4 +51,8 @@ return [
         'fee' => env('LOCAL_DELIVERY_FEE', 10000),
     ],
 
+    'finance' => [
+        'default_cogs_percentage' => env('DEFAULT_COGS_PERCENTAGE', 40),
+    ],
+
 ];

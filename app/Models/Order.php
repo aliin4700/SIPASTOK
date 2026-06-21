@@ -21,9 +21,19 @@ class Order extends Model
 
     protected $fillable = [
         'customer_id',
+        'outlet_id',
+        'cashier_shift_id',
+        'cashier_id',
         'order_number',
+        'order_channel',
         'status',
         'transaction_method',
+        'service_type',
+        'customer_name',
+        'customer_phone',
+        'table_number',
+        'pickup_time',
+        'order_source',
         'payment_method',
         'payment_status',
         'subtotal',
@@ -40,6 +50,7 @@ class Order extends Model
         'shipping_cost' => 'decimal:2',
         'total_price' => 'decimal:2',
         'total_weight' => 'integer',
+        'pickup_time' => 'datetime',
     ];
 
     public function orderItems()
@@ -55,6 +66,21 @@ class Order extends Model
     public function customer()
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function outlet()
+    {
+        return $this->belongsTo(Outlet::class);
+    }
+
+    public function cashierShift()
+    {
+        return $this->belongsTo(CashierShift::class);
+    }
+
+    public function cashier()
+    {
+        return $this->belongsTo(User::class, 'cashier_id');
     }
 
     public function user()
