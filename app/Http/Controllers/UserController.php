@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Helpers\ImageHelper;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -47,7 +48,7 @@ class UserController extends Controller
         $validatedData = $request->validate([
             'nama' => 'required|max:255',
             'email' => 'required|max:255|email|unique:users,email',
-            'role' => 'required|in:admin,super_admin',
+            'role' => ['required', Rule::in($this->roleNames())],
             'hp' => 'required|min:10|max:13',
             'password' => 'required|min:4|confirmed',
             'foto' => 'image|mimes:jpeg,jpg,png,gif|file|max:1024',
@@ -119,7 +120,7 @@ class UserController extends Controller
         ];
 
         if ($isSuperAdmin) {
-            $rules['role'] = 'required|in:admin,super_admin';
+            $rules['role'] = ['required', Rule::in($this->roleNames())];
             $rules['status'] = 'required|in:active,inactive,blocked';
         }
 
@@ -209,5 +210,10 @@ class UserController extends Controller
             'tanggalAkhir' => $tanggalAkhir,
             'cetak' => $user
         ]);
+    }
+
+    private function roleNames(): array
+    {
+        return ['super_admin', 'admin', 'manager', 'staff_outlet', 'cashier', 'customer'];
     }
 }

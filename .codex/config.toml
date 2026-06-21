@@ -1,7 +1,33 @@
-model_reasoning_effort = "medium"
+[project]
+name = "BreadLab"
+framework = "Laravel 10"
+frontend = "Blade + Bootstrap"
+database = "MySQL"
+language = "PHP"
 
-approval_policy = "on-request"
+[behavior]
+prefer_small_steps = true
+avoid_large_refactor_without_confirmation = true
+preserve_existing_ui = true
+preserve_existing_routes_when_possible = true
+write_migrations_incrementally = true
+run_tests_after_changes = true
+explain_files_changed = true
 
-sandbox_mode = "workspace-write"
+[priorities]
+current_phase = "Role Access and Outlet Context"
+next_phases = [
+  "Cashier POS Foundation",
+  "Cash Flow Shift Report",
+  "Finance Target Net Profit",
+  "Inventory Outlet Foundation",
+  "Stock Opname Per Division",
+  "Purchasing Workflow",
+  "Waste Recipe BOM COGS"
+]
 
-web_search = "cached"
+[constraints]
+do_not_replace_existing_design = true
+do_not_remove_existing_modules_without_confirmation = true
+do_not_mix_cashier_panel_with_admin_panel = true
+do_not_show_finance_to_cashier_or_staff = true

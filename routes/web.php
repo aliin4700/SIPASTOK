@@ -48,6 +48,40 @@ if (config('app.debug')) {
         ->name('debug.rajaongkir.cost');
 }
 
+Route::middleware(['auth', 'role:manager,admin,super_admin'])->group(function () {
+    Route::get('/manager/dashboard', function () {
+        return view('panel-placeholder', [
+            'title' => 'Manager Dashboard',
+            'message' => 'Panel monitoring manager sedang disiapkan.',
+        ]);
+    })->name('manager.dashboard');
+
+    Route::get('/manager/finance', function () {
+        return view('panel-placeholder', [
+            'title' => 'Finance Monitoring',
+            'message' => 'Area finance hanya untuk manager, admin, dan super admin.',
+        ]);
+    })->middleware('finance.access')->name('manager.finance.index');
+});
+
+Route::middleware(['auth', 'role:cashier,admin,super_admin'])->group(function () {
+    Route::get('/cashier', function () {
+        return view('panel-placeholder', [
+            'title' => 'Cashier POS',
+            'message' => 'Panel cashier/POS sedang disiapkan.',
+        ]);
+    })->name('cashier.index');
+});
+
+Route::middleware(['auth', 'role:staff_outlet,admin,super_admin'])->group(function () {
+    Route::get('/staff/dashboard', function () {
+        return view('panel-placeholder', [
+            'title' => 'Staff Outlet Dashboard',
+            'message' => 'Panel staff outlet sedang disiapkan.',
+        ]);
+    })->name('staff.dashboard');
+});
+
 Route::middleware(['auth', 'is.admin'])->group(function () {
     Route::get('/admin', fn () => redirect()->route('backend.dashboard'))->name('backend.beranda');
     Route::get('backend/beranda', fn () => redirect()->route('backend.dashboard'));

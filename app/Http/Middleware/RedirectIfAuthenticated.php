@@ -22,11 +22,13 @@ class RedirectIfAuthenticated
             if (Auth::guard($guard)->check()) {
                 $user = Auth::guard($guard)->user();
 
-                if (in_array((string) $user->role, ['admin', 'super_admin'], true)) {
-                    return redirect()->route('backend.beranda');
-                }
-
-                return redirect()->route('beranda');
+                return redirect(match ((string) $user->role) {
+                    'super_admin', 'admin' => route('backend.dashboard'),
+                    'manager' => route('manager.dashboard'),
+                    'cashier' => route('cashier.index'),
+                    'staff_outlet' => route('staff.dashboard'),
+                    default => route('beranda'),
+                });
             }
         }
 

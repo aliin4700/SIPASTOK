@@ -33,16 +33,17 @@
                                 <td> {{ $row->email }} </td>
                                 <td> {{ $row->name }} </td>
                                 <td>
-                                    @if ((string) $row->role === 'super_admin')
-                                    <span class="badge badge-success"></i>
-                                        Super Admin</span>
-                                    @elseif((string) $row->role === 'admin')
-                                    <span class="badge badge-primary"></i>
-                                        Admin</span>
-                                    @elseif((string) $row->role === 'customer')
-                                    <span class="badge badge-info"></i>
-                                        Customer</span>
-                                    @endif
+                                    @php
+                                        $roleLabels = [
+                                            'super_admin' => 'Super Admin',
+                                            'admin' => 'Admin',
+                                            'manager' => 'Manager',
+                                            'staff_outlet' => 'Staff Outlet',
+                                            'cashier' => 'Cashier',
+                                            'customer' => 'Customer',
+                                        ];
+                                    @endphp
+                                    <span class="badge badge-info">{{ $roleLabels[(string) $row->role] ?? $row->role }}</span>
                                 </td>
                                 <td>
                                     @if ((string) $row->status === 'active')

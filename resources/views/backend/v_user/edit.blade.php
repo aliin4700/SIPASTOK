@@ -38,10 +38,16 @@
                                         <select name="role" class="form-control @error('role') is-invalid @enderror">
                                             <option value="" {{ old('role', $edit->role) == '' ? 'selected' : '' }}> -
                                                 Pilih Hak Akses -</option>
-                                            <option value="super_admin" {{ old('role', $edit->role) == 'super_admin' ? 'selected' : '' }}>
-                                                Super Admin</option>
-                                            <option value="admin" {{ old('role', $edit->role) == 'admin' ? 'selected' : '' }}>
-                                                Admin</option>
+                                            @foreach ([
+                                                'super_admin' => 'Super Admin',
+                                                'admin' => 'Admin',
+                                                'manager' => 'Manager',
+                                                'staff_outlet' => 'Staff Outlet',
+                                                'cashier' => 'Cashier',
+                                                'customer' => 'Customer',
+                                            ] as $roleValue => $roleLabel)
+                                                <option value="{{ $roleValue }}" {{ old('role', $edit->role) == $roleValue ? 'selected' : '' }}>{{ $roleLabel }}</option>
+                                            @endforeach
                                         </select>
                                         @error('role')
                                         <span class="invalid-feedback alert-danger" role="alert">

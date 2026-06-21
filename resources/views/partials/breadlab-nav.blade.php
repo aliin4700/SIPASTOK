@@ -32,7 +32,17 @@
                     </ul>
                 </li>
                 @else
-                <li class="nav-item"><a class="btn btn-outline-dark" href="{{ route('backend.beranda') }}">Dashboard Admin</a></li>
+                @php
+                    $panelRoutes = [
+                        'super_admin' => 'backend.dashboard',
+                        'admin' => 'backend.dashboard',
+                        'manager' => 'manager.dashboard',
+                        'cashier' => 'cashier.index',
+                        'staff_outlet' => 'staff.dashboard',
+                    ];
+                    $panelRoute = $panelRoutes[(string) Auth::user()->role] ?? 'beranda';
+                @endphp
+                <li class="nav-item"><a class="btn btn-outline-dark" href="{{ route($panelRoute) }}">Dashboard</a></li>
                 @endif
                 @else
                 <li class="nav-item"><a class="btn btn-outline-dark" href="{{ route('login') }}">Login/Register</a></li>

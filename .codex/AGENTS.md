@@ -1,914 +1,1284 @@
-# Breadlab Codex Instructions
+# BreadLab Agent Instructions
 
-Breadlab adalah project website e-commerce toko roti berbasis Laravel 10 dan Bootstrap.
+You are working on **BreadLab**, a Laravel 10 bakery business management system.
 
-Project ini mengikuti alur pembelajaran Modul Web Programming III, tetapi struktur teknisnya menggunakan Option B: Laravel convention agar lebih konsisten, mudah di-debug, dan lebih siap dikembangkan.
+BreadLab started as an online bakery store and is now being developed into a full outlet operation system for bakery/cafe operations.
 
-Modul digunakan sebagai acuan alur fitur, bukan sebagai acuan penamaan teknis secara persis. Alur modul mencakup frontend produk, login customer, akun customer, route group dan middleware, cart, RajaOngkir, checkout, manajemen pesanan, grafik pesanan, dan Midtrans. :contentReference[oaicite:0]{index=0}
+The system must support:
 
----
-
-# Main Rule
-
-Do not recreate the project from scratch.
-
-Breadlab is an existing Laravel 10 project.
-
-Continue, refactor, and improve the existing project carefully.
-
-Do not delete working features unless explicitly required for database cleanup or naming refactor.
-
-Do not implement all features at once.
-
-Always work step by step.
+* Customer Website
+* Admin Backend
+* Cashier/POS Panel
+* Staff Outlet Panel
+* Manager Monitoring Panel
+* Multi-outlet operations
+* Division-based stock opname
+* Inventory control
+* Purchasing workflow
+* Waste tracking
+* Sales target
+* Operational expenses
+* Gross profit and net profit reporting
 
 ---
 
-# Option B Final Decision
+## 1. Core Project Identity
 
-Breadlab uses Option B.
+BreadLab is built with:
 
-Use Laravel convention for:
+* Laravel 10
+* Blade
+* Bootstrap
+* MySQL
+* Role-based access
+* Multi-outlet context
+* Multi-division operations
 
-- table names
-- model names
-- controller names
-- route names
-- Blade view folder names
+Existing modules must be preserved unless explicitly instructed otherwise.
 
-The project must use English technical naming for Laravel files and database structure.
+Current existing modules include:
 
-The project may keep `BerandaController` and `v_beranda` because they are easy to understand and still match the module homepage concept.
+* Product
+* Category
+* Product Photo
+* Customer Auth
+* Google Login
+* Cart
+* Checkout
+* Orders
+* Payments
+* Shipments
+* Chat
+* Admin Dashboard
 
-The project must keep `RajaOngkirController` because it matches the module topic and makes debugging easier.
-
----
-
-# Module Flow Reference
-
-Breadlab follows this feature flow:
-
-1. Homepage / frontend landing page
-2. Product catalog
-3. Product detail
-4. Customer login
-5. Customer account management
-6. Route group and middleware
-7. Cart management
-8. RajaOngkir shipping cost integration
-9. Checkout and ordering process
-10. Admin order management
-11. Order chart/dashboard
-12. Payment gateway with Midtrans
-
-Additional Breadlab features:
-
-1. Pickup transaction
-2. Local delivery transaction
-3. Shipping transaction
-4. OpenStreetMap and Leaflet for local delivery
-5. Manual bank transfer proof upload
-6. Midtrans automatic payment callback
-7. Customer-admin chat using database and AJAX polling
+Do not remove or rewrite working modules without approval.
 
 ---
 
-# Final Table Names
+## 2. Main Development Principle
 
-Use only these table names:
+Always work in **small, safe, reviewable steps**.
 
-- users
-- customers
-- categories
-- products
-- product_photos
-- carts
-- cart_items
-- orders
-- order_items
-- payments
-- shipments
-- conversations
-- messages
+Before changing code:
 
-Do not create or use these old or duplicate table names:
+1. Inspect existing migrations.
+2. Inspect existing models.
+3. Inspect existing controllers.
+4. Inspect existing routes.
+5. Inspect existing middleware.
+6. Inspect existing views.
+7. Inspect existing seeders.
+8. Explain the implementation plan first if the requested change is large.
 
-- user
-- customer
-- kategori
-- produk
-- foto_produk
-- order
-- order_item
-- products and produk together
-- orders and order together
-- order_items and order_item together
+Do not perform large refactors without explicit confirmation.
 
-If old duplicate tables still exist and the user has confirmed the data can be deleted, clean them through a planned database reset or migration cleanup.
+Prefer incremental improvements over full rewrites.
 
 ---
 
-# Final Model Names
+## 3. Important Rules
 
-Use these model names:
+Follow these rules at all times:
 
-- User
-- Customer
-- Category
-- Product
-- ProductPhoto
-- Cart
-- CartItem
-- Order
-- OrderItem
-- Payment
-- Shipment
-- Conversation
-- Message
-
-Do not create mixed naming such as:
-
-- Produk
-- Kategori
-- FotoProduk
-- Pesanan
+* Preserve existing UI style and Bootstrap layout.
+* Preserve existing route names when possible.
+* Preserve existing database data when possible.
+* Do not edit old migrations if they may have already been migrated.
+* Use new incremental migrations for structural changes.
+* Do not mix customer, admin, cashier, staff, and manager workflows.
+* Do not expose finance, net profit, operational expense, salary, electricity, gas, rent, or sensitive company financial reports to cashier, staff_outlet, or customer.
+* Manager is read-only by default.
+* Cashier must have a separate POS panel.
+* Staff outlet must only access assigned outlet and assigned division.
+* Admin handles setup and configuration.
+* Super admin has full access.
+* All stock changes must be traceable.
+* All financial and inventory changes should be auditable.
+* Do not silently update stock without creating stock movement.
+* Do not delete important business records; use status, void, cancel, refund, or soft delete where appropriate.
 
 ---
 
-# Final Controller Names
+## 4. Core Roles
 
-Use these controller names:
+BreadLab uses flexible roles.
 
-- BerandaController
-- ProductController
-- CategoryController
-- CustomerController
-- CartController
-- CheckoutController
-- RajaOngkirController
-- OrderController
-- AdminOrderController
-- PaymentController
-- MidtransController
-- DashboardController
-- ConversationController
-- MessageController
+Main roles:
 
-Do not create these old or mixed controller names:
+* super_admin
+* admin
+* manager
+* staff_outlet
+* cashier
+* customer
 
-- ProdukController
-- KategoriController
-- PesananController
+Do not create rigid main roles such as:
 
-Controller responsibility:
+* staff_kitchen
+* staff_bar
+* staff_pastry
+* staff_bakery
+* staff_floor
+* staff_packaging
 
-- BerandaController: homepage and latest products
-- ProductController: frontend product catalog, product detail, and backend product management
-- CategoryController: backend category management
-- CustomerController: customer login, customer account, and customer profile
-- CartController: cart and cart items
-- CheckoutController: checkout process
-- RajaOngkirController: RajaOngkir API only
-- OrderController: customer order history and order detail
-- AdminOrderController: admin order list, admin order detail, and order status update
-- PaymentController: cash and manual bank transfer payment
-- MidtransController: Midtrans transaction, snap token, and notification callback
-- DashboardController: admin dashboard and charts
-- ConversationController: customer-admin chat conversation
-- MessageController: chat messages
+Instead, use:
 
-Do not put all logic into OrderController.
+* role = staff_outlet
+* division access = kitchen, bar, pastry, bakery, floor, packaging
+* outlet access = Mejasem, Slawi, or other outlet
 
-Keep responsibilities separated for easier debugging.
+This keeps the system flexible and scalable.
 
 ---
 
-# Final Blade View Folder Names
+## 5. Role Responsibilities
 
-Frontend views:
+### Super Admin
 
-- resources/views/v_layouts
-- resources/views/v_beranda
-- resources/views/v_product
-- resources/views/v_category
-- resources/views/v_customer
-- resources/views/v_cart
-- resources/views/v_checkout
-- resources/views/v_order
-- resources/views/v_payment
-- resources/views/v_chat
+Super admin has full access to all modules, all outlets, all reports, all users, and all system settings.
 
-Backend views:
+Super admin can:
 
-- resources/views/backend/v_layouts
-- resources/views/backend/v_dashboard
-- resources/views/backend/v_product
-- resources/views/backend/v_category
-- resources/views/backend/v_customer
-- resources/views/backend/v_order
-- resources/views/backend/v_payment
-- resources/views/backend/v_chat
-
-Do not create these old or duplicate folders:
-
-- v_produk
-- v_kategori
-- v_pesanan
-- backend/v_produk
-- backend/v_kategori
-- backend/v_pesanan
-
-Correct mapping:
-
-- ProductController → Product model → products table → v_product
-- CategoryController → Category model → categories table → v_category
-- CartController → Cart model → carts and cart_items tables → v_cart
-- CheckoutController → orders, order_items, payments, shipments → v_checkout
-- OrderController → orders, order_items, payments, shipments → v_order
-- AdminOrderController → backend/v_order
+* manage users
+* manage roles
+* manage permissions
+* manage outlets
+* manage divisions
+* manage products
+* manage inventory
+* manage purchasing
+* manage finance
+* view all reports
+* approve critical actions
+* perform system configuration
 
 ---
 
-# UI Preservation Rule
+### Admin
 
-Preserve the existing Breadlab visual design.
+Admin is responsible for setup and operational configuration.
 
-Do not redesign the frontend or backend UI unless explicitly requested.
+Admin can:
 
-Do not replace the existing frontend template.
+* manage product master
+* manage category master
+* manage outlet master
+* manage division master
+* manage supplier master
+* manage inventory item master
+* manage minimum stock
+* manage unit conversion
+* manage payment settings
+* manage delivery settings
+* manage shipping settings
+* manage sales target
+* manage operational expenses
+* view operational reports
+* view financial reports
 
-Do not replace the existing backend template.
-
-Do not change colors, button style, product card style, sidebar style, dashboard layout, spacing, or overall visual theme unless explicitly requested.
-
-The UI documentation is used mainly to standardize:
-
-- view folder names
-- Blade file placement
-- UI responsibility
-- route usage
-- debugging structure
-
-Allowed UI changes:
-
-- rename view folders according to Option B
-- move Blade files to correct folders
-- update route names
-- update variable names
-- update model/table references
-- add missing UI sections required by features
-- add form fields needed for checkout, payment, shipment, or chat
-- keep current styling as much as possible
-
-Not allowed unless explicitly requested:
-
-- redesigning homepage
-- changing the theme
-- replacing the admin template
-- replacing the frontend template
-- changing the product card style drastically
-- changing sidebar design drastically
-- changing dashboard visual style drastically
-
-When refactoring Blade views, preserve the existing visual appearance as much as possible.
+Admin should not be treated as a cashier by default.
 
 ---
 
-# Route Naming Standard
+### Manager
 
-Use clear route names.
+Manager is a monitoring role by default.
 
-Public frontend:
+Manager can view:
 
-- beranda
-- product.index
-- product.category
-- product.detail
+* dashboard
+* sales reports
+* cashier shift reports
+* cash flow reports
+* stock reports
+* stock opname reports
+* waste reports
+* purchase request reports
+* outlet performance
+* sales target achievement
+* gross profit
+* net profit
+* operational expenses
 
-Customer:
+Manager must not modify operational data by default.
 
-- customer.account
-- customer.account.update
+Manager cannot:
 
-Cart:
+* input stock opname
+* input POS transactions
+* edit master product
+* edit master inventory
+* edit supplier
+* delete transactions
+* change system setup
+* change user roles
 
-- cart.index
-- cart.add
-- cart.update
-- cart.remove
-
-Checkout:
-
-- checkout.index
-- checkout.process
-
-Customer order:
-
-- order.history
-- order.detail
-
-Payment:
-
-- payment.uploadProof
-- payment.storeProof
-- payment.status
-
-RajaOngkir:
-
-- rajaongkir.provinces
-- rajaongkir.cities
-- rajaongkir.cost
-
-Midtrans:
-
-- midtrans.create
-- midtrans.callback
-- midtrans.finish
-- midtrans.unfinish
-- midtrans.error
-
-Chat:
-
-- chat.show
-- chat.send
-- chat.fetch
-
-Backend:
-
-- backend.dashboard
-- backend.product.index
-- backend.product.create
-- backend.product.store
-- backend.product.edit
-- backend.product.update
-- backend.product.destroy
-- backend.category.index
-- backend.category.create
-- backend.category.store
-- backend.category.edit
-- backend.category.update
-- backend.category.destroy
-- backend.customer.index
-- backend.customer.show
-- backend.order.index
-- backend.order.show
-- backend.order.updateStatus
-- backend.payment.index
-- backend.payment.show
-- backend.payment.verify
-- backend.payment.reject
-- backend.chat.index
-- backend.chat.show
-- backend.chat.send
+If approval permissions are needed later, implement them explicitly through permissions, not by default.
 
 ---
 
-# Database Refactor Rule
+### Staff Outlet
 
-The user has confirmed that old data can be deleted if necessary because the project data is still small and can be uploaded again.
+Staff outlet handles operational input based on assigned outlet and division.
 
-Therefore, it is allowed to perform database cleanup or reset when needed.
+Staff outlet can:
 
-Preferred command during full database reset:
+* input stock opname for assigned outlet and division
+* input waste for assigned outlet and division
+* create purchase request for assigned outlet and division
+* view own division stock
+* view own stock opname history
 
-php artisan migrate:fresh --seed
+Staff outlet cannot:
 
-Important rules:
-
-- Do not keep duplicate old and new tables.
-- Do not create `produk` if `products` exists.
-- Do not create `kategori` if `categories` exists.
-- Do not create `order` if `orders` exists.
-- Do not create `order_item` if `order_items` exists.
-- Do not create both module-style and Laravel convention tables.
-- Use Laravel convention only.
-
-Before database reset:
-
-- explain which tables will be removed
-- explain which migrations will be used
-- explain seeders needed
-- explain what data must be uploaded again
+* access cashier POS
+* view company net profit
+* view operational expenses
+* edit master item
+* edit product price
+* edit supplier
+* access all outlet data
+* approve purchase request unless explicitly given permission
 
 ---
 
-# Final Database Structure
+### Cashier
 
-The final database should use these main tables:
+Cashier handles offline outlet transactions through a separate POS panel.
 
-## users
+Cashier can:
 
-Stores login accounts for super admin, admin, and customer.
+* access cashier panel
+* open cashier shift
+* create POS orders
+* handle dine in orders
+* handle pickup orders
+* handle local delivery orders
+* handle shipping orders
+* process cash payment
+* process manual transfer payment
+* process manual QRIS payment
+* print receipts
+* close cashier shift
+* view own shift transactions
+* record cash in and cash out if allowed
 
-## customers
+Cashier cannot:
 
-Stores customer profile details related to users.
-
-## categories
-
-Stores product categories.
-
-## products
-
-Stores Breadlab bakery products.
-
-## product_photos
-
-Stores additional product photos.
-
-## carts
-
-Stores active customer cart.
-
-## cart_items
-
-Stores products inside cart.
-
-## orders
-
-Stores confirmed order after checkout.
-
-## order_items
-
-Stores purchased products in an order.
-
-## payments
-
-Stores payment details for cash, bank transfer, and Midtrans.
-
-## shipments
-
-Stores pickup, local delivery, and shipping details.
-
-## conversations
-
-Stores customer-admin chat conversations.
-
-## messages
-
-Stores chat messages.
+* access admin setup
+* edit product master
+* edit inventory master
+* edit supplier
+* input stock opname
+* view net profit
+* view salary expense
+* view operational expense
+* view full company finance report
+* perform refund or void without approval if approval is enabled
 
 ---
 
-# Transaction Methods
+### Customer
 
-Breadlab supports three transaction methods:
+Customer can:
 
-- pickup
-- local_delivery
-- shipping
+* browse products
+* register
+* login
+* add products to cart
+* checkout
+* choose pickup, local delivery, or shipping
+* upload payment proof
+* view order history
+* chat with admin
+
+Customer cannot access any backend, cashier, staff, manager, inventory, or finance module.
+
+---
+
+## 6. Access Control Structure
+
+Use flexible access tables.
+
+Recommended tables:
+
+### user_outlet_access
+
+Purpose: controls which outlet a user can access.
+
+Recommended columns:
+
+* id
+* user_id
+* outlet_id
+* can_monitor
+* can_cashier
+* can_manage_stock
+* can_manage_purchase
+* can_manage_finance
+* created_at
+* updated_at
+
+### user_division_access
+
+Purpose: controls which division a staff user can access.
+
+Recommended columns:
+
+* id
+* user_id
+* outlet_id
+* division_id
+* can_input_stock
+* can_input_waste
+* can_request_order
+* created_at
+* updated_at
+
+Use these tables instead of creating many rigid staff roles.
+
+---
+
+## 7. Main Panels and Route Boundaries
+
+BreadLab must separate panels clearly.
+
+### Customer Website
+
+For customers.
+
+Suggested routes:
+
+* /
+* /products
+* /products/{product}
+* /cart
+* /checkout
+* /orders
+* /payments
+* /chat
+* /account
+
+---
+
+### Admin Backend
+
+For super_admin and admin.
+
+Suggested route prefix:
+
+* /backend
+
+Main purpose:
+
+* setup
+* configuration
+* master data
+* operational control
+* finance setup
+* report management
+
+Examples:
+
+* /backend/dashboard
+* /backend/products
+* /backend/categories
+* /backend/customers
+* /backend/orders
+* /backend/payments
+* /backend/shipments
+* /backend/outlets
+* /backend/divisions
+* /backend/suppliers
+* /backend/inventory-items
+* /backend/settings
+* /backend/finance
+* /backend/reports
+
+---
+
+### Cashier/POS Panel
+
+For cashier.
+
+Suggested route prefix:
+
+* /cashier
+
+Main purpose:
+
+* POS transactions
+* cashier shift
+* payment handling
+* receipt printing
+* cash movement
+
+Examples:
+
+* /cashier
+* /cashier/shift
+* /cashier/orders
+* /cashier/cash-flow
+* /cashier/receipts
+
+Cashier routes must not be mixed with backend admin routes.
+
+---
+
+### Staff Outlet Panel
+
+For staff_outlet.
+
+Suggested route prefix:
+
+* /staff
+
+Main purpose:
+
+* stock opname
+* waste input
+* purchase request
+* own division stock monitoring
+
+Examples:
+
+* /staff/dashboard
+* /staff/stock-opnames
+* /staff/waste
+* /staff/purchase-requests
+* /staff/stocks
+
+---
+
+### Manager Panel
+
+For manager.
+
+Suggested route prefix:
+
+* /manager
+
+Main purpose:
+
+* monitoring only
+* read-only dashboard
+* outlet performance
+* finance overview
+* sales target
+* net profit report
+
+Examples:
+
+* /manager/dashboard
+* /manager/sales
+* /manager/cashier-shifts
+* /manager/stock
+* /manager/waste
+* /manager/purchasing
+* /manager/finance
+
+Manager panel must be read-only by default.
+
+---
+
+## 8. Order Channels and Service Types
+
+Every order should have a clear source.
+
+Recommended order channels:
+
+* online
+* cashier_pos
+* admin_manual
+
+Recommended service types:
+
+* dine_in
+* pickup
+* local_delivery
+* shipping
+
+This separation is required for clear reports.
+
+The system must be able to answer:
+
+* How much sales came from online orders?
+* How much sales came from cashier/POS?
+* How much was dine in?
+* How much was pickup?
+* How much was local delivery?
+* How much was shipping?
+* How much was paid by cash?
+* How much was paid by transfer?
+* How much was paid by QRIS?
+* How much was paid by Midtrans later?
+
+---
+
+## 9. Cashier/POS Rules
+
+Cashier must open a shift before creating transactions if shift enforcement is enabled.
+
+Cashier shift flow:
+
+1. Cashier login.
+2. Cashier selects assigned outlet.
+3. Cashier opens shift.
+4. Cashier inputs opening cash.
+5. Cashier creates POS transactions.
+6. Cashier records cash in/cash out when needed.
+7. Cashier closes shift.
+8. Cashier inputs actual cash.
+9. System calculates expected cash.
+10. System calculates cash difference.
+11. Manager or admin reviews shift.
+12. Shift is locked.
+
+Recommended cashier shift status:
+
+* open
+* closed
+* reviewed
+* locked
+
+Recommended cashier payment methods for initial version:
+
+* cash
+* bank_transfer
+* qris_manual
+
+Future payment methods:
+
+* midtrans
+* edc_debit
+* edc_credit
+
+---
+
+## 10. Cash Flow Rules
+
+Cash flow must not be mixed between online, POS, and manual admin orders.
+
+Use clear separation:
+
+* order_channel
+* service_type
+* payment_method
+* cashier_shift_id
+* outlet_id
+
+Cashier cash flow should track:
+
+* opening cash
+* cash sales
+* cash in
+* cash out
+* expected cash
+* actual cash
+* cash difference
+
+Do not delete cashier transactions.
+
+For mistakes, use:
+
+* void
+* cancel
+* refund
+* adjustment
+
+Void/refund should require approval if approval setting is enabled.
+
+---
+
+## 11. Finance, Target and Net Profit Rules
+
+Finance module is restricted.
+
+Allowed roles:
+
+* super_admin
+* admin
+* manager
+
+Not allowed:
+
+* cashier
+* staff_outlet
+* customer
+
+Finance module should support:
+
+* daily sales target
+* monthly sales target
+* gross sales
+* net sales
+* COGS
+* gross profit
+* operational expenses
+* net profit
+* net profit margin
+* outlet performance
+* target achievement
+
+Basic formulas:
+
+Gross Sales:
+
+```text
+total sales before discount and refund
+```
+
+Net Sales:
+
+```text
+gross_sales - discount_total - refund_total
+```
+
+Gross Profit:
+
+```text
+net_sales - cogs
+```
+
+Net Profit:
+
+```text
+net_sales - cogs - operational_expense
+```
+
+Net Profit Margin:
+
+```text
+net_profit / net_sales * 100
+```
+
+Target Achievement:
+
+```text
+actual_sales / target_amount * 100
+```
+
+Operational expense categories may include:
+
+* staff_salary
+* electricity
+* gas
+* water
+* rent
+* internet
+* packaging
+* maintenance
+* delivery_operational
+* marketing
+* cleaning
+* equipment
+* other
+
+Sensitive finance data must never be shown to cashier, staff_outlet, or customer.
+
+---
+
+## 12. Inventory and Stock Opname Rules
+
+Inventory must support multi-outlet and multi-division stock.
+
+Initial outlets:
+
+* Mejasem
+* Slawi
+
+Initial divisions:
+
+* Kitchen
+* Pastry
+* Bakery
+* Bar
+* Floor
+* Packaging
 
 Rules:
 
-## pickup
+* Every stock belongs to an outlet.
+* Every inventory item belongs to a division or category.
+* Staff can only input stock for assigned outlet and division.
+* Manager can only monitor by default.
+* Admin can setup master item, supplier, minimum stock, and stock settings.
+* Every stock change must create stock movement.
+* Never update stock silently without stock movement.
 
-- does not require delivery address
-- does not require courier
-- does not require tracking number
-- shipping cost must be 0
-- can use cash
-- can use bank_transfer
-- can use midtrans
+Stock movement types:
 
-## local_delivery
+* purchase_in
+* sales_out
+* waste_out
+* stock_opname_adjustment
+* transfer_in
+* transfer_out
+* manual_adjustment
+* return_in
 
-- uses customer shared location
-- uses HTML5 Geolocation API
-- uses Leaflet and OpenStreetMap
-- stores latitude and longitude in shipments
-- customer should still add delivery note or address detail
-- delivery fee can be flat/manual in first implementation
-- can use cash
-- can use bank_transfer
-- can use midtrans
+Stock opname flow:
 
-## shipping
+1. Staff login.
+2. System detects outlet and division access.
+3. Staff opens stock opname page.
+4. Staff inputs final stock.
+5. Staff inputs stock in, stock out, and waste if needed.
+6. System calculates used quantity.
+7. Staff submits stock opname.
+8. Admin or manager reviews.
+9. Data is approved and locked.
+10. Stock movement is created.
 
-- uses RajaOngkir
-- requires destination address
-- requires courier and service
-- stores shipping cost and estimated delivery
-- admin can input tracking number
-- should not use cash unless explicitly requested
-- can use bank_transfer
-- can use midtrans
+Used quantity formula:
 
----
+```text
+opening_stock + stock_in - final_stock - waste_qty
+```
 
-# Payment Methods
+Warning rules:
 
-Breadlab supports three payment methods:
-
-- cash
-- bank_transfer
-- midtrans
-
-## cash
-
-- manual payment
-- allowed for pickup and local_delivery
-- admin confirms payment manually
-- stored in payments table
-
-## bank_transfer
-
-- manual payment
-- customer uploads payment proof
-- admin verifies payment proof
-- admin can accept or reject payment proof
-- stored in payments table
-
-## midtrans
-
-- online payment gateway
-- system creates Midtrans transaction
-- customer pays through Midtrans
-- Midtrans sends notification callback
-- system updates payment automatically
-- stored in payments table
+* If final_stock is negative, block submission.
+* If used_qty is negative, show warning.
+* If final_stock > opening_stock and stock_in is empty, show warning.
+* If current_stock <= minimum_stock, mark as critical stock.
 
 ---
 
-# Status Rule
+## 13. Purchasing Rules
 
-Keep order status and payment status separate.
+Purchasing workflow should support:
 
-Do not mix order process status and payment verification status.
+* supplier master
+* purchase request
+* purchase order
+* goods receipt
+* stock update
+* supplier monitoring
 
-## Order status
+Recommended flow:
 
-Stored in:
+1. Staff or admin creates purchase request.
+2. Admin reviews request.
+3. Admin or purchasing creates purchase order.
+4. Supplier sends goods.
+5. Staff/admin records goods receipt.
+6. Inventory stock increases.
+7. Stock movement is created.
+8. Purchase order status is updated.
 
-- orders.status
+Recommended purchase request status:
 
-Allowed values:
+* draft
+* submitted
+* approved
+* rejected
+* ordered
+* partially_received
+* received
+* closed
 
-- pending
-- waiting_payment
-- paid
-- processing
-- ready_for_pickup
-- delivering
-- shipped
-- completed
-- cancelled
+Recommended purchase order status:
 
-Meaning:
-
-- pending: order created but not yet processed
-- waiting_payment: waiting for customer payment
-- paid: payment received
-- processing: admin is preparing order
-- ready_for_pickup: order ready to be picked up
-- delivering: local delivery in progress
-- shipped: shipping courier has received the order
-- completed: order finished
-- cancelled: order cancelled
-
-## Payment status
-
-Stored in:
-
-- payments.payment_status
-
-Allowed values:
-
-- pending
-- waiting_confirmation
-- paid
-- failed
-- expired
-- cancelled
-- rejected
-
-Meaning:
-
-- pending: payment created but not completed
-- waiting_confirmation: waiting admin verification for bank transfer
-- paid: payment successful
-- failed: payment failed
-- expired: payment expired
-- cancelled: payment cancelled
-- rejected: manual proof rejected
-
-orders.payment_status may exist only as a summary field for quick display, but the main payment record must be in payments.
+* draft
+* ordered
+* partially_received
+* received
+* cancelled
+* closed
 
 ---
 
-# Midtrans Rule
+## 14. Waste Rules
 
-Midtrans logic must be handled in MidtransController.
+Waste must be tracked as operational cost and inventory movement.
 
-MidtransController responsibilities:
+Waste record should include:
 
-- create transaction
-- generate snap token
-- receive notification callback
-- verify notification
-- update payments
-- update orders
+* outlet
+* division
+* inventory item
+* date
+* quantity
+* unit
+* estimated value
+* reason
+* recorded by
+* notes
 
-When Midtrans notification is successful:
+Waste reasons may include:
 
-- update payments.payment_status to paid
-- update payments.paid_at
-- update payments.midtrans_transaction_id if available
-- update orders.payment_status to paid if summary field exists
-- update orders.status to paid if current status is pending or waiting_payment
+* expired
+* over_production
+* damaged
+* wrong_process
+* customer_return
+* trial_menu
+* human_error
+* other
 
-Admin should not manually verify successful Midtrans payment.
+Every waste record should reduce stock and create stock movement.
 
-Admin may only manually correct Midtrans status if explicitly required.
-
----
-
-# RajaOngkir Rule
-
-RajaOngkir logic must be handled in RajaOngkirController.
-
-RajaOngkirController responsibilities:
-
-- get provinces
-- get cities
-- get shipping cost
-
-RajaOngkir is only for shipping.
-
-Do not use RajaOngkir for pickup.
-
-Do not use RajaOngkir for local_delivery.
-
-CheckoutController may use RajaOngkir data, but direct API request logic should stay in RajaOngkirController or a dedicated service.
+Waste should be visible in manager/admin reports.
 
 ---
 
-# OpenStreetMap and Leaflet Rule
+## 15. Recipe, BOM and COGS Rules
 
-OpenStreetMap and Leaflet are only for local_delivery.
+Future product costing should support recipe/BOM.
+
+Use recipe/BOM to connect sellable products with inventory items.
+
+Example:
+
+Product: Kopi Susu
+
+Ingredients:
+
+* Fresh Milk 150 ml
+* Espresso 30 ml
+* Gula Aren 20 ml
+* Cup 16 oz 1 pcs
+* Lid 1 pcs
+
+When a product is sold, the system can deduct raw materials automatically.
+
+COGS should eventually be calculated from recipe/BOM.
+
+Before recipe/BOM is ready, COGS can use a default percentage setting.
+
+Example:
+
+```text
+DEFAULT_COGS_PERCENTAGE=40
+```
+
+---
+
+## 16. Daily Closing Rules
+
+BreadLab should eventually support daily outlet closing.
+
+Daily closing flow:
+
+1. All cashier shifts are closed.
+2. All POS and online transactions are reviewed.
+3. Stock opname is submitted.
+4. Waste is recorded.
+5. Operational expenses are recorded.
+6. Daily sales summary is calculated.
+7. Target achievement is calculated.
+8. Net profit is calculated.
+9. Manager/admin reviews.
+10. Daily closing is locked.
+
+After daily closing is locked, important records should not be changed without approval or audit log.
+
+---
+
+## 17. Audit Log Rules
+
+Important actions should be auditable.
+
+Audit log should track:
+
+* user_id
+* action
+* module
+* record_id
+* old_value
+* new_value
+* reason
+* created_at
+
+Actions that should be audited:
+
+* changing product price
+* changing stock
+* editing payment status
+* voiding transaction
+* refunding transaction
+* deleting or cancelling order
+* changing user role
+* changing outlet access
+* changing division access
+* approving stock opname
+* approving purchase request
+* editing operational expense
+* editing sales target
+
+---
+
+## 18. UI and UX Rules
+
+Use the existing BreadLab visual direction.
+
+Do not redesign the whole system unless explicitly asked.
 
 Use:
 
-- HTML5 Geolocation API
-- Leaflet
-- OpenStreetMap tile layer
+* Blade
+* Bootstrap
+* existing layout style
+* clean tables
+* cards for dashboards
+* simple forms
+* responsive layout
 
-Store local delivery data in shipments:
+Panel UX should match role needs:
 
-- delivery_latitude
-- delivery_longitude
-- delivery_address
-- delivery_note
-- delivery_distance
+### Admin
 
-First implementation rule:
+Full sidebar and setup-focused layout.
 
-- do not implement complex routing
-- do not implement distance matrix
-- do not use Google Maps API unless explicitly requested
-- delivery fee can be flat/manual
+### Manager
 
-Admin order detail should show customer location through map or location link.
+Read-only dashboard and reports.
 
-Customer order detail may also show saved delivery location.
+### Cashier
 
----
+Fast POS layout with minimum distraction.
 
-# Chat Rule
+Suggested POS layout:
 
-Customer-admin chat should be connected to order.
+* Left side: product categories, product search, product cards.
+* Right side: cart, service type, customer info, payment, total, paid amount, change amount, submit button.
 
-Use tables:
+### Staff Outlet
 
-- conversations
-- messages
+Simple operational forms for stock opname, waste, and purchase request.
 
-Use controllers:
+### Customer
 
-- ConversationController
-- MessageController
-
-Initial implementation:
-
-- database-based chat
-- AJAX polling
-- no WebSocket
-- no Laravel Reverb
-- no Pusher
-
-Do not implement WebSocket unless explicitly requested.
-
-Chat locations:
-
-Frontend:
-
-- v_chat/show.blade.php
-- can be embedded in v_order/detail.blade.php
-
-Backend:
-
-- backend/v_chat/index.blade.php
-- backend/v_chat/show.blade.php
-- can be embedded in backend/v_order/show.blade.php
-
-Chat should allow:
-
-- customer sends message to admin
-- admin replies to customer
-- messages are stored
-- unread status can be tracked
-- conversation can be open or closed
+Clean storefront and checkout flow.
 
 ---
 
-# Development Order
+## 19. Laravel Coding Standards
 
-Do not implement all features at once.
+Follow Laravel conventions.
 
-Recommended order:
+Use:
 
-1. Audit existing project without changing files
-2. Refactor database and naming to Option B
-3. Fix Product and Category modules
-4. Fix Customer module
-5. Fix Cart module
-6. Fix Checkout core
-7. Add pickup, local_delivery, and shipping
-8. Add OpenStreetMap for local_delivery
-9. Add RajaOngkir for shipping
-10. Add cash and bank transfer payment
-11. Add admin order management
-12. Add Midtrans automatic callback
-13. Add customer order history
-14. Add customer-admin chat using AJAX polling
-15. Add dashboard charts
-16. Final testing and presentation cleanup
+* Models for business entities
+* Controllers grouped by module
+* Form Requests for validation when useful
+* Middleware for access control
+* Policies when module access becomes complex
+* Blade components when reusable
+* Route names consistently
+* Eloquent relationships
+* Seeders for required default data
+* Incremental migrations
 
----
+Do not hardcode sensitive values.
 
-# Before Editing Files
+Use `.env` for configurable settings.
 
-Before editing files, always inspect:
+After route changes, run:
 
-- .codex/docs/project-overview.md
-- .codex/docs/database.md
-- .codex/docs/modules.md
-- .codex/docs/workflow.md
-- .codex/docs/roadmap.md
-- .codex/docs/ui-design.md
-- .codex/docs/coding-standard.md
-- routes/web.php
-- existing controllers
-- existing models
-- existing migrations
-- existing Blade views
+```bash
+php artisan route:list
+```
 
-Do not assume file names.
+After migration changes, run:
 
-Do not assume old module-style names still apply.
+```bash
+php artisan migrate
+```
 
-Follow Option B.
+After seeder changes, run:
 
----
+```bash
+php artisan db:seed
+```
 
-# After Editing Files
+When debugging config, use:
 
-After editing, always explain:
-
-- files created
-- files modified
-- files removed if any
-- migrations created
-- routes added
-- routes changed
-- artisan commands to run
-- manual testing steps
-- possible risks or notes
+```bash
+php artisan config:clear
+php artisan cache:clear
+php artisan route:clear
+php artisan view:clear
+```
 
 ---
 
-# Debugging Map
+## 20. Database Rules
 
-Use this map when debugging:
+Use clear table names.
 
-- Homepage problem:
-  - BerandaController
-  - v_beranda
-  - v_layouts
+Prefer additive migrations.
 
-- Product problem:
-  - ProductController
-  - Product model
-  - products table
-  - product_photos table
-  - v_product
-  - backend/v_product
+Do not modify existing migrations if the project has already been migrated.
 
-- Category problem:
-  - CategoryController
-  - Category model
-  - categories table
-  - v_category
-  - backend/v_category
+For major changes, create new migrations.
 
-- Customer problem:
-  - CustomerController
-  - User model
-  - Customer model
-  - users table
-  - customers table
-  - v_customer
-  - backend/v_customer
+Existing important tables:
 
-- Cart problem:
-  - CartController
-  - Cart model
-  - CartItem model
-  - carts table
-  - cart_items table
-  - v_cart
+* users
+* customers
+* categories
+* products
+* product_photos
+* carts
+* cart_items
+* orders
+* order_items
+* payments
+* shipments
+* conversations
+* messages
 
-- Checkout problem:
-  - CheckoutController
-  - Order model
-  - OrderItem model
-  - Payment model
-  - Shipment model
-  - orders table
-  - order_items table
-  - payments table
-  - shipments table
-  - v_checkout
+Planned future tables:
 
-- RajaOngkir problem:
-  - RajaOngkirController
-  - shipments table
-  - v_checkout
-
-- Local delivery problem:
-  - CheckoutController
-  - Leaflet script
-  - OpenStreetMap tile layer
-  - shipments table
-  - backend/v_order/show.blade.php
-
-- Customer order problem:
-  - OrderController
-  - Order model
-  - OrderItem model
-  - orders table
-  - order_items table
-  - v_order
-
-- Admin order problem:
-  - AdminOrderController
-  - backend/v_order
-  - orders table
-  - order_items table
-  - payments table
-  - shipments table
-
-- Payment problem:
-  - PaymentController
-  - Payment model
-  - payments table
-  - v_payment
-  - backend/v_payment
-
-- Midtrans problem:
-  - MidtransController
-  - Payment model
-  - Order model
-  - payments table
-  - orders table
-
-- Chat problem:
-  - ConversationController
-  - MessageController
-  - Conversation model
-  - Message model
-  - conversations table
-  - messages table
-  - v_chat
-  - backend/v_chat
-
-- Dashboard problem:
-  - DashboardController
-  - backend/v_dashboard
-  - orders table
-  - order_items table
-  - payments table
-  - products table
+* roles
+* permissions
+* role_permissions
+* outlets
+* divisions
+* user_outlet_access
+* user_division_access
+* cashier_shifts
+* cashier_cash_movements
+* sales_targets
+* operational_expenses
+* daily_financial_summaries
+* inventory_items
+* inventory_stocks
+* stock_movements
+* stock_opnames
+* stock_opname_items
+* suppliers
+* purchase_requests
+* purchase_request_items
+* purchase_orders
+* purchase_order_items
+* goods_receipts
+* goods_receipt_items
+* waste_records
+* product_recipes
+* product_recipe_items
+* audit_logs
 
 ---
 
-# Presentation Rule
+## 21. RajaOngkir and Shipping Rules
 
-The project should remain easy to present.
+BreadLab supports:
 
-Use this explanation during presentation:
+* pickup
+* local delivery
+* shipping
 
-"Project Breadlab mengikuti alur Modul Web Programming III, mulai dari produk, customer, keranjang, checkout, RajaOngkir, manajemen pesanan, grafik, hingga Midtrans. Namun, pada implementasi Breadlab, penamaan tabel, model, controller, route, dan folder view menggunakan Laravel convention agar struktur lebih konsisten, mudah di-debug, dan siap dikembangkan."
+Do not mix local delivery and shipping.
 
-Do not make unnecessary changes that make presentation harder.
+Local delivery is for nearby outlet delivery.
 
-Do not over-engineer features unless requested.
+Shipping is for long-distance courier delivery.
+
+RajaOngkir/Komerce may be used for shipping cost calculation.
+
+Important environment variables may include:
+
+```env
+RAJAONGKIR_MODE=komerce
+RAJAONGKIR_BASE_URL=https://rajaongkir.komerce.id/api/v1
+RAJAONGKIR_API_KEY=
+RAJAONGKIR_KEY_HEADER=key
+RAJAONGKIR_ORIGIN_CITY_ID=
+RAJAONGKIR_ORIGIN_DISTRICT_ID=
+RAJAONGKIR_DEFAULT_WEIGHT=1000
+LOCAL_DELIVERY_FEE=10000
+LOCAL_DELIVERY_MAX_DISTANCE_KM=5
+```
+
+If RajaOngkir fails, show a clear error message and do not break checkout.
+
+---
+
+## 22. Payment Rules
+
+Initial payment methods:
+
+* cash
+* bank_transfer
+* qris_manual
+
+Future payment methods:
+
+* midtrans
+* edc_debit
+* edc_credit
+
+Payment statuses may include:
+
+* unpaid
+* waiting_confirmation
+* paid
+* settled
+* failed
+* refunded
+* cancelled
+
+Manual transfer flow:
+
+1. Customer uploads proof.
+2. Admin verifies.
+3. Payment becomes paid.
+4. Order can be processed.
+
+Cash POS flow:
+
+1. Cashier receives payment.
+2. Payment becomes paid immediately.
+3. Payment is linked to cashier shift.
+4. Cash flow is updated.
+
+---
+
+## 23. Testing and Verification Rules
+
+After implementation, always explain:
+
+* files changed
+* migrations added
+* models added or updated
+* controllers added or updated
+* routes added or updated
+* views added or updated
+* seeders added or updated
+* commands that should be run
+
+Recommended verification:
+
+```bash
+php artisan migrate
+php artisan db:seed
+php artisan route:list
+php artisan config:clear
+php artisan cache:clear
+php artisan view:clear
+```
+
+When possible, test:
+
+* login
+* role redirect
+* sidebar visibility
+* route access
+* CRUD pages
+* form validation
+* dashboard loading
+* checkout flow
+* cashier flow
+* stock flow
+* finance visibility restrictions
+
+---
+
+## 24. Development Roadmap
+
+Current roadmap:
+
+1. Role, Access & Outlet Context
+2. Cashier/POS Foundation
+3. Cash Flow, Shift & Closing Report
+4. Finance Target & Net Profit
+5. Inventory Outlet Foundation
+6. Stock Opname per Division
+7. Purchasing Workflow
+8. Waste, Recipe/BOM & COGS
+9. Daily Closing
+10. Audit Log
+11. Advanced Reports
+12. Midtrans Integration
+13. Advanced RajaOngkir/Shipping
+14. Product Availability per Outlet
+15. Kitchen/Production Display
+
+Do not jump to later phases unless explicitly instructed.
+
+---
+
+## 25. Current Priority
+
+The current priority is:
+
+```text
+Role, Access & Outlet Context
+```
+
+Before coding this phase:
+
+1. Inspect current user role implementation.
+2. Inspect login and redirect logic.
+3. Inspect admin middleware.
+4. Inspect sidebar rendering.
+5. Inspect existing routes.
+6. Propose safe changes.
+7. Then implement incrementally.
+
+Goal of this phase:
+
+* Add flexible role foundation.
+* Add outlet access.
+* Add division access.
+* Keep one login form.
+* Redirect users based on role.
+* Prepare separate cashier panel.
+* Prepare staff outlet panel.
+* Prepare manager monitoring panel.
+* Protect finance access.
+* Preserve existing modules.
+
+---
+
+## 26. Output Style When Working
+
+When completing a task, always summarize:
+
+```text
+Implemented:
+- ...
+
+Files changed:
+- ...
+
+Database changes:
+- ...
+
+Routes added:
+- ...
+
+How to test:
+- ...
+
+Notes:
+- ...
+```
+
+If something cannot be completed safely, explain why and ask for confirmation.
+
+Do not assume destructive changes are allowed.
+
+---
+
+## 27. Final Reminder
+
+BreadLab must become:
+
+```text
+Customer Website + Cashier POS + Outlet Operations + Inventory + Purchasing + Finance Reporting
+```
+
+The system must remain:
+
+* safe
+* modular
+* scalable
+* easy for outlet staff
+* clear for cashier
+* read-only for manager by default
+* configurable by admin
+* fully controlled by super admin

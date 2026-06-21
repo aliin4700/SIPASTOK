@@ -46,13 +46,17 @@
             <td> {{ $row->email }} </td>
             <td> {{ $row->name }} </td>
             <td>
-                @if ((string) $row->role === 'super_admin')
-                Super Admin
-                @elseif((string) $row->role === 'admin')
-                Admin
-                @elseif((string) $row->role === 'customer')
-                Customer
-                @endif
+                @php
+                    $roleLabels = [
+                        'super_admin' => 'Super Admin',
+                        'admin' => 'Admin',
+                        'manager' => 'Manager',
+                        'staff_outlet' => 'Staff Outlet',
+                        'cashier' => 'Cashier',
+                        'customer' => 'Customer',
+                    ];
+                @endphp
+                {{ $roleLabels[(string) $row->role] ?? $row->role }}
             </td>
             <td>
                 @if ((string) $row->status === 'active')

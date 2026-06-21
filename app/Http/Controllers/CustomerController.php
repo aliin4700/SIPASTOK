@@ -63,19 +63,7 @@ class CustomerController extends Controller
 
             $request->session()->regenerate();
 
-            if (in_array((string) $user->role, ['admin', 'super_admin'], true)) {
-                return redirect('/admin');
-            }
-
-            if ((string) $user->role === 'customer') {
-                return redirect('/beranda');
-            }
-
-            Auth::logout();
-
-            return back()
-                ->withInput($request->only('email', 'remember'))
-                ->with('error', 'Role akun tidak dikenali.');
+            return redirect($this->redirectPathForRole((string) $user->role));
         }
 
         return back()
@@ -244,5 +232,17 @@ class CustomerController extends Controller
         ]);
 
         return redirect()->route('customer.account')->with('success', 'Data berhasil diperbarui');
+    }
+
+    private function redirectPathForRole(string $role): string
+    {
+        return match ($role) {
+            'super_admin', 'admin' => '/backend/dashboard',
+            'manager' => '/manager/dashboard',
+            'cashier' => '/cashier',
+            'staff_outlet' => '/staff/dashboard',
+            'customer' => '/',
+            default => '/',
+        };
     }
 }

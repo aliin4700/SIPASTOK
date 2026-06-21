@@ -30,9 +30,16 @@
                                         <option value="" {{ old('role') == '' ? 'selected' : '' }}> - Pilih Hak Akses
                                             -
                                         </option>
-                                        <option value="super_admin" {{ old('role') == 'super_admin' ? 'selected' : '' }}> Super Admin</option>
-                                        <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}> Admin
-                                        </option>
+                                        @foreach ([
+                                            'super_admin' => 'Super Admin',
+                                            'admin' => 'Admin',
+                                            'manager' => 'Manager',
+                                            'staff_outlet' => 'Staff Outlet',
+                                            'cashier' => 'Cashier',
+                                            'customer' => 'Customer',
+                                        ] as $roleValue => $roleLabel)
+                                            <option value="{{ $roleValue }}" {{ old('role') == $roleValue ? 'selected' : '' }}>{{ $roleLabel }}</option>
+                                        @endforeach
                                     </select>
                                     @error('role')
                                     <span class="invalid-feedback alert-danger" role="alert">

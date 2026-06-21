@@ -59,6 +59,67 @@ class User extends Authenticatable
         return $this->hasMany(Message::class, 'sender_id');
     }
 
+    public function roleRecord()
+    {
+        return $this->belongsTo(Role::class, 'role', 'name');
+    }
+
+    public function outletAccesses()
+    {
+        return $this->hasMany(UserOutletAccess::class);
+    }
+
+    public function divisionAccesses()
+    {
+        return $this->hasMany(UserDivisionAccess::class);
+    }
+
+    public function hasRole(string $role): bool
+    {
+        return (string) $this->role === $role;
+    }
+
+    public function hasAnyRole(array|string $roles): bool
+    {
+        return in_array((string) $this->role, (array) $roles, true);
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        if ($this->hasRole('super_admin')) {
+            return true;
+        }
+
+        return $this->roleRecord()
+            ->whereHas('permissions', fn ($query) => $query->where('name', $permission))
+            ->exists();
+    }
+
+    public function hasOutletAccess(int|string $outletId, ?string $ability = null): bool
+    {
+        if ($this->hasAnyRole(['super_admin', 'admin'])) {
+            return true;
+        }
+
+        return $this->outletAccesses()
+            ->where('outlet_id', $outletId)
+            ->when($ability, fn ($query) => $query->where($ability, true))
+            ->exists();
+    }
+
+    public function hasDivisionAccess(int|string $outletId, int|string $divisionId, ?string $ability = null): bool
+    {
+        if ($this->hasAnyRole(['super_admin', 'admin'])) {
+            return true;
+        }
+
+        return $this->divisionAccesses()
+            ->where('outlet_id', $outletId)
+            ->where('division_id', $divisionId)
+            ->when($ability, fn ($query) => $query->where($ability, true))
+            ->exists();
+    }
+
     public function getNamaAttribute(): ?string
     {
         return $this->name;
