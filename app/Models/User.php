@@ -129,6 +129,21 @@ class User extends Authenticatable
         return $this->hasMany(WasteRecord::class, 'recorded_by');
     }
 
+    public function productionRecords()
+    {
+        return $this->hasMany(ProductionRecord::class, 'produced_by');
+    }
+
+    public function stockOpnames()
+    {
+        return $this->hasMany(StockOpname::class, 'counted_by');
+    }
+
+    public function reviewedStockOpnames()
+    {
+        return $this->hasMany(StockOpname::class, 'reviewed_by');
+    }
+
     public function hasRole(string $role): bool
     {
         return (string) $this->role === $role;

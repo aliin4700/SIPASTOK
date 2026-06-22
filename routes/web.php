@@ -33,6 +33,8 @@ use App\Http\Controllers\Backend\InventoryStockController as BackendInventorySto
 use App\Http\Controllers\Backend\StockMovementController as BackendStockMovementController;
 use App\Http\Controllers\Backend\MaterialRequestController as BackendMaterialRequestController;
 use App\Http\Controllers\Backend\WasteRecordController as BackendWasteRecordController;
+use App\Http\Controllers\Backend\ProductionRecordController as BackendProductionRecordController;
+use App\Http\Controllers\Backend\StockOpnameController as BackendStockOpnameController;
 use App\Http\Controllers\Manager\CashierShiftReportController as ManagerCashierShiftReportController;
 use App\Http\Controllers\Manager\FinanceDashboardController as ManagerFinanceDashboardController;
 use App\Http\Controllers\Manager\SalesTargetController as ManagerSalesTargetController;
@@ -40,11 +42,15 @@ use App\Http\Controllers\Manager\OperationalExpenseController as ManagerOperatio
 use App\Http\Controllers\Manager\InventoryMonitoringController as ManagerInventoryMonitoringController;
 use App\Http\Controllers\Manager\MaterialRequestController as ManagerMaterialRequestController;
 use App\Http\Controllers\Manager\WasteRecordController as ManagerWasteRecordController;
+use App\Http\Controllers\Manager\ProductionRecordController as ManagerProductionRecordController;
+use App\Http\Controllers\Manager\StockOpnameController as ManagerStockOpnameController;
 use App\Http\Controllers\Staff\StaffDashboardController as StaffDashboardController;
 use App\Http\Controllers\Staff\DailyOperationController as StaffDailyOperationController;
 use App\Http\Controllers\Staff\OpeningAlertController as StaffOpeningAlertController;
 use App\Http\Controllers\Staff\MaterialRequestController as StaffMaterialRequestController;
 use App\Http\Controllers\Staff\WasteRecordController as StaffWasteRecordController;
+use App\Http\Controllers\Staff\ProductionRecordController as StaffProductionRecordController;
+use App\Http\Controllers\Staff\StockOpnameController as StaffStockOpnameController;
 
 Route::get('/', function () {
     // return view('welcome');
@@ -97,6 +103,10 @@ Route::middleware(['auth', 'role:manager,admin,super_admin'])->group(function ()
     Route::get('/manager/material-requests/{materialRequest}', [ManagerMaterialRequestController::class, 'show'])->name('manager.material-requests.show');
     Route::get('/manager/waste-records', [ManagerWasteRecordController::class, 'index'])->name('manager.waste-records.index');
     Route::get('/manager/waste-records/{wasteRecord}', [ManagerWasteRecordController::class, 'show'])->name('manager.waste-records.show');
+    Route::get('/manager/production-records', [ManagerProductionRecordController::class, 'index'])->name('manager.production-records.index');
+    Route::get('/manager/production-records/{productionRecord}', [ManagerProductionRecordController::class, 'show'])->name('manager.production-records.show');
+    Route::get('/manager/stock-opnames', [ManagerStockOpnameController::class, 'index'])->name('manager.stock-opnames.index');
+    Route::get('/manager/stock-opnames/{stockOpname}', [ManagerStockOpnameController::class, 'show'])->name('manager.stock-opnames.show');
 });
 
 Route::prefix('cashier')->name('cashier.')->middleware(['auth', 'role:cashier,admin,super_admin'])->group(function () {
@@ -137,6 +147,18 @@ Route::middleware(['auth', 'role:staff_outlet,admin,super_admin'])->group(functi
     Route::get('/staff/waste/{wasteRecord}', [StaffWasteRecordController::class, 'show'])->name('staff.waste.show');
     Route::post('/staff/waste/{wasteRecord}/submit', [StaffWasteRecordController::class, 'submit'])->name('staff.waste.submit');
     Route::post('/staff/waste/{wasteRecord}/cancel', [StaffWasteRecordController::class, 'cancel'])->name('staff.waste.cancel');
+    Route::get('/staff/production', [StaffProductionRecordController::class, 'index'])->name('staff.production.index');
+    Route::get('/staff/production/create', [StaffProductionRecordController::class, 'create'])->name('staff.production.create');
+    Route::post('/staff/production', [StaffProductionRecordController::class, 'store'])->name('staff.production.store');
+    Route::get('/staff/production/{productionRecord}', [StaffProductionRecordController::class, 'show'])->name('staff.production.show');
+    Route::post('/staff/production/{productionRecord}/submit', [StaffProductionRecordController::class, 'submit'])->name('staff.production.submit');
+    Route::post('/staff/production/{productionRecord}/cancel', [StaffProductionRecordController::class, 'cancel'])->name('staff.production.cancel');
+    Route::get('/staff/stock-opnames', [StaffStockOpnameController::class, 'index'])->name('staff.stock-opnames.index');
+    Route::get('/staff/stock-opnames/create', [StaffStockOpnameController::class, 'create'])->name('staff.stock-opnames.create');
+    Route::post('/staff/stock-opnames', [StaffStockOpnameController::class, 'store'])->name('staff.stock-opnames.store');
+    Route::get('/staff/stock-opnames/{stockOpname}', [StaffStockOpnameController::class, 'show'])->name('staff.stock-opnames.show');
+    Route::post('/staff/stock-opnames/{stockOpname}/submit', [StaffStockOpnameController::class, 'submit'])->name('staff.stock-opnames.submit');
+    Route::post('/staff/stock-opnames/{stockOpname}/cancel', [StaffStockOpnameController::class, 'cancel'])->name('staff.stock-opnames.cancel');
 });
 
 Route::middleware(['auth', 'is.admin'])->group(function () {
@@ -194,6 +216,11 @@ Route::middleware(['auth', 'is.admin'])->group(function () {
     Route::get('backend/material-requests/{materialRequest}', [BackendMaterialRequestController::class, 'show'])->name('backend.material-requests.show');
     Route::get('backend/waste-records', [BackendWasteRecordController::class, 'index'])->name('backend.waste-records.index');
     Route::get('backend/waste-records/{wasteRecord}', [BackendWasteRecordController::class, 'show'])->name('backend.waste-records.show');
+    Route::get('backend/production-records', [BackendProductionRecordController::class, 'index'])->name('backend.production-records.index');
+    Route::get('backend/production-records/{productionRecord}', [BackendProductionRecordController::class, 'show'])->name('backend.production-records.show');
+    Route::get('backend/stock-opnames', [BackendStockOpnameController::class, 'index'])->name('backend.stock-opnames.index');
+    Route::get('backend/stock-opnames/{stockOpname}', [BackendStockOpnameController::class, 'show'])->name('backend.stock-opnames.show');
+    Route::post('backend/stock-opnames/{stockOpname}/review', [BackendStockOpnameController::class, 'review'])->name('backend.stock-opnames.review');
 
     Route::get('backend/chats', [ConversationController::class, 'index'])->name('backend.chat.index');
     Route::get('backend/chats/{conversation}', [ConversationController::class, 'adminShow'])->name('backend.chat.show');

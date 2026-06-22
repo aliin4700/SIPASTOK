@@ -70,6 +70,8 @@
             <a href="{{ route('staff.opening-alerts.index') }}" class="btn btn-outline-primary">Opening Alert</a>
             <a href="{{ route('staff.material-requests.index') }}" class="btn btn-outline-primary">Take Bahan</a>
             <a href="{{ route('staff.waste.index') }}" class="btn btn-outline-primary">Input Waste</a>
+            <a href="{{ route('staff.production.index') }}" class="btn btn-outline-primary">Input Produksi / WIP</a>
+            <a href="{{ route('staff.stock-opnames.index') }}" class="btn btn-outline-primary">Closing Stock</a>
         </div>
     </div>
 @endif

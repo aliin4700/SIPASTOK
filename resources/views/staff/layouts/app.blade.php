@@ -17,6 +17,8 @@
                 <a href="{{ route('staff.opening-alerts.index') }}" class="btn btn-outline-secondary btn-sm">Opening Alert</a>
                 <a href="{{ route('staff.material-requests.index') }}" class="btn btn-outline-secondary btn-sm">Take Bahan</a>
                 <a href="{{ route('staff.waste.index') }}" class="btn btn-outline-secondary btn-sm">Waste</a>
+                <a href="{{ route('staff.production.index') }}" class="btn btn-outline-secondary btn-sm">Produksi / WIP</a>
+                <a href="{{ route('staff.stock-opnames.index') }}" class="btn btn-outline-secondary btn-sm">Closing Stock</a>
                 @if(auth()->user()?->hasAnyRole(['admin', 'super_admin']))
                     <a href="{{ route('backend.dashboard') }}" class="btn btn-outline-primary btn-sm">Backend</a>
                 @endif

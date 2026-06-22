@@ -75,4 +75,14 @@ class Outlet extends Model
     {
         return $this->hasMany(WasteRecord::class);
     }
+
+    public function productionRecords()
+    {
+        return $this->hasMany(ProductionRecord::class);
+    }
+
+    public function stockOpnames()
+    {
+        return $this->hasMany(StockOpname::class);
+    }
 }

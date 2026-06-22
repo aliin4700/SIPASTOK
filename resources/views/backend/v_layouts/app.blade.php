@@ -185,6 +185,8 @@
                                 <li class="sidebar-item"><a href="{{ route('backend.stock-movements.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Stock Movement </span></a></li>
                                 <li class="sidebar-item"><a href="{{ route('backend.material-requests.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Material Request </span></a></li>
                                 <li class="sidebar-item"><a href="{{ route('backend.waste-records.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Waste Record </span></a></li>
+                                <li class="sidebar-item"><a href="{{ route('backend.production-records.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Production Record </span></a></li>
+                                <li class="sidebar-item"><a href="{{ route('backend.stock-opnames.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Stock Opname </span></a></li>
                             </ul>
                         </li>
                         <li class="sidebar-item"> <a class="sidebar-link waves-effect waves-dark sidebar-link" href="{{ route('backend.chat.index') }}" aria-expanded="false"><i class="mdi mdi-message-text"></i><span class="hide-menu">Chat</span></a>
