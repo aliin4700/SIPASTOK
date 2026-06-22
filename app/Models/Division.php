@@ -24,4 +24,29 @@ class Division extends Model
     {
         return $this->hasMany(UserDivisionAccess::class);
     }
+
+    public function inventoryItems()
+    {
+        return $this->hasMany(InventoryItem::class);
+    }
+
+    public function stockMovements()
+    {
+        return $this->hasMany(StockMovement::class);
+    }
+
+    public function divisionDailyOperations()
+    {
+        return $this->hasMany(DivisionDailyOperation::class);
+    }
+
+    public function materialRequests()
+    {
+        return $this->hasMany(MaterialRequest::class);
+    }
+
+    public function wasteRecords()
+    {
+        return $this->hasMany(WasteRecord::class);
+    }
 }

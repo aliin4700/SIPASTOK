@@ -24,13 +24,27 @@ use App\Http\Controllers\Cashier\CashierOrderController;
 use App\Http\Controllers\Cashier\CashFlowController;
 use App\Http\Controllers\Cashier\CashierReceiptController;
 use App\Http\Controllers\Backend\CashierShiftReportController as BackendCashierShiftReportController;
+use App\Http\Controllers\Backend\UserAccessController as BackendUserAccessController;
 use App\Http\Controllers\Backend\FinanceDashboardController as BackendFinanceDashboardController;
 use App\Http\Controllers\Backend\SalesTargetController as BackendSalesTargetController;
 use App\Http\Controllers\Backend\OperationalExpenseController as BackendOperationalExpenseController;
+use App\Http\Controllers\Backend\InventoryItemController as BackendInventoryItemController;
+use App\Http\Controllers\Backend\InventoryStockController as BackendInventoryStockController;
+use App\Http\Controllers\Backend\StockMovementController as BackendStockMovementController;
+use App\Http\Controllers\Backend\MaterialRequestController as BackendMaterialRequestController;
+use App\Http\Controllers\Backend\WasteRecordController as BackendWasteRecordController;
 use App\Http\Controllers\Manager\CashierShiftReportController as ManagerCashierShiftReportController;
 use App\Http\Controllers\Manager\FinanceDashboardController as ManagerFinanceDashboardController;
 use App\Http\Controllers\Manager\SalesTargetController as ManagerSalesTargetController;
 use App\Http\Controllers\Manager\OperationalExpenseController as ManagerOperationalExpenseController;
+use App\Http\Controllers\Manager\InventoryMonitoringController as ManagerInventoryMonitoringController;
+use App\Http\Controllers\Manager\MaterialRequestController as ManagerMaterialRequestController;
+use App\Http\Controllers\Manager\WasteRecordController as ManagerWasteRecordController;
+use App\Http\Controllers\Staff\StaffDashboardController as StaffDashboardController;
+use App\Http\Controllers\Staff\DailyOperationController as StaffDailyOperationController;
+use App\Http\Controllers\Staff\OpeningAlertController as StaffOpeningAlertController;
+use App\Http\Controllers\Staff\MaterialRequestController as StaffMaterialRequestController;
+use App\Http\Controllers\Staff\WasteRecordController as StaffWasteRecordController;
 
 Route::get('/', function () {
     // return view('welcome');
@@ -76,6 +90,13 @@ Route::middleware(['auth', 'role:manager,admin,super_admin'])->group(function ()
 
     Route::get('/manager/cashier-shifts', [ManagerCashierShiftReportController::class, 'index'])->name('manager.cashier-shifts.index');
     Route::get('/manager/cashier-shifts/{shift}', [ManagerCashierShiftReportController::class, 'show'])->name('manager.cashier-shifts.show');
+    Route::get('/manager/inventory', [ManagerInventoryMonitoringController::class, 'inventory'])->name('manager.inventory.index');
+    Route::get('/manager/daily-operations', [ManagerInventoryMonitoringController::class, 'dailyOperations'])->name('manager.daily-operations.index');
+    Route::get('/manager/opening-alerts', [ManagerInventoryMonitoringController::class, 'openingAlerts'])->name('manager.opening-alerts.index');
+    Route::get('/manager/material-requests', [ManagerMaterialRequestController::class, 'index'])->name('manager.material-requests.index');
+    Route::get('/manager/material-requests/{materialRequest}', [ManagerMaterialRequestController::class, 'show'])->name('manager.material-requests.show');
+    Route::get('/manager/waste-records', [ManagerWasteRecordController::class, 'index'])->name('manager.waste-records.index');
+    Route::get('/manager/waste-records/{wasteRecord}', [ManagerWasteRecordController::class, 'show'])->name('manager.waste-records.show');
 });
 
 Route::prefix('cashier')->name('cashier.')->middleware(['auth', 'role:cashier,admin,super_admin'])->group(function () {
@@ -99,12 +120,23 @@ Route::prefix('cashier')->name('cashier.')->middleware(['auth', 'role:cashier,ad
 });
 
 Route::middleware(['auth', 'role:staff_outlet,admin,super_admin'])->group(function () {
-    Route::get('/staff/dashboard', function () {
-        return view('panel-placeholder', [
-            'title' => 'Staff Outlet Dashboard',
-            'message' => 'Panel staff outlet sedang disiapkan.',
-        ]);
-    })->name('staff.dashboard');
+    Route::get('/staff/dashboard', [StaffDashboardController::class, 'index'])->name('staff.dashboard');
+    Route::get('/staff/daily-operations', [StaffDailyOperationController::class, 'index'])->name('staff.daily-operations.index');
+    Route::post('/staff/daily-operations/open', [StaffDailyOperationController::class, 'open'])->name('staff.daily-operations.open');
+    Route::post('/staff/daily-operations/{operation}/submit', [StaffDailyOperationController::class, 'submit'])->name('staff.daily-operations.submit');
+    Route::get('/staff/opening-alerts', [StaffOpeningAlertController::class, 'index'])->name('staff.opening-alerts.index');
+    Route::get('/staff/material-requests', [StaffMaterialRequestController::class, 'index'])->name('staff.material-requests.index');
+    Route::get('/staff/material-requests/create', [StaffMaterialRequestController::class, 'create'])->name('staff.material-requests.create');
+    Route::post('/staff/material-requests', [StaffMaterialRequestController::class, 'store'])->name('staff.material-requests.store');
+    Route::get('/staff/material-requests/{materialRequest}', [StaffMaterialRequestController::class, 'show'])->name('staff.material-requests.show');
+    Route::post('/staff/material-requests/{materialRequest}/submit', [StaffMaterialRequestController::class, 'submit'])->name('staff.material-requests.submit');
+    Route::post('/staff/material-requests/{materialRequest}/cancel', [StaffMaterialRequestController::class, 'cancel'])->name('staff.material-requests.cancel');
+    Route::get('/staff/waste', [StaffWasteRecordController::class, 'index'])->name('staff.waste.index');
+    Route::get('/staff/waste/create', [StaffWasteRecordController::class, 'create'])->name('staff.waste.create');
+    Route::post('/staff/waste', [StaffWasteRecordController::class, 'store'])->name('staff.waste.store');
+    Route::get('/staff/waste/{wasteRecord}', [StaffWasteRecordController::class, 'show'])->name('staff.waste.show');
+    Route::post('/staff/waste/{wasteRecord}/submit', [StaffWasteRecordController::class, 'submit'])->name('staff.waste.submit');
+    Route::post('/staff/waste/{wasteRecord}/cancel', [StaffWasteRecordController::class, 'cancel'])->name('staff.waste.cancel');
 });
 
 Route::middleware(['auth', 'is.admin'])->group(function () {
@@ -115,6 +147,8 @@ Route::middleware(['auth', 'is.admin'])->group(function () {
 
     // Route untuk User
     // Route::resource('backend/user', UserController::class)->middleware('auth');
+    Route::get('backend/users/{user}/access', [BackendUserAccessController::class, 'edit'])->name('backend.user.access.edit');
+    Route::put('backend/users/{user}/access', [BackendUserAccessController::class, 'update'])->name('backend.user.access.update');
     Route::resource('backend/user', UserController::class, ['as' => 'backend']);
     // Route untuk laporan user
     Route::get('backend/laporan/formuser', [UserController::class, 'formUser'])->name('backend.laporan.formuser');
@@ -151,6 +185,15 @@ Route::middleware(['auth', 'is.admin'])->group(function () {
     Route::get('backend/finance', [BackendFinanceDashboardController::class, 'dashboard'])->middleware('finance.access')->name('backend.finance.dashboard');
     Route::resource('backend/sales-targets', BackendSalesTargetController::class)->except(['show'])->names('backend.sales-targets');
     Route::resource('backend/operational-expenses', BackendOperationalExpenseController::class)->except(['show'])->names('backend.operational-expenses');
+    Route::resource('backend/inventory-items', BackendInventoryItemController::class)->except(['show'])->names('backend.inventory-items');
+    Route::get('backend/inventory-stocks', [BackendInventoryStockController::class, 'index'])->name('backend.inventory-stocks.index');
+    Route::get('backend/inventory-stocks/{inventoryStock}/edit', [BackendInventoryStockController::class, 'edit'])->name('backend.inventory-stocks.edit');
+    Route::put('backend/inventory-stocks/{inventoryStock}', [BackendInventoryStockController::class, 'update'])->name('backend.inventory-stocks.update');
+    Route::get('backend/stock-movements', [BackendStockMovementController::class, 'index'])->name('backend.stock-movements.index');
+    Route::get('backend/material-requests', [BackendMaterialRequestController::class, 'index'])->name('backend.material-requests.index');
+    Route::get('backend/material-requests/{materialRequest}', [BackendMaterialRequestController::class, 'show'])->name('backend.material-requests.show');
+    Route::get('backend/waste-records', [BackendWasteRecordController::class, 'index'])->name('backend.waste-records.index');
+    Route::get('backend/waste-records/{wasteRecord}', [BackendWasteRecordController::class, 'show'])->name('backend.waste-records.show');
 
     Route::get('backend/chats', [ConversationController::class, 'index'])->name('backend.chat.index');
     Route::get('backend/chats/{conversation}', [ConversationController::class, 'adminShow'])->name('backend.chat.show');

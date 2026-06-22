@@ -178,6 +178,15 @@
                         </li>
                         <li class="sidebar-item"> <a class="sidebar-link waves-effect waves-dark sidebar-link" href="{{ route('backend.finance.dashboard') }}" aria-expanded="false"><i class="mdi mdi-chart-line"></i><span class="hide-menu">Finance</span></a>
                         </li>
+                        <li class="sidebar-item"> <a class="sidebar-link has-arrow waves-effect waves-dark" href="javascript:void(0)" aria-expanded="false"><i class="mdi mdi-warehouse"></i><span class="hide-menu">Inventory </span></a>
+                            <ul aria-expanded="false" class="collapse  first-level">
+                                <li class="sidebar-item"><a href="{{ route('backend.inventory-items.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Master Item </span></a></li>
+                                <li class="sidebar-item"><a href="{{ route('backend.inventory-stocks.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Stok Outlet </span></a></li>
+                                <li class="sidebar-item"><a href="{{ route('backend.stock-movements.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Stock Movement </span></a></li>
+                                <li class="sidebar-item"><a href="{{ route('backend.material-requests.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Material Request </span></a></li>
+                                <li class="sidebar-item"><a href="{{ route('backend.waste-records.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Waste Record </span></a></li>
+                            </ul>
+                        </li>
                         <li class="sidebar-item"> <a class="sidebar-link waves-effect waves-dark sidebar-link" href="{{ route('backend.chat.index') }}" aria-expanded="false"><i class="mdi mdi-message-text"></i><span class="hide-menu">Chat</span></a>
                         </li>
                         <li class="sidebar-item"> <a class="sidebar-link has-arrow waves-effect waves-dark" href="javascript:void(0)" aria-expanded="false"><i class="mdi mdi-receipt"></i><span class="hide-menu">Laporan </span></a>

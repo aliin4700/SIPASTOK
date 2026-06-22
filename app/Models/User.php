@@ -99,6 +99,36 @@ class User extends Authenticatable
         return $this->hasMany(OperationalExpense::class, 'approved_by');
     }
 
+    public function openedDivisionDailyOperations()
+    {
+        return $this->hasMany(DivisionDailyOperation::class, 'opened_by');
+    }
+
+    public function submittedDivisionDailyOperations()
+    {
+        return $this->hasMany(DivisionDailyOperation::class, 'submitted_by');
+    }
+
+    public function approvedDivisionDailyOperations()
+    {
+        return $this->hasMany(DivisionDailyOperation::class, 'approved_by');
+    }
+
+    public function createdStockMovements()
+    {
+        return $this->hasMany(StockMovement::class, 'created_by');
+    }
+
+    public function materialRequests()
+    {
+        return $this->hasMany(MaterialRequest::class, 'requested_by');
+    }
+
+    public function wasteRecords()
+    {
+        return $this->hasMany(WasteRecord::class, 'recorded_by');
+    }
+
     public function hasRole(string $role): bool
     {
         return (string) $this->role === $role;

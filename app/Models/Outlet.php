@@ -50,4 +50,29 @@ class Outlet extends Model
     {
         return $this->hasMany(OperationalExpense::class);
     }
+
+    public function inventoryStocks()
+    {
+        return $this->hasMany(InventoryStock::class);
+    }
+
+    public function stockMovements()
+    {
+        return $this->hasMany(StockMovement::class);
+    }
+
+    public function divisionDailyOperations()
+    {
+        return $this->hasMany(DivisionDailyOperation::class);
+    }
+
+    public function materialRequests()
+    {
+        return $this->hasMany(MaterialRequest::class);
+    }
+
+    public function wasteRecords()
+    {
+        return $this->hasMany(WasteRecord::class);
+    }
 }
