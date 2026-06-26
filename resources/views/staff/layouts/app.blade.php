@@ -14,6 +14,7 @@
             <div class="d-flex flex-wrap gap-2">
                 <a href="{{ route('staff.dashboard') }}" class="btn btn-outline-secondary btn-sm">Dashboard</a>
                 <a href="{{ route('staff.daily-operations.index') }}" class="btn btn-outline-secondary btn-sm">Operasional Hari Ini</a>
+                <a href="{{ route('staff.daily-operations.closing-summary') }}" class="btn btn-outline-secondary btn-sm">Tutup Operasional</a>
                 <a href="{{ route('staff.opening-alerts.index') }}" class="btn btn-outline-secondary btn-sm">Opening Alert</a>
                 <a href="{{ route('staff.material-requests.index') }}" class="btn btn-outline-secondary btn-sm">Take Bahan</a>
                 <a href="{{ route('staff.waste.index') }}" class="btn btn-outline-secondary btn-sm">Waste</a>

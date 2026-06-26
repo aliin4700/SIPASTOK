@@ -35,6 +35,7 @@ use App\Http\Controllers\Backend\MaterialRequestController as BackendMaterialReq
 use App\Http\Controllers\Backend\WasteRecordController as BackendWasteRecordController;
 use App\Http\Controllers\Backend\ProductionRecordController as BackendProductionRecordController;
 use App\Http\Controllers\Backend\StockOpnameController as BackendStockOpnameController;
+use App\Http\Controllers\Backend\DailyOperationController as BackendDailyOperationController;
 use App\Http\Controllers\Manager\CashierShiftReportController as ManagerCashierShiftReportController;
 use App\Http\Controllers\Manager\FinanceDashboardController as ManagerFinanceDashboardController;
 use App\Http\Controllers\Manager\SalesTargetController as ManagerSalesTargetController;
@@ -98,6 +99,7 @@ Route::middleware(['auth', 'role:manager,admin,super_admin'])->group(function ()
     Route::get('/manager/cashier-shifts/{shift}', [ManagerCashierShiftReportController::class, 'show'])->name('manager.cashier-shifts.show');
     Route::get('/manager/inventory', [ManagerInventoryMonitoringController::class, 'inventory'])->name('manager.inventory.index');
     Route::get('/manager/daily-operations', [ManagerInventoryMonitoringController::class, 'dailyOperations'])->name('manager.daily-operations.index');
+    Route::get('/manager/daily-operations/{dailyOperation}', [ManagerInventoryMonitoringController::class, 'dailyOperationShow'])->name('manager.daily-operations.show');
     Route::get('/manager/opening-alerts', [ManagerInventoryMonitoringController::class, 'openingAlerts'])->name('manager.opening-alerts.index');
     Route::get('/manager/material-requests', [ManagerMaterialRequestController::class, 'index'])->name('manager.material-requests.index');
     Route::get('/manager/material-requests/{materialRequest}', [ManagerMaterialRequestController::class, 'show'])->name('manager.material-requests.show');
@@ -132,7 +134,9 @@ Route::prefix('cashier')->name('cashier.')->middleware(['auth', 'role:cashier,ad
 Route::middleware(['auth', 'role:staff_outlet,admin,super_admin'])->group(function () {
     Route::get('/staff/dashboard', [StaffDashboardController::class, 'index'])->name('staff.dashboard');
     Route::get('/staff/daily-operations', [StaffDailyOperationController::class, 'index'])->name('staff.daily-operations.index');
+    Route::get('/staff/daily-operations/closing-summary', [StaffDailyOperationController::class, 'closingSummary'])->name('staff.daily-operations.closing-summary');
     Route::post('/staff/daily-operations/open', [StaffDailyOperationController::class, 'open'])->name('staff.daily-operations.open');
+    Route::post('/staff/daily-operations/submit', [StaffDailyOperationController::class, 'submitClosing'])->name('staff.daily-operations.submit-closing');
     Route::post('/staff/daily-operations/{operation}/submit', [StaffDailyOperationController::class, 'submit'])->name('staff.daily-operations.submit');
     Route::get('/staff/opening-alerts', [StaffOpeningAlertController::class, 'index'])->name('staff.opening-alerts.index');
     Route::get('/staff/material-requests', [StaffMaterialRequestController::class, 'index'])->name('staff.material-requests.index');
@@ -221,6 +225,9 @@ Route::middleware(['auth', 'is.admin'])->group(function () {
     Route::get('backend/stock-opnames', [BackendStockOpnameController::class, 'index'])->name('backend.stock-opnames.index');
     Route::get('backend/stock-opnames/{stockOpname}', [BackendStockOpnameController::class, 'show'])->name('backend.stock-opnames.show');
     Route::post('backend/stock-opnames/{stockOpname}/review', [BackendStockOpnameController::class, 'review'])->name('backend.stock-opnames.review');
+    Route::get('backend/daily-operations', [BackendDailyOperationController::class, 'index'])->name('backend.daily-operations.index');
+    Route::get('backend/daily-operations/{dailyOperation}', [BackendDailyOperationController::class, 'show'])->name('backend.daily-operations.show');
+    Route::post('backend/daily-operations/{dailyOperation}/approve', [BackendDailyOperationController::class, 'approve'])->name('backend.daily-operations.approve');
 
     Route::get('backend/chats', [ConversationController::class, 'index'])->name('backend.chat.index');
     Route::get('backend/chats/{conversation}', [ConversationController::class, 'adminShow'])->name('backend.chat.show');

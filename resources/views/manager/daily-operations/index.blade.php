@@ -14,6 +14,7 @@
                         <th>Status</th>
                         <th>Dibuka Oleh</th>
                         <th>Submitted Oleh</th>
+                        <th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -25,9 +26,10 @@
                             <td><span class="badge bg-info">{{ $operation->status }}</span></td>
                             <td>{{ $operation->opener->name ?? '-' }}</td>
                             <td>{{ $operation->submitter->name ?? '-' }}</td>
+                            <td><a href="{{ route('manager.daily-operations.show', $operation) }}" class="btn btn-sm btn-outline-primary">Detail</a></td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="text-center text-muted">Belum ada operasional harian.</td></tr>
+                        <tr><td colspan="7" class="text-center text-muted">Belum ada operasional harian.</td></tr>
                     @endforelse
                 </tbody>
             </table>

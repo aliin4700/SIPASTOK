@@ -19,6 +19,7 @@
                 <a href="{{ route('manager.operational-expenses.index') }}" class="btn btn-outline-secondary btn-sm">Expenses</a>
                 <a href="{{ route('manager.cashier-shifts.index') }}" class="btn btn-outline-secondary btn-sm">Cashier Shifts</a>
                 <a href="{{ route('manager.inventory.index') }}" class="btn btn-outline-secondary btn-sm">Inventory</a>
+                <a href="{{ route('manager.daily-operations.index') }}" class="btn btn-outline-secondary btn-sm">Daily Ops</a>
                 <a href="{{ route('manager.material-requests.index') }}" class="btn btn-outline-secondary btn-sm">Material Request</a>
                 <a href="{{ route('manager.waste-records.index') }}" class="btn btn-outline-secondary btn-sm">Waste</a>
                 <a href="{{ route('manager.production-records.index') }}" class="btn btn-outline-secondary btn-sm">Production</a>

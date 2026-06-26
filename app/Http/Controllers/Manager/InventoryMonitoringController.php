@@ -6,7 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Division;
 use App\Models\DivisionDailyOperation;
 use App\Models\InventoryStock;
+use App\Models\MaterialRequest;
 use App\Models\Outlet;
+use App\Models\ProductionRecord;
+use App\Models\StockOpname;
+use App\Models\WasteRecord;
 use Illuminate\Http\Request;
 
 class InventoryMonitoringController extends Controller
@@ -31,6 +35,14 @@ class InventoryMonitoringController extends Controller
         ]);
     }
 
+    public function dailyOperationShow(DivisionDailyOperation $dailyOperation)
+    {
+        return view('manager.daily-operations.show', [
+            'operation' => $dailyOperation->load(['outlet', 'division', 'opener', 'submitter', 'approver']),
+            'summary' => $this->summary($dailyOperation),
+        ]);
+    }
+
     public function openingAlerts(Request $request)
     {
         $outletId = $request->integer('outlet_id') ?: Outlet::where('is_active', true)->value('id');
@@ -52,5 +64,17 @@ class InventoryMonitoringController extends Controller
             'selectedDivisionId' => $divisionId,
             'alerts' => $alerts,
         ]);
+    }
+
+    private function summary(DivisionDailyOperation $operation): array
+    {
+        $id = $operation->id;
+
+        return [
+            'materialRequests' => MaterialRequest::with('items')->where('division_daily_operation_id', $id)->latest()->get(),
+            'productionRecords' => ProductionRecord::with('items')->where('division_daily_operation_id', $id)->latest()->get(),
+            'wasteRecords' => WasteRecord::with('items')->where('division_daily_operation_id', $id)->latest()->get(),
+            'stockOpnames' => StockOpname::with('items')->where('division_daily_operation_id', $id)->latest()->get(),
+        ];
     }
 }

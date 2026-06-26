@@ -72,6 +72,7 @@
             <a href="{{ route('staff.waste.index') }}" class="btn btn-outline-primary">Input Waste</a>
             <a href="{{ route('staff.production.index') }}" class="btn btn-outline-primary">Input Produksi / WIP</a>
             <a href="{{ route('staff.stock-opnames.index') }}" class="btn btn-outline-primary">Closing Stock</a>
+            <a href="{{ route('staff.daily-operations.closing-summary') }}" class="btn btn-success">Tutup Operasional</a>
         </div>
     </div>
 @endif

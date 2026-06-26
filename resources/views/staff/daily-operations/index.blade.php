@@ -38,10 +38,7 @@
                 </div>
 
                 @if($operation->status === 'open')
-                    <form action="{{ route('staff.daily-operations.submit', $operation) }}" method="post">
-                        @csrf
-                        <button type="submit" class="btn btn-success">Submit Operasional</button>
-                    </form>
+                    <a href="{{ route('staff.daily-operations.closing-summary', ['outlet_id' => $selectedOutletId, 'division_id' => $selectedDivisionId]) }}" class="btn btn-success">Lihat Closing Summary</a>
                 @else
                     <div class="alert alert-info mb-0">Operasional hari ini sudah {{ $operation->status }}.</div>
                 @endif

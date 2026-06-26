@@ -22,3 +22,4 @@ node_modules/
 vendor/
 storage/logs/
 .codex
+wiki/.obsidian/

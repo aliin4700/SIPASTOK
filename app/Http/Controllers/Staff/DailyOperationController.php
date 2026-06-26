@@ -5,13 +5,18 @@ namespace App\Http\Controllers\Staff;
 use App\Http\Controllers\Controller;
 use App\Models\Division;
 use App\Models\DivisionDailyOperation;
+use App\Models\MaterialRequest;
 use App\Models\Outlet;
+use App\Models\ProductionRecord;
+use App\Models\StockOpname;
 use App\Models\UserDivisionAccess;
+use App\Models\WasteRecord;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class DailyOperationController extends Controller
 {
+    private bool $requireStockOpnameBeforeSubmit = true;
+
     public function index(Request $request)
     {
         [$outletId, $divisionId, $message] = $this->context($request);
@@ -73,17 +78,48 @@ class DailyOperationController extends Controller
     {
         abort_unless($this->canAccess($request, $operation->outlet_id, $operation->division_id), 403);
 
-        if ($operation->status !== 'open') {
-            return back()->with('error', 'Hanya operasional berstatus open yang bisa disubmit.');
+        return $this->submitOperation($request, $operation);
+    }
+
+    public function closingSummary(Request $request)
+    {
+        [$outletId, $divisionId, $message] = $this->context($request);
+
+        $operation = $outletId && $divisionId
+            ? DivisionDailyOperation::with(['outlet', 'division', 'opener', 'submitter'])
+                ->where('outlet_id', $outletId)
+                ->where('division_id', $divisionId)
+                ->whereDate('operation_date', today())
+                ->first()
+            : null;
+
+        return view('staff.daily-operations.closing-summary', [
+            'message' => $message,
+            'operation' => $operation,
+            'summary' => $operation ? $this->summary($operation) : null,
+            'requireStockOpnameBeforeSubmit' => $this->requireStockOpnameBeforeSubmit,
+            'outlets' => Outlet::where('is_active', true)->orderBy('name')->get(),
+            'divisions' => Division::where('is_active', true)->orderBy('name')->get(),
+            'selectedOutletId' => $outletId,
+            'selectedDivisionId' => $divisionId,
+        ]);
+    }
+
+    public function submitClosing(Request $request)
+    {
+        [$outletId, $divisionId, $message] = $this->context($request, true);
+        if ($message || ! $outletId || ! $divisionId) {
+            return back()->with('error', 'Akun staff belum memiliki akses outlet/divisi.');
         }
 
-        $operation->update([
-            'submitted_by' => $request->user()->id,
-            'submitted_at' => now(),
-            'status' => 'submitted',
-        ]);
+        $operation = DivisionDailyOperation::where('outlet_id', $outletId)
+            ->where('division_id', $divisionId)
+            ->whereDate('operation_date', today())
+            ->firstOrFail();
 
-        return back()->with('success', 'Operasional hari ini berhasil disubmit.');
+        abort_unless($this->canAccess($request, $operation->outlet_id, $operation->division_id), 403);
+
+        return $this->submitOperation($request, $operation);
     }
 
     private function context(Request $request, bool $validateAdminInput = false): array
@@ -123,5 +159,54 @@ class DailyOperationController extends Controller
     {
         return $request->user()->hasAnyRole(['admin', 'super_admin'])
             || $request->user()->hasDivisionAccess($outletId, $divisionId, 'can_input_stock');
+    }
+
+    private function submitOperation(Request $request, DivisionDailyOperation $operation)
+    {
+        if ($operation->status !== 'open') {
+            return back()->with('error', 'Hanya operasional berstatus open yang bisa disubmit.');
+        }
+
+        $summary = $this->summary($operation);
+        if ($this->requireStockOpnameBeforeSubmit && $summary['stockOpnamesReady']->isEmpty()) {
+            return back()->with('error', 'Closing Stock Opname submitted/reviewed wajib ada sebelum tutup operasional.');
+        }
+
+        $data = $request->validate([
+            'closing_notes' => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        $operation->update([
+            'submitted_by' => $request->user()->id,
+            'submitted_at' => now(),
+            'status' => 'submitted',
+            'notes' => $data['closing_notes'] ?? $operation->notes,
+        ]);
+
+        return redirect()->route('staff.daily-operations.closing-summary', [
+            'outlet_id' => $operation->outlet_id,
+            'division_id' => $operation->division_id,
+        ])->with('success', 'Operasional hari ini berhasil ditutup/submitted. Stok belum berubah.');
+    }
+
+    private function summary(DivisionDailyOperation $operation): array
+    {
+        $id = $operation->id;
+
+        $materialRequests = MaterialRequest::with('items')->where('division_daily_operation_id', $id)->latest()->get();
+        $productionRecords = ProductionRecord::with('items')->where('division_daily_operation_id', $id)->latest()->get();
+        $wasteRecords = WasteRecord::with('items')->where('division_daily_operation_id', $id)->latest()->get();
+        $stockOpnames = StockOpname::with('items')->where('division_daily_operation_id', $id)->latest()->get();
+
+        return [
+            'materialRequests' => $materialRequests,
+            'productionRecords' => $productionRecords,
+            'wasteRecords' => $wasteRecords,
+            'stockOpnames' => $stockOpnames,
+            'materialRequestsSubmitted' => $materialRequests->where('status', 'submitted'),
+            'productionRecordsSubmitted' => $productionRecords->where('status', 'submitted'),
+            'wasteRecordsSubmitted' => $wasteRecords->where('status', 'submitted'),
+            'stockOpnamesReady' => $stockOpnames->whereIn('status', ['submitted', 'reviewed']),
+        ];
     }
 }
