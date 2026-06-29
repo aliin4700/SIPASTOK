@@ -218,10 +218,13 @@ Route::middleware(['auth', 'is.admin'])->group(function () {
     Route::get('backend/stock-movements', [BackendStockMovementController::class, 'index'])->name('backend.stock-movements.index');
     Route::get('backend/material-requests', [BackendMaterialRequestController::class, 'index'])->name('backend.material-requests.index');
     Route::get('backend/material-requests/{materialRequest}', [BackendMaterialRequestController::class, 'show'])->name('backend.material-requests.show');
+    Route::post('backend/material-requests/{materialRequest}/issue-stock', [BackendMaterialRequestController::class, 'issueStock'])->name('backend.material-requests.issue-stock');
     Route::get('backend/waste-records', [BackendWasteRecordController::class, 'index'])->name('backend.waste-records.index');
     Route::get('backend/waste-records/{wasteRecord}', [BackendWasteRecordController::class, 'show'])->name('backend.waste-records.show');
+    Route::post('backend/waste-records/{wasteRecord}/apply-stock', [BackendWasteRecordController::class, 'applyStock'])->name('backend.waste-records.apply-stock');
     Route::get('backend/production-records', [BackendProductionRecordController::class, 'index'])->name('backend.production-records.index');
     Route::get('backend/production-records/{productionRecord}', [BackendProductionRecordController::class, 'show'])->name('backend.production-records.show');
+    Route::post('backend/production-records/{productionRecord}/apply-stock', [BackendProductionRecordController::class, 'applyStock'])->name('backend.production-records.apply-stock');
     Route::get('backend/stock-opnames', [BackendStockOpnameController::class, 'index'])->name('backend.stock-opnames.index');
     Route::get('backend/stock-opnames/{stockOpname}', [BackendStockOpnameController::class, 'show'])->name('backend.stock-opnames.show');
     Route::post('backend/stock-opnames/{stockOpname}/review', [BackendStockOpnameController::class, 'review'])->name('backend.stock-opnames.review');

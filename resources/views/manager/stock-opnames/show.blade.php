@@ -1,7 +1,11 @@
 @extends('manager.layouts.app')
 
 @section('content')
-<div class="alert alert-warning">Monitoring ini read-only. Stok belum berubah dari hasil opname.</div>
+@if($stockOpname->status === 'reviewed')
+    <div class="alert alert-success">Monitoring ini read-only. Stock adjustment untuk opname reviewed sudah diterapkan melalui stock movement.</div>
+@else
+    <div class="alert alert-warning">Monitoring ini read-only. Stock adjustment diterapkan setelah admin/super admin review.</div>
+@endif
 
 <div class="card mb-3">
     <div class="card-body">
@@ -30,11 +34,13 @@
                         <th>Physical</th>
                         <th>Selisih</th>
                         <th>Unit</th>
+                        <th>Movement</th>
                         <th>Catatan</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($stockOpname->items as $item)
+                        @php($movement = $movementsByItemId[$item->id] ?? null)
                         <tr>
                             <td>{{ $item->item->name ?? '-' }}</td>
                             <td>{{ str_replace('_', ' ', $item->item->item_type ?? '-') }}</td>
@@ -42,6 +48,17 @@
                             <td>{{ number_format((float) $item->physical_stock, 2, ',', '.') }}</td>
                             <td>{{ number_format((float) $item->difference_qty, 2, ',', '.') }}</td>
                             <td>{{ $item->unit }}</td>
+                            <td>
+                                @if($movement)
+                                    <span class="badge bg-success">Applied</span>
+                                @elseif($stockOpname->status === 'reviewed' && (float) $item->difference_qty == 0.0)
+                                    <span class="badge bg-secondary">Zero Difference</span>
+                                @elseif($stockOpname->status === 'reviewed')
+                                    <span class="badge bg-warning">No Movement</span>
+                                @else
+                                    <span class="badge bg-secondary">Pending Review</span>
+                                @endif
+                            </td>
                             <td>{{ $item->notes ?? '-' }}</td>
                         </tr>
                     @endforeach

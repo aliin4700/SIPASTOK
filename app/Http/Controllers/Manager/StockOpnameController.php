@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Manager;
 
 use App\Http\Controllers\Controller;
+use App\Models\StockMovement;
 use App\Models\StockOpname;
+use App\Models\StockOpnameItem;
 
 class StockOpnameController extends Controller
 {
@@ -18,8 +20,15 @@ class StockOpnameController extends Controller
 
     public function show(StockOpname $stockOpname)
     {
+        $stockOpname->load(['outlet', 'division', 'counter', 'reviewer', 'dailyOperation', 'items.item']);
+        $movementsByItemId = StockMovement::where('reference_type', StockOpnameItem::class)
+            ->whereIn('reference_id', $stockOpname->items->pluck('id'))
+            ->get()
+            ->keyBy('reference_id');
+
         return view('manager.stock-opnames.show', [
-            'stockOpname' => $stockOpname->load(['outlet', 'division', 'counter', 'reviewer', 'dailyOperation', 'items.item']),
+            'stockOpname' => $stockOpname,
+            'movementsByItemId' => $movementsByItemId,
         ]);
     }
 }
