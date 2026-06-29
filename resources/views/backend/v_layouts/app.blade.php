@@ -189,6 +189,7 @@
                                 <li class="sidebar-item"><a href="{{ route('backend.goods-receipts.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Goods Receipt </span></a></li>
                                 <li class="sidebar-item"><a href="{{ route('backend.waste-records.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Waste Record </span></a></li>
                                 <li class="sidebar-item"><a href="{{ route('backend.production-records.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Production Record </span></a></li>
+                                <li class="sidebar-item"><a href="{{ route('backend.recipes.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Recipes / BOM </span></a></li>
                                 <li class="sidebar-item"><a href="{{ route('backend.stock-opnames.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Stock Opname </span></a></li>
                                 <li class="sidebar-item"><a href="{{ route('backend.daily-operations.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Daily Operation </span></a></li>
                             </ul>

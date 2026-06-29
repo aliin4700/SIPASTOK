@@ -6,11 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Models\CashierCashMovement;
 use App\Models\CashierShift;
 use App\Models\Category;
+use App\Models\InventoryStock;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
+use App\Services\Inventory\StockMovementService;
+use DomainException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Throwable;
 
 class CashierOrderController extends Controller
 {
@@ -178,81 +183,106 @@ class CashierOrderController extends Controller
             $paidAmount = $paidAmount > 0 ? $paidAmount : $total;
         }
 
-        $products = Product::whereIn('id', $cart->pluck('product_id'))->get()->keyBy('id');
+        $products = Product::with([
+            'recipes' => fn ($query) => $query
+                ->where('is_active', true)
+                ->with('items.item')
+                ->latest(),
+        ])->whereIn('id', $cart->pluck('product_id'))->get()->keyBy('id');
 
         if ($products->count() !== $cart->count()) {
             return back()->with('error', 'Ada produk di POS cart yang tidak ditemukan.');
+        }
+
+        if ($stockError = $this->stockDeductionError($cart, $products, (int) $openShift->outlet_id)) {
+            return back()
+                ->withInput()
+                ->with('error', $stockError);
         }
 
         $totalWeight = (int) $cart->sum(function (array $item) use ($products) {
             return (int) ($products[$item['product_id']]->weight ?? 0) * (int) $item['qty'];
         });
 
-        $order = DB::transaction(function () use ($cart, $products, $validated, $openShift, $total, $paidAmount, $totalWeight) {
-            $order = Order::create([
-                'customer_id' => null,
-                'outlet_id' => $openShift->outlet_id,
-                'cashier_shift_id' => $openShift->id,
-                'cashier_id' => auth()->id(),
-                'order_number' => $this->orderNumber($openShift),
-                'order_channel' => 'cashier_pos',
-                'status' => 'paid',
-                'transaction_method' => $validated['service_type'],
-                'service_type' => $validated['service_type'],
-                'customer_name' => $validated['customer_name'] ?? null,
-                'customer_phone' => $validated['customer_phone'] ?? null,
-                'table_number' => $validated['table_number'] ?? null,
-                'pickup_time' => $validated['pickup_time'] ?? null,
-                'order_source' => 'cashier',
-                'payment_method' => $validated['payment_method'],
-                'payment_status' => 'paid',
-                'subtotal' => $total,
-                'shipping_cost' => 0,
-                'total_weight' => $totalWeight,
-                'total_price' => $total,
-                'address' => $validated['delivery_address'] ?? null,
-                'postal_code' => null,
-                'notes' => null,
-            ]);
-
-            foreach ($cart as $item) {
-                $product = $products[$item['product_id']];
-
-                $order->items()->create([
-                    'product_id' => $product->id,
-                    'product_name' => $product->name,
-                    'quantity' => (int) $item['qty'],
-                    'price' => (float) $item['price'],
-                    'subtotal' => (float) $item['subtotal'],
-                ]);
-            }
-
-            $order->payment()->create([
-                'cashier_shift_id' => $openShift->id,
-                'payment_method' => $validated['payment_method'],
-                'payment_channel' => 'cashier_pos',
-                'payment_status' => 'paid',
-                'paid_amount' => $paidAmount,
-                'change_amount' => $validated['payment_method'] === 'cash' ? $paidAmount - $total : 0,
-                'paid_at' => now(),
-            ]);
-
-            if ($validated['payment_method'] === 'cash') {
-                CashierCashMovement::create([
-                    'cashier_shift_id' => $openShift->id,
+        try {
+            $order = DB::transaction(function () use ($cart, $products, $validated, $openShift, $total, $paidAmount, $totalWeight) {
+                $order = Order::create([
+                    'customer_id' => null,
                     'outlet_id' => $openShift->outlet_id,
-                    'cashier_id' => $openShift->cashier_id,
-                    'type' => 'cash_in',
-                    'category' => 'sales_cash',
-                    'amount' => $total,
-                    'description' => 'POS order payment: ' . $order->order_number,
+                    'cashier_shift_id' => $openShift->id,
+                    'cashier_id' => auth()->id(),
+                    'order_number' => $this->orderNumber($openShift),
+                    'order_channel' => 'cashier_pos',
+                    'status' => 'paid',
+                    'transaction_method' => $validated['service_type'],
+                    'service_type' => $validated['service_type'],
+                    'customer_name' => $validated['customer_name'] ?? null,
+                    'customer_phone' => $validated['customer_phone'] ?? null,
+                    'table_number' => $validated['table_number'] ?? null,
+                    'pickup_time' => $validated['pickup_time'] ?? null,
+                    'order_source' => 'cashier',
+                    'payment_method' => $validated['payment_method'],
+                    'payment_status' => 'paid',
+                    'subtotal' => $total,
+                    'shipping_cost' => 0,
+                    'total_weight' => $totalWeight,
+                    'total_price' => $total,
+                    'address' => $validated['delivery_address'] ?? null,
+                    'postal_code' => null,
+                    'notes' => null,
                 ]);
 
-                $openShift->refreshExpectedCash();
-            }
+                foreach ($cart as $item) {
+                    $product = $products[$item['product_id']];
 
-            return $order;
-        });
+                    $orderItem = $order->items()->create([
+                        'product_id' => $product->id,
+                        'product_name' => $product->name,
+                        'quantity' => (int) $item['qty'],
+                        'price' => (float) $item['price'],
+                        'subtotal' => (float) $item['subtotal'],
+                    ]);
+
+                    $this->deductRecipeStock($orderItem, $product, (int) $item['qty'], $openShift, $order->order_number);
+                }
+
+                $order->payment()->create([
+                    'cashier_shift_id' => $openShift->id,
+                    'payment_method' => $validated['payment_method'],
+                    'payment_channel' => 'cashier_pos',
+                    'payment_status' => 'paid',
+                    'paid_amount' => $paidAmount,
+                    'change_amount' => $validated['payment_method'] === 'cash' ? $paidAmount - $total : 0,
+                    'paid_at' => now(),
+                ]);
+
+                if ($validated['payment_method'] === 'cash') {
+                    CashierCashMovement::create([
+                        'cashier_shift_id' => $openShift->id,
+                        'outlet_id' => $openShift->outlet_id,
+                        'cashier_id' => $openShift->cashier_id,
+                        'type' => 'cash_in',
+                        'category' => 'sales_cash',
+                        'amount' => $total,
+                        'description' => 'POS order payment: ' . $order->order_number,
+                    ]);
+
+                    $openShift->refreshExpectedCash();
+                }
+
+                return $order;
+            });
+        } catch (DomainException $exception) {
+            return back()
+                ->withInput()
+                ->with('error', $exception->getMessage());
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Order POS gagal dibuat. Coba ulangi atau hubungi admin.');
+        }
 
         session()->forget(self::CART_KEY);
 
@@ -282,6 +312,102 @@ class CashierOrderController extends Controller
             'subtotal' => $price * $qty,
             'image_url' => $product->image_url,
         ];
+    }
+
+    private function activeRecipe(Product $product)
+    {
+        return $product->recipes->first();
+    }
+
+    private function stockDeductionError($cart, $products, int $outletId): ?string
+    {
+        $required = [];
+        $missingRecipe = [];
+
+        foreach ($cart as $cartItem) {
+            $product = $products[$cartItem['product_id']];
+            $recipe = $this->activeRecipe($product);
+
+            if (! $recipe) {
+                $missingRecipe[] = $product->name;
+                continue;
+            }
+
+            foreach ($recipe->items as $recipeItem) {
+                $item = $recipeItem->item;
+
+                if (! $item) {
+                    continue;
+                }
+
+                $itemId = (int) $item->id;
+                $required[$itemId]['item'] = $item;
+                $required[$itemId]['qty'] = ($required[$itemId]['qty'] ?? 0) + ((float) $recipeItem->effective_qty * (int) $cartItem['qty']);
+            }
+        }
+
+        if ($missingRecipe) {
+            logger()->warning('POS product recipe missing; stock not deducted for those products.', [
+                'products' => $missingRecipe,
+                'cashier_id' => auth()->id(),
+            ]);
+        }
+
+        if (! $required) {
+            return null;
+        }
+
+        if ($outletId <= 0) {
+            return 'Shift POS belum memiliki outlet, stok recipe tidak bisa dikurangi.';
+        }
+
+        $stocks = InventoryStock::where('outlet_id', $outletId)
+            ->whereIn('inventory_item_id', array_keys($required))
+            ->get()
+            ->keyBy('inventory_item_id');
+
+        foreach ($required as $itemId => $need) {
+            $current = (float) ($stocks[$itemId]->current_stock ?? 0);
+
+            if ($current + 0.00001 < $need['qty']) {
+                return sprintf(
+                    'Stok %s tidak cukup. Dibutuhkan %s %s, tersedia %s %s.',
+                    $need['item']->name,
+                    rtrim(rtrim(number_format($need['qty'], 4, '.', ''), '0'), '.'),
+                    $need['item']->base_unit,
+                    rtrim(rtrim(number_format($current, 4, '.', ''), '0'), '.'),
+                    $need['item']->base_unit
+                );
+            }
+        }
+
+        return null;
+    }
+
+    private function deductRecipeStock(OrderItem $orderItem, Product $product, int $qty, CashierShift $shift, string $orderNumber): void
+    {
+        $recipe = $this->activeRecipe($product);
+
+        if (! $recipe) {
+            return;
+        }
+
+        foreach ($recipe->items as $recipeItem) {
+            if (! $recipeItem->item) {
+                continue;
+            }
+
+            app(StockMovementService::class)->decreaseStock([
+                'outlet_id' => $shift->outlet_id,
+                'inventory_item_id' => $recipeItem->inventory_item_id,
+                'quantity' => (float) $recipeItem->effective_qty * $qty,
+                'movement_type' => 'pos_sale_out',
+                'reference_type' => OrderItem::class,
+                'reference_id' => $orderItem->id,
+                'user_id' => auth()->id(),
+                'notes' => 'POS stock deduction: ' . $orderNumber,
+            ]);
+        }
     }
 
     private function orderNumber(CashierShift $shift): string

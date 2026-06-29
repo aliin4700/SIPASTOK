@@ -139,6 +139,16 @@ class User extends Authenticatable
         return $this->hasMany(GoodsReceipt::class, 'applied_by');
     }
 
+    public function createdRecipes()
+    {
+        return $this->hasMany(Recipe::class, 'created_by');
+    }
+
+    public function updatedRecipes()
+    {
+        return $this->hasMany(Recipe::class, 'updated_by');
+    }
+
     public function wasteRecords()
     {
         return $this->hasMany(WasteRecord::class, 'recorded_by');

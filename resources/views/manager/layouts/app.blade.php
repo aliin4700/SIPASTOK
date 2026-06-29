@@ -26,6 +26,7 @@
                 <a href="{{ route('manager.goods-receipts.index') }}" class="btn btn-outline-secondary btn-sm">Goods Receipts</a>
                 <a href="{{ route('manager.waste-records.index') }}" class="btn btn-outline-secondary btn-sm">Waste</a>
                 <a href="{{ route('manager.production-records.index') }}" class="btn btn-outline-secondary btn-sm">Production</a>
+                <a href="{{ route('manager.recipes.index') }}" class="btn btn-outline-secondary btn-sm">Recipes / BOM</a>
                 <a href="{{ route('manager.stock-opnames.index') }}" class="btn btn-outline-secondary btn-sm">Stock Opname</a>
                 @if(auth()->user()?->hasAnyRole(['admin', 'super_admin']))
                     <a href="{{ route('backend.dashboard') }}" class="btn btn-outline-primary btn-sm">Backend</a>

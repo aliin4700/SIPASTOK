@@ -39,6 +39,11 @@ class Product extends Model
         return $this->hasMany(ProductPhoto::class);
     }
 
+    public function recipes()
+    {
+        return $this->hasMany(Recipe::class);
+    }
+
     public function getImageUrlAttribute(): string
     {
         if (! $this->main_photo) {

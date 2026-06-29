@@ -60,4 +60,14 @@ class InventoryItem extends Model
     {
         return $this->hasMany(GoodsReceiptItem::class);
     }
+
+    public function recipeItems()
+    {
+        return $this->hasMany(RecipeItem::class);
+    }
+
+    public function outputRecipes()
+    {
+        return $this->hasMany(Recipe::class, 'output_inventory_item_id');
+    }
 }

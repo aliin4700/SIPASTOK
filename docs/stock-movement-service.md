@@ -4,7 +4,7 @@
 
 `App\Services\Inventory\StockMovementService` is the single gateway for future inventory stock changes.
 
-Stock Opname review, backend Waste Record stock deduction, backend Production Record stock increase, backend Material Request issue stock, and backend Goods Receipt purchase stock increase are connected to this service. Daily Operation Closing, POS, Checkout, Payment, Shipment, and Finance still behave as before.
+Stock Opname review, backend Waste Record stock deduction, backend Production Record stock increase, backend Material Request issue stock, backend Goods Receipt purchase stock increase, and POS recipe stock deduction are connected to this service. Daily Operation Closing, Checkout, Payment, Shipment, and Finance still behave as before.
 
 ## Methods
 
@@ -33,6 +33,7 @@ Common fields:
 
 - `purchase_in`
 - `material_issue_out`
+- `pos_sale_out`
 - `production_in`
 - `production_out`
 - `waste_out`

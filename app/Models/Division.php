@@ -59,4 +59,9 @@ class Division extends Model
     {
         return $this->hasMany(StockOpname::class);
     }
+
+    public function recipes()
+    {
+        return $this->hasMany(Recipe::class);
+    }
 }

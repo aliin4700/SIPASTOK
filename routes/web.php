@@ -39,6 +39,7 @@ use App\Http\Controllers\Backend\DailyOperationController as BackendDailyOperati
 use App\Http\Controllers\Backend\SupplierController as BackendSupplierController;
 use App\Http\Controllers\Backend\PurchaseOrderController as BackendPurchaseOrderController;
 use App\Http\Controllers\Backend\GoodsReceiptController as BackendGoodsReceiptController;
+use App\Http\Controllers\Backend\RecipeController as BackendRecipeController;
 use App\Http\Controllers\Manager\CashierShiftReportController as ManagerCashierShiftReportController;
 use App\Http\Controllers\Manager\FinanceDashboardController as ManagerFinanceDashboardController;
 use App\Http\Controllers\Manager\SalesTargetController as ManagerSalesTargetController;
@@ -51,6 +52,7 @@ use App\Http\Controllers\Manager\StockOpnameController as ManagerStockOpnameCont
 use App\Http\Controllers\Manager\SupplierController as ManagerSupplierController;
 use App\Http\Controllers\Manager\PurchaseOrderController as ManagerPurchaseOrderController;
 use App\Http\Controllers\Manager\GoodsReceiptController as ManagerGoodsReceiptController;
+use App\Http\Controllers\Manager\RecipeController as ManagerRecipeController;
 use App\Http\Controllers\Staff\StaffDashboardController as StaffDashboardController;
 use App\Http\Controllers\Staff\DailyOperationController as StaffDailyOperationController;
 use App\Http\Controllers\Staff\OpeningAlertController as StaffOpeningAlertController;
@@ -121,6 +123,8 @@ Route::middleware(['auth', 'role:manager,admin,super_admin'])->group(function ()
     Route::get('/manager/purchase-orders/{purchaseOrder}', [ManagerPurchaseOrderController::class, 'show'])->name('manager.purchase-orders.show');
     Route::get('/manager/goods-receipts', [ManagerGoodsReceiptController::class, 'index'])->name('manager.goods-receipts.index');
     Route::get('/manager/goods-receipts/{goodsReceipt}', [ManagerGoodsReceiptController::class, 'show'])->name('manager.goods-receipts.show');
+    Route::get('/manager/recipes', [ManagerRecipeController::class, 'index'])->name('manager.recipes.index');
+    Route::get('/manager/recipes/{recipe}', [ManagerRecipeController::class, 'show'])->name('manager.recipes.show');
 });
 
 Route::prefix('cashier')->name('cashier.')->middleware(['auth', 'role:cashier,admin,super_admin'])->group(function () {
@@ -262,6 +266,12 @@ Route::middleware(['auth', 'is.admin'])->group(function () {
     Route::post('backend/goods-receipts/{goodsReceipt}/submit', [BackendGoodsReceiptController::class, 'submit'])->name('backend.goods-receipts.submit');
     Route::post('backend/goods-receipts/{goodsReceipt}/cancel', [BackendGoodsReceiptController::class, 'cancel'])->name('backend.goods-receipts.cancel');
     Route::post('backend/goods-receipts/{goodsReceipt}/apply-stock', [BackendGoodsReceiptController::class, 'applyStock'])->name('backend.goods-receipts.apply-stock');
+    Route::get('backend/recipes', [BackendRecipeController::class, 'index'])->name('backend.recipes.index');
+    Route::get('backend/recipes/create', [BackendRecipeController::class, 'create'])->name('backend.recipes.create');
+    Route::post('backend/recipes', [BackendRecipeController::class, 'store'])->name('backend.recipes.store');
+    Route::get('backend/recipes/{recipe}', [BackendRecipeController::class, 'show'])->name('backend.recipes.show');
+    Route::get('backend/recipes/{recipe}/edit', [BackendRecipeController::class, 'edit'])->name('backend.recipes.edit');
+    Route::put('backend/recipes/{recipe}', [BackendRecipeController::class, 'update'])->name('backend.recipes.update');
 
     Route::get('backend/chats', [ConversationController::class, 'index'])->name('backend.chat.index');
     Route::get('backend/chats/{conversation}', [ConversationController::class, 'adminShow'])->name('backend.chat.show');
