@@ -8,10 +8,10 @@ description = "Bakery e-commerce and outlet operation system with customer websi
 
 [paths]
 laravel_root = "."
-obsidian_vault = "C:/Obsidian/BreadLab-Mind"
-project_memory = "C:/Obsidian/BreadLab-Mind/PROJECT-MEMORY.md"
-current_session = "C:/Obsidian/BreadLab-Mind/CURRENT-SESSION.md"
-codex_context = "C:/Obsidian/BreadLab-Mind/CODEX-CONTEXT.md"
+obsidian_vault = "C:/ObsidianMind"
+project_memory = "C:/ObsidianMind/Breadlab-Mind/PROJECT-MEMORY.md"
+current_session = "C:/ObsidianMind/Breadlab-Mind/CURRENT-SESSION.md"
+codex_context = "C:/ObsidianMind/Breadlab-Mind/CODEX-CONTEXT.md"
 
 [behavior]
 prefer_small_steps = true
@@ -83,13 +83,13 @@ pos_stock_deduction = "pending"
 
 [obsidian]
 enabled = true
-vault_path = "C:/Obsidian/BreadLab-Mind"
+vault_path = "C:/ObsidianMind"
 required_files = [
-  "PROJECT-MEMORY.md",
-  "CURRENT-SESSION.md",
-  "CODEX-CONTEXT.md",
-  "06-Module-Status.md",
-  "07-Inventory-Flow.md",
-  "15-Next-Development-Roadmap.md",
-  "20-Changelog.md"
+  "Breadlab-Mind/PROJECT-MEMORY.md",
+  "Breadlab-Mind/CURRENT-SESSION.md",
+  "Breadlab-Mind/CODEX-CONTEXT.md",
+  "Breadlab-Mind/06-Module-Status.md",
+  "Breadlab-Mind/07-Inventory-Flow.md",
+  "Breadlab-Mind/15-Next-Development-Roadmap.md",
+  "Breadlab-Mind/20-Changelog.md"
 ]

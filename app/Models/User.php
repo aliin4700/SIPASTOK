@@ -124,6 +124,21 @@ class User extends Authenticatable
         return $this->hasMany(MaterialRequest::class, 'requested_by');
     }
 
+    public function purchaseOrders()
+    {
+        return $this->hasMany(PurchaseOrder::class, 'ordered_by');
+    }
+
+    public function goodsReceipts()
+    {
+        return $this->hasMany(GoodsReceipt::class, 'received_by');
+    }
+
+    public function appliedGoodsReceipts()
+    {
+        return $this->hasMany(GoodsReceipt::class, 'applied_by');
+    }
+
     public function wasteRecords()
     {
         return $this->hasMany(WasteRecord::class, 'recorded_by');

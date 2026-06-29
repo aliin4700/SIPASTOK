@@ -36,6 +36,9 @@ use App\Http\Controllers\Backend\WasteRecordController as BackendWasteRecordCont
 use App\Http\Controllers\Backend\ProductionRecordController as BackendProductionRecordController;
 use App\Http\Controllers\Backend\StockOpnameController as BackendStockOpnameController;
 use App\Http\Controllers\Backend\DailyOperationController as BackendDailyOperationController;
+use App\Http\Controllers\Backend\SupplierController as BackendSupplierController;
+use App\Http\Controllers\Backend\PurchaseOrderController as BackendPurchaseOrderController;
+use App\Http\Controllers\Backend\GoodsReceiptController as BackendGoodsReceiptController;
 use App\Http\Controllers\Manager\CashierShiftReportController as ManagerCashierShiftReportController;
 use App\Http\Controllers\Manager\FinanceDashboardController as ManagerFinanceDashboardController;
 use App\Http\Controllers\Manager\SalesTargetController as ManagerSalesTargetController;
@@ -45,6 +48,9 @@ use App\Http\Controllers\Manager\MaterialRequestController as ManagerMaterialReq
 use App\Http\Controllers\Manager\WasteRecordController as ManagerWasteRecordController;
 use App\Http\Controllers\Manager\ProductionRecordController as ManagerProductionRecordController;
 use App\Http\Controllers\Manager\StockOpnameController as ManagerStockOpnameController;
+use App\Http\Controllers\Manager\SupplierController as ManagerSupplierController;
+use App\Http\Controllers\Manager\PurchaseOrderController as ManagerPurchaseOrderController;
+use App\Http\Controllers\Manager\GoodsReceiptController as ManagerGoodsReceiptController;
 use App\Http\Controllers\Staff\StaffDashboardController as StaffDashboardController;
 use App\Http\Controllers\Staff\DailyOperationController as StaffDailyOperationController;
 use App\Http\Controllers\Staff\OpeningAlertController as StaffOpeningAlertController;
@@ -109,6 +115,12 @@ Route::middleware(['auth', 'role:manager,admin,super_admin'])->group(function ()
     Route::get('/manager/production-records/{productionRecord}', [ManagerProductionRecordController::class, 'show'])->name('manager.production-records.show');
     Route::get('/manager/stock-opnames', [ManagerStockOpnameController::class, 'index'])->name('manager.stock-opnames.index');
     Route::get('/manager/stock-opnames/{stockOpname}', [ManagerStockOpnameController::class, 'show'])->name('manager.stock-opnames.show');
+    Route::get('/manager/suppliers', [ManagerSupplierController::class, 'index'])->name('manager.suppliers.index');
+    Route::get('/manager/suppliers/{supplier}', [ManagerSupplierController::class, 'show'])->name('manager.suppliers.show');
+    Route::get('/manager/purchase-orders', [ManagerPurchaseOrderController::class, 'index'])->name('manager.purchase-orders.index');
+    Route::get('/manager/purchase-orders/{purchaseOrder}', [ManagerPurchaseOrderController::class, 'show'])->name('manager.purchase-orders.show');
+    Route::get('/manager/goods-receipts', [ManagerGoodsReceiptController::class, 'index'])->name('manager.goods-receipts.index');
+    Route::get('/manager/goods-receipts/{goodsReceipt}', [ManagerGoodsReceiptController::class, 'show'])->name('manager.goods-receipts.show');
 });
 
 Route::prefix('cashier')->name('cashier.')->middleware(['auth', 'role:cashier,admin,super_admin'])->group(function () {
@@ -231,6 +243,25 @@ Route::middleware(['auth', 'is.admin'])->group(function () {
     Route::get('backend/daily-operations', [BackendDailyOperationController::class, 'index'])->name('backend.daily-operations.index');
     Route::get('backend/daily-operations/{dailyOperation}', [BackendDailyOperationController::class, 'show'])->name('backend.daily-operations.show');
     Route::post('backend/daily-operations/{dailyOperation}/approve', [BackendDailyOperationController::class, 'approve'])->name('backend.daily-operations.approve');
+    Route::get('backend/suppliers', [BackendSupplierController::class, 'index'])->name('backend.suppliers.index');
+    Route::get('backend/suppliers/create', [BackendSupplierController::class, 'create'])->name('backend.suppliers.create');
+    Route::post('backend/suppliers', [BackendSupplierController::class, 'store'])->name('backend.suppliers.store');
+    Route::get('backend/suppliers/{supplier}', [BackendSupplierController::class, 'show'])->name('backend.suppliers.show');
+    Route::get('backend/suppliers/{supplier}/edit', [BackendSupplierController::class, 'edit'])->name('backend.suppliers.edit');
+    Route::put('backend/suppliers/{supplier}', [BackendSupplierController::class, 'update'])->name('backend.suppliers.update');
+    Route::get('backend/purchase-orders', [BackendPurchaseOrderController::class, 'index'])->name('backend.purchase-orders.index');
+    Route::get('backend/purchase-orders/create', [BackendPurchaseOrderController::class, 'create'])->name('backend.purchase-orders.create');
+    Route::post('backend/purchase-orders', [BackendPurchaseOrderController::class, 'store'])->name('backend.purchase-orders.store');
+    Route::get('backend/purchase-orders/{purchaseOrder}', [BackendPurchaseOrderController::class, 'show'])->name('backend.purchase-orders.show');
+    Route::post('backend/purchase-orders/{purchaseOrder}/submit', [BackendPurchaseOrderController::class, 'submit'])->name('backend.purchase-orders.submit');
+    Route::post('backend/purchase-orders/{purchaseOrder}/cancel', [BackendPurchaseOrderController::class, 'cancel'])->name('backend.purchase-orders.cancel');
+    Route::get('backend/goods-receipts', [BackendGoodsReceiptController::class, 'index'])->name('backend.goods-receipts.index');
+    Route::get('backend/goods-receipts/create', [BackendGoodsReceiptController::class, 'create'])->name('backend.goods-receipts.create');
+    Route::post('backend/goods-receipts', [BackendGoodsReceiptController::class, 'store'])->name('backend.goods-receipts.store');
+    Route::get('backend/goods-receipts/{goodsReceipt}', [BackendGoodsReceiptController::class, 'show'])->name('backend.goods-receipts.show');
+    Route::post('backend/goods-receipts/{goodsReceipt}/submit', [BackendGoodsReceiptController::class, 'submit'])->name('backend.goods-receipts.submit');
+    Route::post('backend/goods-receipts/{goodsReceipt}/cancel', [BackendGoodsReceiptController::class, 'cancel'])->name('backend.goods-receipts.cancel');
+    Route::post('backend/goods-receipts/{goodsReceipt}/apply-stock', [BackendGoodsReceiptController::class, 'applyStock'])->name('backend.goods-receipts.apply-stock');
 
     Route::get('backend/chats', [ConversationController::class, 'index'])->name('backend.chat.index');
     Route::get('backend/chats/{conversation}', [ConversationController::class, 'adminShow'])->name('backend.chat.show');

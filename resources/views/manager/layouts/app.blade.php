@@ -21,6 +21,9 @@
                 <a href="{{ route('manager.inventory.index') }}" class="btn btn-outline-secondary btn-sm">Inventory</a>
                 <a href="{{ route('manager.daily-operations.index') }}" class="btn btn-outline-secondary btn-sm">Daily Ops</a>
                 <a href="{{ route('manager.material-requests.index') }}" class="btn btn-outline-secondary btn-sm">Material Request</a>
+                <a href="{{ route('manager.suppliers.index') }}" class="btn btn-outline-secondary btn-sm">Suppliers</a>
+                <a href="{{ route('manager.purchase-orders.index') }}" class="btn btn-outline-secondary btn-sm">Purchase Orders</a>
+                <a href="{{ route('manager.goods-receipts.index') }}" class="btn btn-outline-secondary btn-sm">Goods Receipts</a>
                 <a href="{{ route('manager.waste-records.index') }}" class="btn btn-outline-secondary btn-sm">Waste</a>
                 <a href="{{ route('manager.production-records.index') }}" class="btn btn-outline-secondary btn-sm">Production</a>
                 <a href="{{ route('manager.stock-opnames.index') }}" class="btn btn-outline-secondary btn-sm">Stock Opname</a>

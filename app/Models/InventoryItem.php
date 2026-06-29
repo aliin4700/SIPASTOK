@@ -50,4 +50,14 @@ class InventoryItem extends Model
     {
         return $this->hasMany(StockMovement::class);
     }
+
+    public function purchaseOrderItems()
+    {
+        return $this->hasMany(PurchaseOrderItem::class);
+    }
+
+    public function goodsReceiptItems()
+    {
+        return $this->hasMany(GoodsReceiptItem::class);
+    }
 }

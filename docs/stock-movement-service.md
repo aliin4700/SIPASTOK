@@ -4,7 +4,7 @@
 
 `App\Services\Inventory\StockMovementService` is the single gateway for future inventory stock changes.
 
-Stock Opname review, backend Waste Record stock deduction, backend Production Record stock increase, and backend Material Request issue stock are connected to this service. Daily Operation Closing, POS, Checkout, Payment, Shipment, and Finance still behave as before.
+Stock Opname review, backend Waste Record stock deduction, backend Production Record stock increase, backend Material Request issue stock, and backend Goods Receipt purchase stock increase are connected to this service. Daily Operation Closing, POS, Checkout, Payment, Shipment, and Finance still behave as before.
 
 ## Methods
 
@@ -77,6 +77,8 @@ app(\App\Services\Inventory\StockMovementService::class)->adjustStock([
     'notes' => 'Adjustment from reviewed closing stock opname',
 ]);
 ```
+
+Goods receipt purchase stock increase uses `increaseStock()` with `movement_type = purchase_in` and `reference_type = GoodsReceiptItem::class`. The reference idempotency rule prevents a goods receipt item from increasing stock twice.
 
 ## Warning
 
