@@ -20,6 +20,7 @@ use Throwable;
 class CashierOrderController extends Controller
 {
     private const CART_KEY = 'cashier_pos_cart';
+    private const FINALIZE_TOKEN_KEY = 'cashier_pos_finalize_token';
 
     public function index(Request $request)
     {
@@ -31,6 +32,8 @@ class CashierOrderController extends Controller
         $categories = Category::where('status', 'active')->orderBy('name')->get();
 
         if ($openShift) {
+            session()->put(self::FINALIZE_TOKEN_KEY, session(self::FINALIZE_TOKEN_KEY, Str::random(40)));
+
             $products = Product::with('category')
                 ->where('status', 'published')
                 ->when($request->filled('search'), fn ($query) => $query->where('name', 'like', '%' . $request->search . '%'))
@@ -48,6 +51,7 @@ class CashierOrderController extends Controller
             'cart' => $cart,
             'cartSubtotal' => $cartSubtotal,
             'cartTotal' => $cartSubtotal,
+            'finalizeToken' => session(self::FINALIZE_TOKEN_KEY),
         ]);
     }
 
@@ -159,7 +163,12 @@ class CashierOrderController extends Controller
             return back()->with('error', 'POS cart masih kosong.');
         }
 
+        if (! hash_equals((string) session(self::FINALIZE_TOKEN_KEY), (string) $request->input('finalize_token'))) {
+            return back()->with('error', 'Form finalisasi POS sudah diproses atau kedaluwarsa. Muat ulang halaman POS lalu coba lagi.');
+        }
+
         $validated = $request->validate([
+            'finalize_token' => ['required', 'string'],
             'service_type' => ['required', 'in:dine_in,pickup,local_delivery,shipping'],
             'payment_method' => ['required', 'in:cash,bank_transfer,qris_manual'],
             'customer_name' => ['nullable', 'string', 'max:100'],
@@ -193,6 +202,8 @@ class CashierOrderController extends Controller
         if ($products->count() !== $cart->count()) {
             return back()->with('error', 'Ada produk di POS cart yang tidak ditemukan.');
         }
+
+        $missingRecipeProducts = $this->missingRecipeProductNames($cart, $products);
 
         if ($stockError = $this->stockDeductionError($cart, $products, (int) $openShift->outlet_id)) {
             return back()
@@ -284,11 +295,20 @@ class CashierOrderController extends Controller
                 ->with('error', 'Order POS gagal dibuat. Coba ulangi atau hubungi admin.');
         }
 
-        session()->forget(self::CART_KEY);
+        session()->forget([self::CART_KEY, self::FINALIZE_TOKEN_KEY]);
 
-        return redirect()
+        $redirect = redirect()
             ->route('cashier.receipts.show', $order)
             ->with('success', 'Order POS ' . $order->order_number . ' berhasil dibuat.');
+
+        if ($missingRecipeProducts) {
+            $redirect->with(
+                'warning',
+                'Transaksi berhasil, tetapi stok bahan tidak dikurangi untuk produk tanpa recipe: ' . implode(', ', $missingRecipeProducts) . '.'
+            );
+        }
+
+        return $redirect;
     }
 
     private function openShift(): ?CashierShift
@@ -317,6 +337,17 @@ class CashierOrderController extends Controller
     private function activeRecipe(Product $product)
     {
         return $product->recipes->first();
+    }
+
+    private function missingRecipeProductNames($cart, $products): array
+    {
+        return $cart
+            ->map(fn ($cartItem) => $products[$cartItem['product_id']])
+            ->filter(fn (Product $product) => ! $this->activeRecipe($product))
+            ->pluck('name')
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function stockDeductionError($cart, $products, int $outletId): ?string

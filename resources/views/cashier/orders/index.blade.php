@@ -133,8 +133,9 @@
                 </div>
             </div>
 
-            <form action="{{ route('cashier.orders.finalize') }}" method="post" class="cashier-card p-3">
+            <form action="{{ route('cashier.orders.finalize') }}" method="post" class="cashier-card p-3" id="pos-finalize-form">
                 @csrf
+                <input type="hidden" name="finalize_token" value="{{ $finalizeToken }}">
                 <h2 class="h5 mb-3">Detail Transaksi</h2>
                 <div class="mb-3">
                     <label for="service_type" class="form-label">Service Type</label>
@@ -180,7 +181,7 @@
                     <input type="number" name="paid_amount" id="paid_amount" value="{{ old('paid_amount') }}" min="0" step="100" class="form-control" placeholder="Nominal bayar">
                     <div class="text-muted small mt-1">Kembalian: <span id="change_amount">Rp 0</span></div>
                 </div>
-                <button type="submit" class="btn btn-bread w-100 mt-3" @disabled($cart->isEmpty())>Finalisasi Order POS</button>
+                <button type="submit" class="btn btn-bread w-100 mt-3" id="pos-finalize-button" @disabled($cart->isEmpty())>Finalisasi Order POS</button>
                 @if($cart->isEmpty())
                     <p class="text-muted small mb-0 mt-2 text-center">Tambahkan produk ke cart terlebih dahulu.</p>
                 @endif
@@ -196,6 +197,8 @@
     const paidAmountInput = document.getElementById('paid_amount');
     const paymentMethodInput = document.getElementById('payment_method');
     const changeAmountText = document.getElementById('change_amount');
+    const finalizeForm = document.getElementById('pos-finalize-form');
+    const finalizeButton = document.getElementById('pos-finalize-button');
 
     function formatRupiah(value) {
         return 'Rp ' + Math.max(0, value).toLocaleString('id-ID');
@@ -213,6 +216,14 @@
 
     paidAmountInput?.addEventListener('input', updateChangeAmount);
     paymentMethodInput?.addEventListener('change', updateChangeAmount);
+    finalizeForm?.addEventListener('submit', function () {
+        if (!finalizeButton) {
+            return;
+        }
+
+        finalizeButton.disabled = true;
+        finalizeButton.textContent = 'Memproses...';
+    });
     updateChangeAmount();
 </script>
 @endpush
