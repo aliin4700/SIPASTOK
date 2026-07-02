@@ -16,6 +16,20 @@
     <link rel="stylesheet" type="text/css" href="{{ asset('backend/extra-libs/multicheck/multicheck.css') }}">
     <link href="{{ asset('backend/libs/datatables.net-bs4/css/dataTables.bootstrap4.css') }}" rel="stylesheet">
     <link href="{{ asset('backend/dist/css/style.min.css') }}" rel="stylesheet">
+    <style>
+        .sidebar-notif-badge {
+            background: #dc3545;
+            border-radius: 999px;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1;
+            margin-left: auto;
+            min-width: 20px;
+            padding: 4px 6px;
+            text-align: center;
+        }
+    </style>
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
@@ -157,6 +171,16 @@
             <div class="scroll-sidebar">
                 <!-- Sidebar navigation-->
                 <nav class="sidebar-nav">
+                    @php
+                        $sidebarBadges = $backendSidebarBadges ?? [];
+                        $sidebarBadge = function (string $key) use ($sidebarBadges) {
+                            $count = (int) ($sidebarBadges[$key] ?? 0);
+
+                            return $count > 0
+                                ? '<span class="sidebar-notif-badge">' . ($count > 99 ? '99+' : $count) . '</span>'
+                                : '';
+                        };
+                    @endphp
                     <ul id="sidebarnav" class="p-t-30">
                         <li class="sidebar-item"> <a class="sidebar-link waves-effect waves-dark sidebar-link" href="{{ route('backend.dashboard') }}" aria-expanded="false"><i class="mdi mdi-view-dashboard"></i><span class="hide-menu">Dashboard</span></a>
                         </li>
@@ -172,13 +196,13 @@
                                 </li>
                             </ul>
                         </li>
-                        <li class="sidebar-item"> <a class="sidebar-link waves-effect waves-dark sidebar-link" href="{{ route('backend.order.index') }}" aria-expanded="false"><i class="mdi mdi-receipt"></i><span class="hide-menu">Pesanan</span></a>
+                        <li class="sidebar-item"> <a class="sidebar-link waves-effect waves-dark sidebar-link" href="{{ route('backend.order.index') }}" aria-expanded="false"><i class="mdi mdi-receipt"></i><span class="hide-menu">Pesanan</span>{!! $sidebarBadge('orders') !!}</a>
                         </li>
-                        <li class="sidebar-item"> <a class="sidebar-link waves-effect waves-dark sidebar-link" href="{{ route('backend.payment.index') }}" aria-expanded="false"><i class="mdi mdi-credit-card"></i><span class="hide-menu">Pembayaran</span></a>
+                        <li class="sidebar-item"> <a class="sidebar-link waves-effect waves-dark sidebar-link" href="{{ route('backend.payment.index') }}" aria-expanded="false"><i class="mdi mdi-credit-card"></i><span class="hide-menu">Pembayaran</span>{!! $sidebarBadge('payments') !!}</a>
                         </li>
                         <li class="sidebar-item"> <a class="sidebar-link waves-effect waves-dark sidebar-link" href="{{ route('backend.finance.dashboard') }}" aria-expanded="false"><i class="mdi mdi-chart-line"></i><span class="hide-menu">Finance</span></a>
                         </li>
-                        <li class="sidebar-item"> <a class="sidebar-link has-arrow waves-effect waves-dark" href="javascript:void(0)" aria-expanded="false"><i class="mdi mdi-warehouse"></i><span class="hide-menu">Inventory </span></a>
+                        <li class="sidebar-item"> <a class="sidebar-link has-arrow waves-effect waves-dark" href="javascript:void(0)" aria-expanded="false"><i class="mdi mdi-warehouse"></i><span class="hide-menu">Inventory </span>{!! $sidebarBadge('inventory') !!}</a>
                             <ul aria-expanded="false" class="collapse  first-level">
                                 <li class="sidebar-item"><a href="{{ route('backend.inventory-items.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Master Item </span></a></li>
                                 <li class="sidebar-item"><a href="{{ route('backend.inventory-stocks.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Stok Outlet </span></a></li>
@@ -194,7 +218,7 @@
                                 <li class="sidebar-item"><a href="{{ route('backend.daily-operations.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Daily Operation </span></a></li>
                             </ul>
                         </li>
-                        <li class="sidebar-item"> <a class="sidebar-link waves-effect waves-dark sidebar-link" href="{{ route('backend.chat.index') }}" aria-expanded="false"><i class="mdi mdi-message-text"></i><span class="hide-menu">Chat</span></a>
+                        <li class="sidebar-item"> <a class="sidebar-link waves-effect waves-dark sidebar-link" href="{{ route('backend.chat.index') }}" aria-expanded="false"><i class="mdi mdi-message-text"></i><span class="hide-menu">Chat</span>{!! $sidebarBadge('chats') !!}</a>
                         </li>
                         <li class="sidebar-item"> <a class="sidebar-link has-arrow waves-effect waves-dark" href="javascript:void(0)" aria-expanded="false"><i class="mdi mdi-receipt"></i><span class="hide-menu">Laporan </span></a>
                             <ul aria-expanded="false" class="collapse  first-level">

@@ -51,22 +51,16 @@ class CheckoutController extends Controller
             'province_name' => ['nullable', 'string', 'max:255'],
             'city_name' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:1000'],
-            'delivery_address' => ['nullable', 'string', 'max:1000'],
+            'delivery_address' => ['nullable', 'required_if:transaction_method,local_delivery', 'string', 'max:1000'],
             'delivery_note' => ['nullable', 'string', 'max:1000'],
             'delivery_latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'delivery_longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'destination' => ['nullable', 'required_if:transaction_method,shipping', 'integer'],
             'courier' => ['nullable', 'required_if:transaction_method,shipping', 'string', Rule::in(array_keys(RajaOngkirService::COURIERS))],
             'service' => ['nullable', 'required_if:transaction_method,shipping', 'string', 'max:100'],
-            'shipping_cost' => ['nullable', 'required_if:transaction_method,shipping', 'numeric', 'min:1'],
+            'shipping_cost' => ['exclude_unless:transaction_method,shipping', 'required', 'numeric', 'min:1'],
             'estimated_delivery' => ['nullable', 'string', 'max:100'],
         ]);
-
-        if ($validated['transaction_method'] === 'local_delivery' && blank($validated['delivery_address'] ?? null) && blank($validated['delivery_note'] ?? null)) {
-            return back()
-                ->withInput()
-                ->with('error', 'Alamat atau catatan delivery wajib diisi untuk local delivery.');
-        }
 
         if ($validated['payment_method'] === 'cash' && ! in_array($validated['transaction_method'], ['pickup', 'local_delivery'], true)) {
             return back()

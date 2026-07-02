@@ -37,6 +37,17 @@
         <div class="alert alert-danger">{{ session('error') }}</div>
         @endif
 
+        @if($errors->any())
+        <div class="alert alert-danger">
+            <div class="fw-semibold mb-1">Periksa kembali data checkout:</div>
+            <ul class="mb-0">
+                @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+        @endif
+
         <form action="{{ route('checkout.process') }}" method="post" id="checkout-form">
             @csrf
             <input type="hidden" name="delivery_latitude" id="delivery_latitude" value="{{ old('delivery_latitude') }}">
@@ -425,6 +436,26 @@
             locationStatus.textContent = `Koordinat: ${deliveryLatitude.value}, ${deliveryLongitude.value}`;
         }
 
+        async function fillLocalAddress(lat, lng) {
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                    },
+                });
+                const payload = await response.json();
+
+                if (!response.ok || !payload.display_name) {
+                    throw new Error('Reverse geocoding failed.');
+                }
+
+                deliveryAddress.value = payload.display_name;
+                locationStatus.textContent = `Koordinat: ${deliveryLatitude.value}, ${deliveryLongitude.value}`;
+            } catch (error) {
+                locationStatus.textContent = 'Alamat otomatis tidak berhasil dideteksi. Silakan isi alamat secara manual.';
+            }
+        }
+
         function applyCheckoutState() {
             const method = selectedTransaction();
             const isLocal = method === 'local_delivery';
@@ -800,7 +831,12 @@
 
             locationStatus.textContent = 'Mengambil lokasi...';
             navigator.geolocation.getCurrentPosition((position) => {
-                setMarker(position.coords.latitude, position.coords.longitude);
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                setMarker(lat, lng);
+                locationStatus.textContent = 'Mendeteksi alamat otomatis...';
+                fillLocalAddress(lat, lng);
             }, () => {
                 locationStatus.textContent = 'Lokasi tidak bisa diambil. Pastikan permission browser diizinkan.';
             }, {
