@@ -172,6 +172,7 @@
                 <!-- Sidebar navigation-->
                 <nav class="sidebar-nav">
                     @php
+                        // Badge sidebar dihitung lewat View::composer agar semua halaman backend konsisten.
                         $sidebarBadges = $backendSidebarBadges ?? [];
                         $sidebarBadge = function (string $key) use ($sidebarBadges) {
                             $count = (int) ($sidebarBadges[$key] ?? 0);

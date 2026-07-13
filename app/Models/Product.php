@@ -6,10 +6,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 
+/**
+ * Produk jualan BreadLab yang tampil di katalog dan POS.
+ */
 class Product extends Model
 {
     use HasFactory;
 
+    // Kolom yang dapat diisi dari form backend produk.
     protected $fillable = [
         'category_id',
         'name',
@@ -23,6 +27,7 @@ class Product extends Model
         'status',
     ];
 
+    // Cast harga/stok/berat agar perhitungan cart dan checkout konsisten.
     protected $casts = [
         'price' => 'decimal:2',
         'stock' => 'integer',
@@ -31,11 +36,13 @@ class Product extends Model
 
     public function category()
     {
+        // Produk berada dalam satu kategori katalog.
         return $this->belongsTo(Category::class);
     }
 
     public function photos()
     {
+        // Foto tambahan produk selain main_photo.
         return $this->hasMany(ProductPhoto::class);
     }
 
@@ -46,6 +53,7 @@ class Product extends Model
 
     public function getImageUrlAttribute(): string
     {
+        // Normalisasi path gambar lama/baru sebelum dikirim ke view.
         if (! $this->main_photo) {
             return $this->fallbackImageUrl();
         }

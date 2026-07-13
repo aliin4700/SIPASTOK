@@ -41,6 +41,7 @@
         @endif
 
         <div class="row g-4">
+            {{-- Detail item dan shipment dari order customer. --}}
             <section class="col-lg-8">
                 <div class="panel p-4 mb-4">
                     <h2 class="h5 mb-3">Produk Pesanan</h2>
@@ -130,6 +131,7 @@
                 </div>
             </section>
 
+            {{-- Ringkasan harga, pembayaran, dan akses chat order. --}}
             <aside class="col-lg-4">
                 <div class="panel p-4 mb-4">
                     <h2 class="h5 mb-3">Ringkasan</h2>

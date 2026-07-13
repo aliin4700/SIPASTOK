@@ -22,6 +22,7 @@
         <a href="{{ route('backend.order.show', $conversation->order) }}" class="btn btn-outline-primary">Detail Order</a>
     </div>
 
+    {{-- Pesan admin-customer dirender lewat AJAX polling. --}}
     <div id="chat-box" class="chat-box mb-3"></div>
     <form id="chat-form" class="d-flex gap-2">
         @csrf
@@ -64,6 +65,7 @@
         }
     }
 
+    // Mengambil pesan terbaru untuk admin tanpa reload halaman.
     async function fetchMessages() {
         const response = await fetch(fetchUrl, { headers: { 'Accept': 'application/json' } });
         if (response.ok) {
@@ -72,6 +74,7 @@
         }
     }
 
+    // Mengirim balasan admin lewat AJAX.
     chatForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         chatError.classList.add('d-none');

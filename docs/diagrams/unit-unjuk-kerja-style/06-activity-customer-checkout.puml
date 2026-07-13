@@ -1,0 +1,34 @@
+@startuml
+title act Customer Checkout
+
+skinparam shadowing true
+skinparam handwritten false
+skinparam backgroundColor white
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam ArrowColor #555555
+skinparam roundcorner 15
+skinparam activity {
+  BackgroundColor #FFF2D8
+  BorderColor #B8B8B8
+}
+skinparam partition {
+  BorderColor #999999
+  BackgroundColor white
+}
+
+|Customer|
+start
+:Memilih Produk;
+:Menambahkan Produk ke Keranjang;
+:Membuka Halaman Checkout;
+:Memilih Metode Pengiriman;
+:Memilih Metode Pembayaran;
+:Klik Buat Pesanan;
+|Sistem|
+:Memproses Pesanan;
+:Menyimpan Data Pesanan;
+:Menyimpan Data Pembayaran;
+:Menampilkan Status Pesanan;
+stop
+@enduml

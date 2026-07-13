@@ -9,6 +9,12 @@ use DomainException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
+/**
+ * Service pusat untuk perubahan stok inventory.
+ *
+ * Controller modul inventory/purchasing/produksi memakai service ini agar
+ * update inventory_stocks dan pencatatan stock_movements selalu konsisten.
+ */
 class StockMovementService
 {
     public function increaseStock(array $data): array
@@ -23,6 +29,7 @@ class StockMovementService
 
     public function adjustStock(array $data): array
     {
+        // Adjustment dipakai untuk opname/review ketika stok fisik menjadi angka baru.
         return DB::transaction(function () use ($data) {
             $outletId = $this->requiredInt($data, 'outlet_id');
             $itemId = $this->requiredInt($data, 'inventory_item_id');
@@ -64,6 +71,7 @@ class StockMovementService
 
     public function moveStock(array $data): array
     {
+        // Transfer dibuat sebagai dua movement: keluar dari outlet asal dan masuk ke outlet tujuan.
         $quantity = $this->decimal($data['quantity'] ?? null, 'quantity');
 
         if ($quantity <= 0) {
@@ -91,6 +99,7 @@ class StockMovementService
 
     private function apply(array $data, string $direction): array
     {
+        // Semua increase/decrease dibungkus transaction agar stok dan movement tidak terpisah.
         return DB::transaction(function () use ($data, $direction) {
             $outletId = $this->requiredInt($data, 'outlet_id');
             $itemId = $this->requiredInt($data, 'inventory_item_id');
@@ -106,6 +115,7 @@ class StockMovementService
             $duplicate = $this->duplicateMovement($stock, $movementType, $data);
 
             if ($duplicate) {
+                // Reference type/id mencegah proses apply stock yang sama menambah stok dua kali.
                 return $this->result($stock, $duplicate, true);
             }
 
@@ -132,6 +142,7 @@ class StockMovementService
 
     private function lockedStock(int $outletId, InventoryItem $item): InventoryStock
     {
+        // Lock stok per outlet+item supaya transaksi bersamaan tidak saling menimpa.
         $stock = InventoryStock::where('outlet_id', $outletId)
             ->where('inventory_item_id', $item->id)
             ->lockForUpdate()
@@ -183,6 +194,7 @@ class StockMovementService
 
     private function createMovement(InventoryStock $stock, InventoryItem $item, array $data): StockMovement
     {
+        // Movement menjadi audit trail setiap perubahan stok.
         return StockMovement::create([
             'outlet_id' => $stock->outlet_id,
             'division_id' => $item->division_id,

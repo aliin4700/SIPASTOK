@@ -1,0 +1,37 @@
+@startuml
+title act Login
+
+skinparam shadowing true
+skinparam handwritten false
+skinparam backgroundColor white
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam ArrowColor #555555
+skinparam roundcorner 15
+skinparam activity {
+  BackgroundColor #FFF2D8
+  BorderColor #B8B8B8
+}
+skinparam partition {
+  BorderColor #999999
+  BackgroundColor white
+}
+
+|Pengguna|
+start
+:Memasukkan Email;
+:Memasukkan Password;
+|Sistem|
+:Validasi Email dan Password;
+if (Validasi sukses?) then (Ya)
+  :Menampilkan Halaman Dashboard;
+  stop
+else (Tidak)
+  :Menampilkan Pesan Login Gagal;
+  |Pengguna|
+  :Memasukkan Email dan Password Kembali;
+  |Sistem|
+  :Validasi Ulang;
+  stop
+endif
+@enduml

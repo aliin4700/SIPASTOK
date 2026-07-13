@@ -7,6 +7,9 @@ use App\Models\CustomerAddress;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * CRUD address book customer untuk checkout shipping.
+ */
 class CustomerAddressController extends Controller
 {
     public function index(Request $request)
@@ -32,6 +35,7 @@ class CustomerAddressController extends Controller
         $customer = $this->customer($request);
         $validated = $this->validateAddress($request);
 
+        // Alamat pertama otomatis menjadi default agar checkout langsung punya alamat utama.
         DB::transaction(function () use ($customer, $validated) {
             $isFirstAddress = ! $customer->addresses()->exists();
             $isDefault = (bool) ($validated['is_default'] ?? false) || $isFirstAddress;
@@ -64,6 +68,7 @@ class CustomerAddressController extends Controller
         $this->authorizeAddress($request, $address);
         $validated = $this->validateAddress($request);
 
+        // Bila alamat ini dijadikan default, alamat lain milik customer dinonaktifkan default-nya.
         DB::transaction(function () use ($customer, $address, $validated) {
             $isDefault = (bool) ($validated['is_default'] ?? false);
 
@@ -85,6 +90,7 @@ class CustomerAddressController extends Controller
         $this->authorizeAddress($request, $address);
         $wasDefault = $address->is_default;
 
+        // Jika alamat default dihapus, pilih alamat terbaru sebagai pengganti.
         DB::transaction(function () use ($customer, $address, $wasDefault) {
             $address->delete();
 
@@ -112,6 +118,7 @@ class CustomerAddressController extends Controller
 
     private function validateAddress(Request $request): array
     {
+        // Province/city/district name tetap divalidasi bersama id untuk snapshot alamat checkout.
         return $request->validate([
             'receiver_name' => ['required', 'string', 'max:255'],
             'receiver_phone' => ['required', 'string', 'max:30'],
@@ -140,6 +147,7 @@ class CustomerAddressController extends Controller
 
     private function authorizeAddress(Request $request, CustomerAddress $address): void
     {
+        // Customer tidak boleh mengubah alamat milik customer lain.
         abort_unless((int) $address->customer_id === (int) $this->customer($request)->id, 403);
     }
 }

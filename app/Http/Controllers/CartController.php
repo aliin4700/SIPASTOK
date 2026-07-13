@@ -8,10 +8,19 @@ use App\Models\Customer;
 use App\Models\Product;
 use Illuminate\Http\Request;
 
+/**
+ * Mengelola cart aktif customer.
+ *
+ * Cart di modul ini belum menjadi order; order baru dibuat saat checkout.
+ */
 class CartController extends Controller
 {
+    /**
+     * Menampilkan isi keranjang customer.
+     */
     public function index()
     {
+        // Load produk agar subtotal dan total berat dihitung dari relasi cart item yang sama.
         $cart = $this->cart()->load('items.product.category');
         $subtotal = $cart->items->sum(fn (CartItem $item) => $item->subtotal());
         $totalWeight = $cart->items->sum(fn (CartItem $item) => (int) ($item->product->weight ?? 0) * $item->quantity);
@@ -24,8 +33,12 @@ class CartController extends Controller
         ]);
     }
 
+    /**
+     * Menambahkan produk ke cart aktif customer.
+     */
     public function add(Request $request, Product $product)
     {
+        // Quantity boleh dikirim dari detail produk, sedangkan product card memakai default satu item.
         $validated = $request->validate([
             'quantity' => ['nullable', 'integer', 'min:1', 'max:' . max(1, $product->stock)],
         ]);
@@ -44,6 +57,7 @@ class CartController extends Controller
             'product_id' => $product->id,
         ]);
 
+        // Quantity digabung bila produk sudah ada di cart, tetapi tidak melewati stok produk.
         $item->quantity = min(($item->exists ? $item->quantity : 0) + $quantity, $product->stock);
         $item->price = $product->price;
         $item->save();
@@ -51,6 +65,9 @@ class CartController extends Controller
         return redirect()->route('cart.index')->with('success', 'Produk berhasil ditambahkan ke keranjang.');
     }
 
+    /**
+     * Mengubah quantity item dalam cart.
+     */
     public function update(Request $request, CartItem $cartItem)
     {
         $this->authorizeCartItem($cartItem);
@@ -67,6 +84,9 @@ class CartController extends Controller
         return redirect()->route('cart.index')->with('success', 'Keranjang berhasil diperbarui.');
     }
 
+    /**
+     * Menghapus satu item dari cart.
+     */
     public function remove(CartItem $cartItem)
     {
         $this->authorizeCartItem($cartItem);
@@ -75,6 +95,9 @@ class CartController extends Controller
         return redirect()->route('cart.index')->with('success', 'Produk dihapus dari keranjang.');
     }
 
+    /**
+     * Mengosongkan seluruh cart customer.
+     */
     public function clear()
     {
         $this->cart()->items()->delete();
@@ -84,6 +107,7 @@ class CartController extends Controller
 
     private function cart(): Cart
     {
+        // Setiap customer hanya membutuhkan satu cart aktif pada tahap ini.
         return Cart::firstOrCreate([
             'customer_id' => $this->customer()->id,
         ]);
@@ -98,6 +122,7 @@ class CartController extends Controller
 
     private function authorizeCartItem(CartItem $cartItem): void
     {
+        // Cart item tidak boleh diubah oleh customer lain walaupun id item diketahui.
         abort_unless((int) $cartItem->cart->customer_id === (int) $this->customer()->id, 403);
     }
 }

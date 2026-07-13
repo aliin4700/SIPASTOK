@@ -8,6 +8,12 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
+/**
+ * Akun utama aplikasi.
+ *
+ * BreadLab tetap memakai users.role sebagai source of truth, sementara tabel
+ * roles/permissions dipakai sebagai referensi akses tambahan.
+ */
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
@@ -61,6 +67,7 @@ class User extends Authenticatable
 
     public function roleRecord()
     {
+        // Relasi memakai kolom string role agar kompatibel dengan data lama.
         return $this->belongsTo(Role::class, 'role', 'name');
     }
 
@@ -185,6 +192,7 @@ class User extends Authenticatable
             return true;
         }
 
+        // Permission dibaca dari roleRecord tanpa mengganti source of truth users.role.
         return $this->roleRecord()
             ->whereHas('permissions', fn ($query) => $query->where('name', $permission))
             ->exists();
@@ -196,6 +204,7 @@ class User extends Authenticatable
             return true;
         }
 
+        // Ability opsional, misalnya can_cashier atau can_monitor.
         return $this->outletAccesses()
             ->where('outlet_id', $outletId)
             ->when($ability, fn ($query) => $query->where($ability, true))
@@ -208,6 +217,7 @@ class User extends Authenticatable
             return true;
         }
 
+        // Staff outlet dibatasi oleh pasangan outlet dan division.
         return $this->divisionAccesses()
             ->where('outlet_id', $outletId)
             ->where('division_id', $divisionId)
@@ -217,6 +227,7 @@ class User extends Authenticatable
 
     public function getNamaAttribute(): ?string
     {
+        // Alias lama `nama` dipertahankan untuk view/controller lama.
         return $this->name;
     }
 

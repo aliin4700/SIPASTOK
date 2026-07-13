@@ -33,6 +33,7 @@
         </div>
 
         <div class="panel p-4">
+            {{-- Pesan dirender lewat AJAX polling agar chat berjalan tanpa reload penuh. --}}
             <div id="chat-box" class="chat-box mb-3"></div>
             <form id="chat-form" class="d-flex gap-2">
                 @csrf
@@ -76,6 +77,7 @@
             }
         }
 
+        // Mengambil pesan terbaru secara berkala.
         async function fetchMessages() {
             const response = await fetch(fetchUrl, { headers: { 'Accept': 'application/json' } });
             if (response.ok) {
@@ -84,6 +86,7 @@
             }
         }
 
+        // Mengirim pesan customer tanpa reload halaman.
         chatForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             chatError.classList.add('d-none');

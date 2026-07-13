@@ -6,8 +6,17 @@ use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
+/**
+ * Monitoring order dari sisi admin.
+ *
+ * Update status order dipisahkan dari payment verification agar status
+ * operasional dan status pembayaran tidak saling menimpa.
+ */
 class AdminOrderController extends Controller
 {
+    /**
+     * Menampilkan daftar order untuk admin.
+     */
     public function index()
     {
         $orders = Order::with('customer.user', 'payment', 'shipment')
@@ -21,6 +30,9 @@ class AdminOrderController extends Controller
         ]);
     }
 
+    /**
+     * Menampilkan detail order untuk admin.
+     */
     public function show(Order $order)
     {
         return view('backend.v_order.show', [
@@ -30,8 +42,12 @@ class AdminOrderController extends Controller
         ]);
     }
 
+    /**
+     * Mengubah status operasional order.
+     */
     public function updateStatus(Request $request, Order $order)
     {
+        // Form ini hanya mengubah orders.status, bukan payments.payment_status.
         $validated = $request->validate([
             'status' => ['required', Rule::in(Order::STATUSES)],
         ]);
@@ -45,8 +61,12 @@ class AdminOrderController extends Controller
             ->with('success', 'Status pesanan berhasil diperbarui.');
     }
 
+    /**
+     * Mengubah data tracking pengiriman courier.
+     */
     public function updateTracking(Request $request, Order $order)
     {
+        // Tracking hanya relevan untuk pengiriman courier, bukan pickup/local delivery.
         if (($order->shipment?->shipping_type ?? $order->transaction_method) !== 'shipping') {
             return redirect()
                 ->route('backend.order.show', $order)

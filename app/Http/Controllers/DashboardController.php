@@ -11,10 +11,17 @@ use App\Models\Product;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Dashboard ringkas admin berdasarkan tabel final BreadLab.
+ */
 class DashboardController extends Controller
 {
+    /**
+     * Menampilkan dashboard admin berisi ringkasan order, payment, revenue, dan chat.
+     */
     public function index()
     {
+        // Trend pendapatan memakai 14 hari terakhir agar grafik tetap ringan.
         $startDate = now()->subDays(13)->startOfDay();
 
         $orderStatusCounts = Order::query()
@@ -36,6 +43,7 @@ class DashboardController extends Controller
             ->orderBy('revenue_date')
             ->pluck('total', 'revenue_date');
 
+        // Isi hari tanpa penjualan dengan nol supaya Chart.js tidak punya tanggal bolong.
         $revenueTrend = collect(CarbonPeriod::create($startDate, now()->startOfDay()))
             ->map(function ($date) use ($revenueRows) {
                 $key = $date->format('Y-m-d');
@@ -56,6 +64,7 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        // Tabel dashboard hanya mengambil data terbaru, bukan laporan lengkap.
         $latestOrders = Order::with('customer.user', 'payment')
             ->latest()
             ->limit(8)

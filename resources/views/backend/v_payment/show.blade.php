@@ -39,6 +39,7 @@
                 <dd class="col-sm-8">{{ str_replace('_', ' ', $payment->order->status ?? '-') }}</dd>
             </dl>
         </div>
+        {{-- Bukti pembayaran manual untuk diverifikasi admin. --}}
         <div class="col-lg-5">
             <h4 class="h5 mb-3">Bukti Pembayaran</h4>
             @if($payment->payment_proof)
@@ -53,6 +54,7 @@
 <div class="breadlab-admin-panel">
     <h4 class="h5 mb-3">Aksi Admin</h4>
     <div class="d-flex flex-wrap gap-2">
+        {{-- Konfirmasi cash hanya menandai payment sebagai paid. --}}
         @if($payment->payment_method === 'cash' && $payment->payment_status !== 'paid')
         <form action="{{ route('backend.payment.confirmCash', $payment) }}" method="post">
             @csrf
@@ -61,6 +63,7 @@
         </form>
         @endif
 
+        {{-- Verifikasi/reject bank transfer dipisahkan dari update status order. --}}
         @if($payment->payment_method === 'bank_transfer' && in_array($payment->payment_status, ['waiting_confirmation', 'pending', 'rejected'], true))
         <form action="{{ route('backend.payment.verify', $payment) }}" method="post">
             @csrf

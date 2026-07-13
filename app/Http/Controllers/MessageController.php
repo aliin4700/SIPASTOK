@@ -9,11 +9,18 @@ use App\Models\Order;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+/**
+ * Endpoint AJAX polling untuk chat customer-admin.
+ */
 class MessageController extends Controller
 {
+    /**
+     * Customer mengirim pesan tanpa reload halaman.
+     */
     public function send(Request $request, Order $order): JsonResponse
     {
         $customer = $this->customer();
+        // Kirim pesan customer tetap dibatasi pada order miliknya.
         abort_unless((int) $order->customer_id === (int) $customer->id, 403);
 
         $validated = $request->validate([
@@ -27,6 +34,7 @@ class MessageController extends Controller
             'status' => 'open',
         ]);
 
+        // Conversation disentuh agar daftar chat admin terurut dari aktivitas terbaru.
         $message = $conversation->messages()->create([
             'sender_id' => auth()->id(),
             'sender_type' => 'customer',
@@ -41,9 +49,13 @@ class MessageController extends Controller
         ], 201);
     }
 
+    /**
+     * Customer mengambil pesan terbaru lewat AJAX polling.
+     */
     public function fetch(Order $order): JsonResponse
     {
         $customer = $this->customer();
+        // Fetch polling memakai authorization yang sama dengan pengiriman pesan.
         abort_unless((int) $order->customer_id === (int) $customer->id, 403);
 
         $conversation = Conversation::where('order_id', $order->id)
@@ -68,6 +80,9 @@ class MessageController extends Controller
         ]);
     }
 
+    /**
+     * Admin membalas pesan customer.
+     */
     public function adminSend(Request $request, Conversation $conversation): JsonResponse
     {
         $validated = $request->validate([
@@ -75,6 +90,7 @@ class MessageController extends Controller
         ]);
 
         if (! $conversation->admin_id) {
+            // Admin pertama yang membalas menjadi admin penanggung jawab conversation.
             $conversation->update([
                 'admin_id' => auth()->id(),
             ]);
@@ -94,6 +110,9 @@ class MessageController extends Controller
         ], 201);
     }
 
+    /**
+     * Admin mengambil pesan terbaru lewat AJAX polling.
+     */
     public function adminFetch(Conversation $conversation): JsonResponse
     {
         $conversation->messages()
@@ -119,6 +138,7 @@ class MessageController extends Controller
 
     private function formatMessage(Message $message, string $viewer): array
     {
+        // Format JSON dibuat kecil agar view bisa render ulang tanpa reload penuh.
         return [
             'id' => $message->id,
             'sender_id' => $message->sender_id,

@@ -48,6 +48,7 @@
         </div>
         @endif
 
+        {{-- Form checkout utama: pickup, local delivery, dan shipping tetap masuk controller yang sama. --}}
         <form action="{{ route('checkout.process') }}" method="post" id="checkout-form">
             @csrf
             <input type="hidden" name="delivery_latitude" id="delivery_latitude" value="{{ old('delivery_latitude') }}">
@@ -58,6 +59,7 @@
 
             <div class="row g-4">
                 <section class="col-lg-8">
+                    {{-- Step 1 menentukan field mana yang tampil dan validasi mana yang aktif. --}}
                     <div class="panel p-4 mb-4">
                         <div class="step-label mb-2">Step 1</div>
                         <h2 class="h5 mb-3">Metode Transaksi</h2>
@@ -160,6 +162,7 @@
                                 @enderror
                             </div>
 
+                            {{-- Shipping memakai address book agar city/district RajaOngkir konsisten. --}}
                             <div class="col-12 shipping-field">
                                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                                     <label for="customer_address_id" class="form-label mb-0">Alamat Pengiriman</label>
@@ -187,6 +190,7 @@
                                 @endif
                             </div>
 
+                            {{-- Nilai ongkir final diisi setelah customer memilih layanan dari tabel ongkir. --}}
                             <div class="col-12 shipping-field">
                                 <label for="address" class="form-label">Alamat Shipping</label>
                                 <textarea name="address" id="address" rows="3" class="form-control @error('address') is-invalid @enderror">{{ old('address', auth()->user()->customer->address ?? '') }}</textarea>
@@ -356,6 +360,7 @@
         const oldShippingCost = Number(@json(old('shipping_cost', 0)));
         const oldEstimatedDelivery = @json(old('estimated_delivery'));
         const rajaOngkirMode = @json(config('services.rajaongkir.mode', 'starter'));
+        // Address book disiapkan dari server agar field shipping bisa diisi tanpa request tambahan.
         const customerAddresses = @json($customerAddressOptions);
 
         const transactionRadios = document.querySelectorAll('.transaction-radio');
@@ -436,6 +441,7 @@
             locationStatus.textContent = `Koordinat: ${deliveryLatitude.value}, ${deliveryLongitude.value}`;
         }
 
+        // Reverse geocoding membantu mengisi alamat local delivery, tetapi customer tetap boleh edit manual.
         async function fillLocalAddress(lat, lng) {
             try {
                 const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`, {
@@ -456,6 +462,7 @@
             }
         }
 
+        // Tampilkan hanya field yang relevan dengan metode transaksi yang dipilih.
         function applyCheckoutState() {
             const method = selectedTransaction();
             const isLocal = method === 'local_delivery';
@@ -528,6 +535,7 @@
             select.value = value;
         }
 
+        // Salin alamat tersimpan ke field checkout sebagai snapshot order.
         function applySavedAddress() {
             const savedAddress = selectedAddress();
 
@@ -565,6 +573,7 @@
             return payload?.message || payload?.body?.rajaongkir?.status?.description || fallback;
         }
 
+        // Normalisasi response Starter/Komerce menjadi bentuk service ongkir yang sama.
         function normalizeCostServices(results) {
             if (Array.isArray(results) && results[0]?.costs) {
                 const courierCode = courierSelect.value;
@@ -612,6 +621,7 @@
             return blocked.some((keyword) => text.includes(keyword));
         }
 
+        // Sembunyikan layanan cargo/trucking yang tidak cocok untuk order roti kecil.
         function filterReasonableServices(services) {
             return services.filter((item) => {
                 const cost = parseRawCost(item.cost);
@@ -693,6 +703,7 @@
             }
         }
 
+        // Cek ongkir hanya dilakukan setelah alamat tersimpan, destination, kurir, dan kode pos lengkap.
         async function loadCosts() {
             hideShippingError();
             clearServices('Memuat service RajaOngkir...');
@@ -794,6 +805,7 @@
             });
         }
 
+        // Service terpilih disimpan sebagai angka mentah agar controller bisa menghitung total ulang.
         function chooseService(button) {
             document.querySelectorAll('.shipping-service-row').forEach((row) => row.classList.remove('selected'));
             document.querySelectorAll('.select-shipping-service').forEach((option) => option.classList.remove('active'));

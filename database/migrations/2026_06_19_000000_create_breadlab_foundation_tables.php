@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Profil customer dipisahkan dari users agar role internal tetap memakai tabel users.
         Schema::create('customers', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->unique()->constrained()->cascadeOnDelete();
@@ -18,6 +19,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
+        // Katalog produk frontend dan backend.
         Schema::create('categories', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -47,6 +49,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
+        // Cart adalah keranjang aktif customer, belum menjadi order.
         Schema::create('carts', function (Blueprint $table) {
             $table->id();
             $table->foreignId('customer_id')->constrained()->cascadeOnDelete();
@@ -64,6 +67,7 @@ return new class extends Migration
             $table->unique(['cart_id', 'product_id']);
         });
 
+        // Order final dibuat dari checkout dan menyimpan ringkasan harga/alamat.
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
             $table->foreignId('customer_id')->constrained()->cascadeOnDelete();
@@ -111,6 +115,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
+        // Payment dipisahkan agar verifikasi pembayaran tidak bercampur dengan status order.
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('order_id')->unique()->constrained()->cascadeOnDelete();
@@ -132,6 +137,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
+        // Shipment menampung pickup, local delivery, dan shipping courier.
         Schema::create('shipments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('order_id')->unique()->constrained()->cascadeOnDelete();
@@ -149,6 +155,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
+        // Chat customer-admin selalu terhubung ke order.
         Schema::create('conversations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('order_id')->unique()->constrained()->cascadeOnDelete();

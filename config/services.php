@@ -31,12 +31,14 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // OAuth customer/admin tetap memakai satu flow login.
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URL'),
     ],
 
+    // RajaOngkir mendukung mode starter lama dan Komerce; API key selalu dibaca dari env.
     'rajaongkir' => [
         'mode' => env('RAJAONGKIR_MODE', 'starter'),
         'key' => env('RAJAONGKIR_API_KEY'),
@@ -47,10 +49,12 @@ return [
         'default_weight' => env('RAJAONGKIR_DEFAULT_WEIGHT', 1000),
     ],
 
+    // Fee lokal dipakai checkout local_delivery, bukan input bebas dari frontend.
     'local_delivery' => [
         'fee' => env('LOCAL_DELIVERY_FEE', 10000),
     ],
 
+    // COGS masih estimasi sampai recipe/BOM dan inventory costing final.
     'finance' => [
         'default_cogs_percentage' => env('DEFAULT_COGS_PERCENTAGE', 40),
     ],

@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
+/**
+ * Mengelola produk backend dan katalog produk customer.
+ */
 class ProductController extends Controller
 {
     public function index()
@@ -34,9 +37,11 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $validated = $this->validatedData($request);
+        // Slug dibuat unik agar URL detail produk stabil.
         $validated['slug'] = $this->uniqueSlug($validated['name']);
 
         if ($request->hasFile('image')) {
+            // Foto utama disimpan ke public disk agar bisa ditampilkan di katalog.
             $validated['main_photo'] = $request->file('image')->store('products', 'public');
             unset($validated['image']);
         }
@@ -102,6 +107,7 @@ class ProductController extends Controller
 
     public function catalog(Request $request)
     {
+        // Katalog publik hanya menampilkan produk published dan mendukung filter sederhana.
         $products = Product::with('category')
             ->where('status', 'published')
             ->when($request->filled('search'), function ($query) use ($request) {
@@ -206,6 +212,7 @@ class ProductController extends Controller
 
     private function uniqueSlug(string $name, ?Product $product = null): string
     {
+        // Tambahkan angka di belakang slug bila nama produk sudah pernah dipakai.
         $baseSlug = Str::slug($name);
         $slug = $baseSlug;
         $counter = 2;

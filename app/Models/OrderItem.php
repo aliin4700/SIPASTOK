@@ -5,8 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Snapshot produk yang dibeli dalam satu order.
+ */
 class OrderItem extends Model
 {
+    // product_name dan price disimpan sebagai snapshot saat checkout/POS final.
     protected $fillable = [
         'order_id',
         'product_id',
@@ -24,16 +28,19 @@ class OrderItem extends Model
 
     public function order()
     {
+        // Item dimiliki oleh satu order.
         return $this->belongsTo(Order::class);
     }
 
     public function product()
     {
+        // Relasi produk tetap ada untuk akses kategori/foto jika produk belum dihapus.
         return $this->belongsTo(Product::class);
     }
 
     public function getQtyAttribute(): int
     {
+        // Alias lama `qty` dipertahankan untuk kompatibilitas view.
         return (int) $this->quantity;
     }
 

@@ -5,10 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Profil customer yang terhubung ke akun users.
+ */
 class Customer extends Model
 {
     use HasFactory;
 
+    // Kolom yang boleh diisi dari form account/register.
     protected $fillable = [
         'user_id',
         'google_id',
@@ -21,21 +25,25 @@ class Customer extends Model
 
     public function user()
     {
+        // Satu customer dimiliki oleh satu user.
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
     public function carts()
     {
+        // Customer dapat memiliki riwayat cart, walau yang aktif biasanya satu.
         return $this->hasMany(Cart::class);
     }
 
     public function orders()
     {
+        // Semua order online customer.
         return $this->hasMany(Order::class);
     }
 
     public function addresses()
     {
+        // Address book customer untuk checkout shipping.
         return $this->hasMany(CustomerAddress::class);
     }
 

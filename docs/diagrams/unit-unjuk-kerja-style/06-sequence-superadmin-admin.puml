@@ -1,0 +1,75 @@
+@startuml
+title Sequence Super Admin Mengelola Admin
+
+skinparam style strictuml
+hide footbox
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam handwritten false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam ArrowColor Black
+
+skinparam sequence {
+    ParticipantStyle uml2
+    LifeLineBorderColor Black
+    LifeLineBackgroundColor White
+    ParticipantBorderColor Black
+    ParticipantBackgroundColor White
+    ActorBorderColor Black
+    ActorBackgroundColor White
+    ArrowColor Black
+}
+
+actor "Super Admin" as SuperAdmin
+boundary "Form Admin" as FormAdmin
+control "AdminController" as AdminController
+entity "User" as User
+
+SuperAdmin -> FormAdmin : Buka Halaman Admin()
+activate FormAdmin
+FormAdmin -> AdminController : Ambil Data Admin()
+activate AdminController
+AdminController -> User : Cek Data Admin()
+activate User
+User --> AdminController : Tampil Data Admin()
+deactivate User
+AdminController --> FormAdmin : Tampil Halaman Admin()
+deactivate AdminController
+
+SuperAdmin -> FormAdmin : Klik Tambah Admin()
+SuperAdmin -> FormAdmin : Input Nama Admin
+SuperAdmin -> FormAdmin : Input Email Admin
+SuperAdmin -> FormAdmin : Input Password Admin
+SuperAdmin -> FormAdmin : Klik Simpan()
+
+FormAdmin -> AdminController : Simpan Admin()
+activate AdminController
+AdminController -> User : Save()
+activate User
+User --> AdminController : Data Tersimpan
+deactivate User
+AdminController --> FormAdmin : Tampil Data Admin()
+deactivate AdminController
+
+SuperAdmin -> FormAdmin : Klik Edit()
+FormAdmin -> AdminController : Update Admin()
+activate AdminController
+AdminController -> User : Update()
+activate User
+User --> AdminController : Data Terupdate
+deactivate User
+deactivate AdminController
+
+SuperAdmin -> FormAdmin : Klik Hapus()
+FormAdmin -> AdminController : Delete Admin()
+activate AdminController
+AdminController -> User : Delete()
+activate User
+User --> AdminController : Data Terhapus
+deactivate User
+deactivate AdminController
+deactivate FormAdmin
+
+@enduml

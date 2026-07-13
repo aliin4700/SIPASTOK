@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Role default mengikuti users.role sebagai source of truth.
         $roles = [
             'super_admin' => ['Super Admin', 'Akses penuh ke seluruh sistem.'],
             'admin' => ['Admin', 'Mengelola setup dan konfigurasi operasional.'],
@@ -37,6 +38,7 @@ class DatabaseSeeder extends Seeder
             );
         }
 
+        // Permission menjadi referensi akses modul tanpa memasang package permission tambahan.
         $permissions = [
             ['dashboard.view', 'View Dashboard', 'general'],
             ['setup.view', 'View Setup', 'setup'],
@@ -76,6 +78,7 @@ class DatabaseSeeder extends Seeder
             );
         }
 
+        // Mapping role-permission dibuat idempotent agar seeder aman dijalankan ulang.
         $permissionIds = Permission::pluck('id', 'name');
         $rolePermissionNames = [
             'super_admin' => $permissionIds->keys()->all(),
@@ -134,6 +137,7 @@ class DatabaseSeeder extends Seeder
             );
         }
 
+        // Outlet dan divisi awal dipakai oleh cashier, staff outlet, inventory, dan purchasing.
         foreach ([
             ['name' => 'Mejasem', 'code' => 'MJS'],
             ['name' => 'Slawi', 'code' => 'SLW'],
@@ -158,6 +162,7 @@ class DatabaseSeeder extends Seeder
             );
         }
 
+        // Akun demo disiapkan untuk development; password dapat diganti dari user management.
         User::updateOrCreate(['email' => 'admin@admin.com'], [
             'name' => 'Super Administrator',
             'role' => 'super_admin',
@@ -187,6 +192,7 @@ class DatabaseSeeder extends Seeder
             'postal_code' => '40123',
         ]);
 
+        // Data katalog minimal menjaga halaman frontend tetap punya contoh produk.
         collect(['Brownies', 'Combro', 'Dawet', 'Mochi', 'Wingko'])->each(function (string $name) {
             Category::updateOrCreate(['slug' => Str::slug($name)], [
                 'name' => $name,

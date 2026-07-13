@@ -1,6 +1,7 @@
 @csrf
 
 <div class="row g-3">
+    {{-- Dropdown wilayah RajaOngkir memastikan city/district id tidak diketik manual. --}}
     <div class="col-md-6">
         <label class="form-label">Nama Penerima</label>
         <input type="text" name="receiver_name" value="{{ old('receiver_name', $address->receiver_name) }}" class="form-control @error('receiver_name') is-invalid @enderror" required>
@@ -59,6 +60,7 @@
         @error('district_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
         @error('district_name')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
     </div>
+    {{-- Autocomplete OpenStreetMap membantu mengisi alamat jalan, tetapi input manual tetap diperbolehkan. --}}
     <div class="col-12">
         <label for="full_address" class="form-label">Nama Jalan, Gedung, No. Rumah</label>
         <div class="position-relative">
@@ -181,6 +183,7 @@
             select.value = value;
         }
 
+        // Ambil daftar provinsi dari endpoint RajaOngkir aplikasi.
         async function loadProvinces() {
             hideError();
 
@@ -221,6 +224,7 @@
             }
         }
 
+        // Setelah provinsi dipilih, kota/kabupaten dimuat berdasarkan province_id.
         async function loadCities(selectedId = '', selectedName = '', selectedPostalCode = '', selectedDistrictId = '', selectedDistrictName = '') {
             hideError();
             citySelect.innerHTML = '<option value="">Memuat kota/kabupaten...</option>';
@@ -276,6 +280,7 @@
             }
         }
 
+        // Kecamatan/district menjadi destination utama untuk ongkir Komerce.
         async function loadDistricts(selectedId = '', selectedName = '', selectedPostalCode = '') {
             hideError();
             districtSelect.innerHTML = '<option value="">Memuat kecamatan...</option>';
@@ -367,6 +372,7 @@
             ].filter(Boolean).join(', ');
         }
 
+        // Pencarian alamat memakai Nominatim dengan debounce agar tidak terlalu sering request.
         async function searchAddressSuggestions() {
             const typed = fullAddress.value.trim();
 
@@ -458,6 +464,7 @@
                 hideSuggestions();
             }
         });
+        // Cegah submit jika id dan nama wilayah belum lengkap.
         provinceSelect.closest('form')?.addEventListener('submit', (event) => {
             if (!provinceSelect.value || !provinceName.value || !citySelect.value || !cityName.value || !districtSelect.value || !districtName.value) {
                 event.preventDefault();

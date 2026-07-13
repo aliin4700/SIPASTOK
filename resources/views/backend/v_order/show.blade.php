@@ -62,6 +62,7 @@
             </dl>
         </div>
 
+        {{-- Form ini hanya mengubah status order, bukan status pembayaran. --}}
         <div class="col-lg-5">
             <h4 class="h5 mb-3">Update Status Order</h4>
             <form action="{{ route('backend.order.updateStatus', $order) }}" method="post">
@@ -84,6 +85,7 @@
     </div>
 </div>
 
+{{-- Informasi pembayaran dipisahkan dari update status order. --}}
 <div class="breadlab-admin-panel mb-4">
     <h4 class="h5 mb-3">Informasi Pembayaran</h4>
     <dl class="row mb-0">
@@ -153,6 +155,7 @@
                 <dd class="col-sm-8">Rp {{ number_format($order->shipping_cost ?? 0, 0, ',', '.') }}</dd>
             </dl>
         </div>
+        {{-- Tracking hanya untuk shipping courier. --}}
         <div class="col-lg-5">
             @if(($shipment->shipping_type ?? $order->transaction_method) === 'shipping')
             <form action="{{ route('backend.order.updateTracking', $order) }}" method="post">

@@ -12,6 +12,9 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use App\Helpers\ImageHelper;
 
+/**
+ * Controller auth utama untuk customer dan role internal.
+ */
 class CustomerController extends Controller
 {
     public function index()
@@ -45,6 +48,7 @@ class CustomerController extends Controller
 
     public function authenticate(Request $request)
     {
+        // Satu login form digunakan untuk semua role, lalu diarahkan sesuai users.role.
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
@@ -87,6 +91,7 @@ class CustomerController extends Controller
             'phone' => ['nullable', 'string', 'max:20'],
         ]);
 
+        // User dan profil customer dibuat dalam transaction agar tidak ada akun setengah jadi.
         $user = DB::transaction(function () use ($validated) {
             $user = User::create([
                 'name' => $validated['name'],
@@ -122,6 +127,7 @@ class CustomerController extends Controller
         try {
             $socialUser = Socialite::driver('google')->user();
 
+            // Google login hanya untuk customer; admin/internal tetap memakai email-password.
             $user = DB::transaction(function () use ($socialUser) {
                 $registeredUser = User::where('email', $socialUser->email)->first();
 
@@ -169,6 +175,7 @@ class CustomerController extends Controller
 
     public function account(Request $request)
     {
+        // Pastikan profil customer tersedia walau user dibuat dari flow lama/Google.
         $customer = Customer::firstOrCreate([
             'user_id' => $request->user()->id,
         ]);
@@ -183,6 +190,7 @@ class CustomerController extends Controller
     public function updateAccount(Request $request)
     {
         $user = $request->user();
+        // Data akun tersebar di users dan customers, sehingga update dilakukan berurutan.
         $customer = Customer::firstOrCreate([
             'user_id' => $user->id,
         ]);
@@ -236,6 +244,7 @@ class CustomerController extends Controller
 
     private function redirectPathForRole(string $role): string
     {
+        // Redirect role internal tetap kompatibel dengan satu form login.
         return match ($role) {
             'super_admin', 'admin' => '/backend/dashboard',
             'manager' => '/manager/dashboard',

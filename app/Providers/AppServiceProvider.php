@@ -26,10 +26,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Semua pagination backend memakai Bootstrap 5 agar tampilan list konsisten.
         Paginator::useBootstrapFive();
 
         View::composer('backend.v_layouts.app', function ($view) {
             try {
+                // Badge sidebar dibuat ringan: hanya count item yang butuh perhatian admin.
                 $view->with('backendSidebarBadges', [
                     'orders' => Order::whereIn('status', ['pending', 'waiting_payment', 'paid', 'processing'])->count(),
                     'payments' => Payment::where('payment_status', 'waiting_confirmation')->count(),

@@ -37,6 +37,7 @@
         @endif
 
         <div class="row g-4">
+            {{-- Status pembayaran customer dan link bukti transfer jika tersedia. --}}
             <section class="col-lg-8">
                 <div class="panel p-4">
                     <h2 class="h5 mb-3">Status Pembayaran</h2>
@@ -70,6 +71,7 @@
                 </div>
             </section>
 
+            {{-- Ringkasan total order dan aksi upload bukti transfer. --}}
             <aside class="col-lg-4">
                 <div class="panel p-4">
                     <h2 class="h5 mb-3">Ringkasan</h2>

@@ -1,0 +1,56 @@
+@startuml
+title Sequence Login
+
+skinparam style strictuml
+hide footbox
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam handwritten false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam ArrowColor Black
+
+skinparam sequence {
+    ParticipantStyle uml2
+    LifeLineBorderColor Black
+    LifeLineBackgroundColor White
+    ParticipantBorderColor Black
+    ParticipantBackgroundColor White
+    ActorBorderColor Black
+    ActorBackgroundColor White
+    ArrowColor Black
+}
+
+actor "Pengguna" as Pengguna
+boundary "Form Login" as FormLogin
+control "LoginController" as LoginController
+entity "User" as User
+entity "Dashboard" as Dashboard
+
+Pengguna -> FormLogin : Buka Halaman Login()
+activate FormLogin
+Pengguna -> FormLogin : Input Email
+Pengguna -> FormLogin : Input Password
+Pengguna -> FormLogin : Klik Login()
+
+FormLogin -> LoginController : Kirim Data Login()
+activate LoginController
+LoginController -> User : Cek Data()
+activate User
+User --> LoginController : Tampil Data()
+deactivate User
+
+LoginController -> LoginController : Validasi
+LoginController --> FormLogin : TampilPesanLoginGagal()
+FormLogin --> Pengguna : Pesan Login Gagal
+
+LoginController -> Dashboard : Tampil Halaman Dashboard()
+activate Dashboard
+Dashboard --> Pengguna : Dashboard
+deactivate Dashboard
+
+deactivate LoginController
+deactivate FormLogin
+
+@enduml

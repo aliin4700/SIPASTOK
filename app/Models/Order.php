@@ -5,8 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Order final dari checkout online maupun cashier POS.
+ */
 class Order extends Model
 {
+    // Status operasional order; status pembayaran tetap dipisahkan di Payment.
     public const STATUSES = [
         'pending',
         'waiting_payment',
@@ -105,11 +109,13 @@ class Order extends Model
 
     public function normalizedStatus(): string
     {
+        // Fallback menjaga tampilan admin tetap aman bila data lama punya status tidak dikenal.
         return in_array($this->status, self::STATUSES, true) ? $this->status : 'pending';
     }
 
     public function paymentStatus(): string
     {
+        // Payment model menjadi sumber utama, orders.payment_status hanya ringkasan.
         return $this->payment?->payment_status ?? $this->payment_status ?? 'pending';
     }
 

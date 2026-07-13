@@ -20,6 +20,7 @@
     </div>
 </div>
 
+{{-- Card statistik dashboard admin. --}}
 <div class="row g-3 mb-4">
     <div class="col-sm-6 col-xl">
         <div class="summary-card">
@@ -53,6 +54,7 @@
     </div>
 </div>
 
+{{-- Grafik status order, status pembayaran, pendapatan, dan produk terlaris. --}}
 <div class="row g-4 mb-4">
     <div class="col-lg-6">
         <div class="breadlab-admin-panel">
@@ -80,6 +82,7 @@
     </div>
 </div>
 
+{{-- Data terbaru untuk tindak lanjut admin. --}}
 <div class="row g-4">
     <div class="col-xl-8">
         <div class="breadlab-admin-panel">
@@ -145,6 +148,7 @@
     const charts = @json($charts);
     const palette = ['#8B4513', '#D2691E', '#2962ff', '#198754', '#ffc107', '#dc3545', '#6f42c1', '#20c997', '#6c757d'];
 
+    // Helper kecil agar konfigurasi Chart.js dashboard tidak berulang.
     function makeChart(id, type, labels, data, options = {}) {
         const element = document.getElementById(id);
         if (!element) {

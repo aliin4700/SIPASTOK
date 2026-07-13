@@ -7,6 +7,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
+/**
+ * CRUD kategori produk backend.
+ */
 class CategoryController extends Controller
 {
     public function index()
@@ -29,6 +32,7 @@ class CategoryController extends Controller
 
     public function store(Request $request)
     {
+        // Nama kategori dibuat unik agar slug katalog tidak bentrok.
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:categories,name'],
             'status' => ['nullable', Rule::in(['active', 'inactive'])],
@@ -77,6 +81,7 @@ class CategoryController extends Controller
 
     private function uniqueSlug(string $name, ?Category $category = null): string
     {
+        // Slug dipakai untuk URL kategori produk.
         $baseSlug = Str::slug($name);
         $slug = $baseSlug;
         $counter = 2;

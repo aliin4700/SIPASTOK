@@ -14,14 +14,24 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use RuntimeException;
 
+/**
+ * Mengubah cart customer menjadi order final.
+ *
+ * Controller ini menjaga pembuatan order, order item, payment, dan shipment
+ * tetap konsisten dalam satu database transaction.
+ */
 class CheckoutController extends Controller
 {
     public function __construct(private RajaOngkirService $rajaOngkir)
     {
     }
 
+    /**
+     * Menampilkan halaman checkout dan ringkasan cart customer.
+     */
     public function index()
     {
+        // Checkout selalu dimulai dari cart aktif customer.
         $cart = $this->cart()->load('items.product.category');
 
         if ($cart->items->isEmpty()) {
@@ -39,8 +49,13 @@ class CheckoutController extends Controller
         ]);
     }
 
+    /**
+     * Memproses checkout menjadi order, order item, payment, dan shipment.
+     */
     public function process(Request $request)
     {
+        // Field checkout dibuat kondisional karena pickup, local delivery,
+        // dan shipping memiliki kebutuhan data yang berbeda.
         $validated = $request->validate([
             'transaction_method' => ['required', Rule::in(['pickup', 'local_delivery', 'shipping'])],
             'payment_method' => ['required', Rule::in(['cash', 'bank_transfer', 'midtrans'])],
@@ -71,6 +86,8 @@ class CheckoutController extends Controller
         $selectedAddress = null;
 
         if ($validated['transaction_method'] === 'shipping') {
+            // Shipping memakai address book milik customer agar ongkir tidak bergantung
+            // pada alamat bebas yang bisa dimanipulasi dari frontend.
             $selectedAddress = $this->customer()->addresses()->whereKey($validated['customer_address_id'])->first();
 
             if (! $selectedAddress) {
@@ -107,6 +124,8 @@ class CheckoutController extends Controller
             return redirect()->route('cart.index')->with('error', 'Keranjang masih kosong.');
         }
 
+        // Cek stok awal memberi pesan cepat sebelum masuk transaction.
+        // Stok tetap dicek ulang dengan lockForUpdate saat order dibuat.
         foreach ($cart->items as $item) {
             if ((int) $item->quantity > (int) $item->product->stock) {
                 return redirect()->route('cart.index')
@@ -118,6 +137,7 @@ class CheckoutController extends Controller
             $shipmentOption = $this->shipmentOption($validated, $cart);
 
             $order = DB::transaction(function () use ($cart, $validated, $shipmentOption, $selectedAddress) {
+                // Reload cart di dalam transaction agar produk dan harga yang dipakai masih segar.
                 $cart->load('items.product');
                 $subtotal = $this->subtotal($cart);
                 $totalWeight = $this->totalWeight($cart);
@@ -144,6 +164,7 @@ class CheckoutController extends Controller
                 ]);
 
                 foreach ($cart->items as $item) {
+                    // Lock produk mencegah dua checkout bersamaan memakai stok yang sama.
                     $product = Product::whereKey($item->product_id)->lockForUpdate()->firstOrFail();
 
                     if ((int) $item->quantity > (int) $product->stock) {
@@ -205,6 +226,7 @@ class CheckoutController extends Controller
                     'delivery_distance' => null,
                 ]);
 
+                // Cart dikosongkan hanya setelah order, payment, shipment, dan item berhasil dibuat.
                 $cart->items()->delete();
 
                 return $order;
@@ -242,9 +264,13 @@ class CheckoutController extends Controller
         return max($this->defaultWeight(), $weight);
     }
 
+    /**
+     * Menentukan data ongkir berdasarkan metode transaksi.
+     */
     private function shipmentOption(array $validated, Cart $cart): array
     {
         if ($validated['transaction_method'] === 'pickup') {
+            // Pickup tidak membutuhkan ongkir, kurir, atau estimasi pengiriman.
             return [
                 'shipping_cost' => 0,
                 'courier' => null,
@@ -254,6 +280,7 @@ class CheckoutController extends Controller
         }
 
         if ($validated['transaction_method'] === 'local_delivery') {
+            // Local delivery memakai fee internal dari konfigurasi, bukan input frontend.
             return [
                 'shipping_cost' => $this->localDeliveryFee(),
                 'courier' => null,
@@ -263,6 +290,7 @@ class CheckoutController extends Controller
         }
 
         if (config('services.rajaongkir.key') && (string) config('services.rajaongkir.mode', 'starter') !== 'komerce') {
+            // Mode starter bisa divalidasi ulang ke RajaOngkirService sebelum order dibuat.
             $service = $this->rajaOngkir->findService(
                 $validated['destination'],
                 $validated['courier'],
@@ -282,6 +310,7 @@ class CheckoutController extends Controller
             ];
         }
 
+        // Mode Komerce menggunakan service yang sudah dipilih di UI checkout.
         return [
             'shipping_cost' => (float) ($validated['shipping_cost'] ?? 0),
             'courier' => $validated['courier'] ?? null,
@@ -300,8 +329,12 @@ class CheckoutController extends Controller
         return max(1, (int) config('services.rajaongkir.default_weight', 1000));
     }
 
+    /**
+     * Membuat nomor pesanan unik.
+     */
     private function orderNumber(): string
     {
+        // Format pendek ini cukup aman untuk transaksi harian dan tetap mudah dibaca admin.
         do {
             $number = 'BRD-' . now()->format('Ymd') . '-' . Str::upper(Str::random(4));
         } while (Order::where('order_number', $number)->exists());

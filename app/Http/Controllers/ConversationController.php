@@ -6,11 +6,18 @@ use App\Models\Conversation;
 use App\Models\Customer;
 use App\Models\Order;
 
+/**
+ * Membuka conversation per order untuk customer dan admin.
+ */
 class ConversationController extends Controller
 {
+    /**
+     * Menampilkan chat customer untuk satu order.
+     */
     public function show(Order $order)
     {
         $customer = $this->customer();
+        // Customer hanya bisa membuka chat untuk order miliknya sendiri.
         abort_unless((int) $order->customer_id === (int) $customer->id, 403);
 
         $conversation = Conversation::firstOrCreate([
@@ -20,6 +27,7 @@ class ConversationController extends Controller
             'status' => 'open',
         ]);
 
+        // Saat customer membuka chat, pesan dari admin dianggap sudah dibaca.
         $conversation->messages()
             ->where('sender_type', 'admin')
             ->where('is_read', false)
@@ -32,6 +40,9 @@ class ConversationController extends Controller
         ]);
     }
 
+    /**
+     * Menampilkan daftar conversation untuk admin.
+     */
     public function index()
     {
         $conversations = Conversation::with('order', 'customer.user', 'admin', 'latestMessage.sender')
@@ -49,8 +60,12 @@ class ConversationController extends Controller
         ]);
     }
 
+    /**
+     * Menampilkan detail conversation untuk admin.
+     */
     public function adminShow(Conversation $conversation)
     {
+        // Saat admin membuka chat, pesan customer di conversation ini dianggap sudah dibaca.
         $conversation->messages()
             ->where('sender_type', 'customer')
             ->where('is_read', false)

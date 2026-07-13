@@ -14,13 +14,25 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Throwable;
 
+/**
+ * Adapter HTTP untuk RajaOngkir Starter dan Komerce.
+ *
+ * Semua response dinormalisasi menjadi JSON aman untuk AJAX checkout/address book
+ * tanpa pernah mengembalikan API key.
+ */
 class RajaOngkirController extends Controller
 {
+    /**
+     * Mengambil daftar provinsi dari RajaOngkir/Komerce.
+     */
     public function provinces(): JsonResponse
     {
         return $this->get($this->endpointFor('province'));
     }
 
+    /**
+     * Mengambil daftar kota berdasarkan province_id.
+     */
     public function cities(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -36,6 +48,9 @@ class RajaOngkirController extends Controller
         ]);
     }
 
+    /**
+     * Mengambil daftar kecamatan/district berdasarkan city_id.
+     */
     public function districts(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -55,6 +70,9 @@ class RajaOngkirController extends Controller
         return $this->komerceDistricts((int) $validated['city_id']);
     }
 
+    /**
+     * Menghitung ongkir berdasarkan origin, destination, weight, dan courier.
+     */
     public function cost(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -68,6 +86,7 @@ class RajaOngkirController extends Controller
         $originCityId = config('services.rajaongkir.origin_city_id');
 
         if ($this->mode() === 'komerce') {
+            // Komerce menghitung ongkir memakai district/subdistrict id, bukan city id.
             $originDistrictId = config('services.rajaongkir.origin_district_id');
 
             if (blank($originDistrictId)) {
@@ -105,6 +124,7 @@ class RajaOngkirController extends Controller
     {
         abort_unless(config('app.debug'), 404);
 
+        // Debug config hanya menampilkan keberadaan key, bukan nilai API key.
         return response()->json([
             'mode' => $this->mode(),
             'base_url' => $this->baseUrl(),
@@ -196,6 +216,7 @@ class RajaOngkirController extends Controller
 
     private function komerceCities(int $provinceId, bool $debug = false): JsonResponse
     {
+        // Beberapa akun Komerce memakai path parameter, sebagian lain query province_id.
         $primaryPath = 'destination/city/' . $provinceId;
         $primary = $this->rawGet($primaryPath);
 
@@ -229,6 +250,7 @@ class RajaOngkirController extends Controller
 
     private function komerceDistricts(int $cityId): JsonResponse
     {
+        // District adalah tujuan final ongkir Komerce.
         $path = 'destination/district/' . $cityId;
         $response = $this->rawGet($path);
 
@@ -281,6 +303,7 @@ class RajaOngkirController extends Controller
         $path = $this->endpointFor('cost');
 
         if (config('app.debug')) {
+            // Payload aman untuk log debug; API key tidak pernah ikut dicatat.
             Log::debug('RajaOngkir Komerce cost request.', [
                 'origin' => $payload['origin'],
                 'destination' => $payload['destination'],
@@ -321,6 +344,7 @@ class RajaOngkirController extends Controller
         $baseUrl = $this->baseUrl();
 
         if (blank($apiKey)) {
+            // Konfigurasi kosong dikembalikan sebagai JSON jelas agar dropdown tidak gagal diam-diam.
             return $this->configurationError('RAJAONGKIR_API_KEY wajib diisi.');
         }
 
@@ -457,6 +481,7 @@ class RajaOngkirController extends Controller
         }
 
         if ($debug && $response->status() === 401) {
+            // 401 sering berarti header key salah untuk jenis akun yang digunakan.
             return $this->apiError(
                 401,
                 'API key tidak valid atau header key salah',

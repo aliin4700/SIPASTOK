@@ -1,0 +1,41 @@
+@startuml
+title act Admin Produk
+
+skinparam shadowing true
+skinparam handwritten false
+skinparam backgroundColor white
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam ArrowColor #555555
+skinparam roundcorner 15
+skinparam activity {
+  BackgroundColor #FFF2D8
+  BorderColor #B8B8B8
+}
+skinparam partition {
+  BorderColor #999999
+  BackgroundColor white
+}
+
+|Admin|
+start
+:Memilih Halaman Produk;
+|Sistem|
+:Memproses Data Produk;
+:Menampilkan Data Produk;
+|Admin|
+:Melakukan Pengolahan Data Produk;
+if (Pilih aksi?) then (Tambah)
+  :Tambah Data Produk;
+elseif (Ubah) then
+  :Ubah Data Produk;
+elseif (Hapus) then
+  :Hapus Data Produk;
+else (Lihat)
+  :Lihat Data Produk;
+endif
+|Sistem|
+:Memproses Data Produk;
+:Menampilkan Data Produk Terbaru;
+stop
+@enduml

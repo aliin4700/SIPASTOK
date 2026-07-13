@@ -36,6 +36,7 @@
         @endif
 
         <div class="row g-4">
+            {{-- Daftar item cart customer sebelum checkout. --}}
             <section class="col-lg-8">
                 <div class="panel p-3">
                     @forelse($cart->items as $item)
@@ -72,6 +73,7 @@
                 </div>
             </section>
 
+            {{-- Ringkasan cart dipakai customer untuk mengecek total sebelum checkout. --}}
             <aside class="col-lg-4">
                 <div class="panel p-4">
                     <h2 class="h5 mb-3">Ringkasan</h2>

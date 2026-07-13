@@ -5,10 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Alamat tersimpan customer untuk pengiriman marketplace-style.
+ */
 class CustomerAddress extends Model
 {
     use HasFactory;
 
+    // Data alamat disimpan lengkap sampai district agar cocok dengan ongkir Komerce.
     protected $fillable = [
         'customer_id',
         'receiver_name',
@@ -28,6 +32,7 @@ class CustomerAddress extends Model
         'is_default',
     ];
 
+    // Cast menjaga flag default dan koordinat mudah dipakai di view.
     protected $casts = [
         'is_default' => 'boolean',
         'latitude' => 'decimal:7',
@@ -36,11 +41,13 @@ class CustomerAddress extends Model
 
     public function customer()
     {
+        // Setiap alamat dimiliki oleh satu customer.
         return $this->belongsTo(Customer::class);
     }
 
     public function snapshotAddress(): string
     {
+        // Snapshot dipakai saat checkout agar order tidak berubah jika address book diedit.
         return collect([
             $this->full_address,
             $this->detail_address,

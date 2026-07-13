@@ -61,12 +61,14 @@ use App\Http\Controllers\Staff\WasteRecordController as StaffWasteRecordControll
 use App\Http\Controllers\Staff\ProductionRecordController as StaffProductionRecordController;
 use App\Http\Controllers\Staff\StockOpnameController as StaffStockOpnameController;
 
+// Entry point publik selalu diarahkan ke beranda katalog.
 Route::get('/', function () {
     // return view('welcome');
     // return redirect()->route('backend.login');
     return redirect()->route('beranda');
 });
 
+// Satu form login dipakai untuk customer dan role internal.
 Route::middleware('guest')->group(function () {
     Route::get('/login', [CustomerController::class, 'login'])->name('login');
     Route::post('/login', [CustomerController::class, 'authenticate'])->name('login.store');
@@ -80,6 +82,7 @@ Route::middleware('guest')->group(function () {
 Route::get('/auth/google/callback', [CustomerController::class, 'callback'])->name('auth.callback');
 Route::post('/logout', [CustomerController::class, 'logout'])->name('logout')->middleware('auth');
 
+// Route debug RajaOngkir hanya aktif di mode development agar detail API tidak terbuka di production.
 if (config('app.debug')) {
     Route::get('/debug/rajaongkir/config', [RajaOngkirController::class, 'debugConfig'])
         ->name('debug.rajaongkir.config');
@@ -91,6 +94,7 @@ if (config('app.debug')) {
         ->name('debug.rajaongkir.cost');
 }
 
+// Area manager bersifat monitoring/read-only dan tetap bisa diakses admin/super_admin.
 Route::middleware(['auth', 'role:manager,admin,super_admin'])->group(function () {
     Route::get('/manager/dashboard', function () {
         return view('panel-placeholder', [
@@ -127,6 +131,7 @@ Route::middleware(['auth', 'role:manager,admin,super_admin'])->group(function ()
     Route::get('/manager/recipes/{recipe}', [ManagerRecipeController::class, 'show'])->name('manager.recipes.show');
 });
 
+// Panel cashier dipisahkan dari backend admin agar POS tidak bercampur dengan modul konfigurasi.
 Route::prefix('cashier')->name('cashier.')->middleware(['auth', 'role:cashier,admin,super_admin'])->group(function () {
     Route::get('/', [CashierDashboardController::class, 'index'])->name('index');
     Route::get('/shift', [CashierShiftController::class, 'index'])->name('shift.index');
@@ -147,6 +152,7 @@ Route::prefix('cashier')->name('cashier.')->middleware(['auth', 'role:cashier,ad
     Route::get('/receipts/{order}/print', [CashierReceiptController::class, 'print'])->name('receipts.print');
 });
 
+// Panel staff outlet hanya menampilkan pekerjaan operasional sesuai akses outlet/divisi.
 Route::middleware(['auth', 'role:staff_outlet,admin,super_admin'])->group(function () {
     Route::get('/staff/dashboard', [StaffDashboardController::class, 'index'])->name('staff.dashboard');
     Route::get('/staff/daily-operations', [StaffDailyOperationController::class, 'index'])->name('staff.daily-operations.index');
@@ -181,6 +187,7 @@ Route::middleware(['auth', 'role:staff_outlet,admin,super_admin'])->group(functi
     Route::post('/staff/stock-opnames/{stockOpname}/cancel', [StaffStockOpnameController::class, 'cancel'])->name('staff.stock-opnames.cancel');
 });
 
+// Backend admin berisi konfigurasi, monitoring, inventory, finance, dan verifikasi operasional.
 Route::middleware(['auth', 'is.admin'])->group(function () {
     Route::get('/admin', fn () => redirect()->route('backend.dashboard'))->name('backend.beranda');
     Route::get('backend/beranda', fn () => redirect()->route('backend.dashboard'));
@@ -279,13 +286,13 @@ Route::middleware(['auth', 'is.admin'])->group(function () {
     Route::get('backend/chats/{conversation}/messages', [MessageController::class, 'adminFetch'])->name('backend.chat.fetch');
 });
 
-// Frontend
+// Halaman katalog publik.
 Route::get('/beranda', [BerandaController::class, 'index'])->name('beranda');
 Route::get('/products', [ProductController::class, 'catalog'])->name('product.index');
 Route::get('/products/category/{category:slug}', [ProductController::class, 'category'])->name('product.category');
 Route::get('/products/{product}', [ProductController::class, 'detail'])->name('product.detail');
 
-// Group route untuk customer
+// Area customer setelah login: akun, alamat, cart, checkout, order, payment, dan chat.
 Route::middleware(['auth', 'is.customer'])->group(function () {
     // Route untuk menampilkan halaman akun customer
     Route::get('/customer/account', [CustomerController::class, 'account'])
@@ -295,6 +302,7 @@ Route::middleware(['auth', 'is.customer'])->group(function () {
     Route::put('/customer/account', [CustomerController::class, 'updateAccount'])
         ->name('customer.account.update');
 
+    // Address book menjadi sumber alamat pengiriman untuk checkout shipping.
     Route::get('/customer/addresses', [CustomerAddressController::class, 'index'])->name('customer.address.index');
     Route::get('/customer/addresses/create', [CustomerAddressController::class, 'create'])->name('customer.address.create');
     Route::post('/customer/addresses', [CustomerAddressController::class, 'store'])->name('customer.address.store');
@@ -303,22 +311,27 @@ Route::middleware(['auth', 'is.customer'])->group(function () {
     Route::delete('/customer/addresses/{address}', [CustomerAddressController::class, 'destroy'])->name('customer.address.destroy');
     Route::patch('/customer/addresses/{address}/default', [CustomerAddressController::class, 'setDefault'])->name('customer.address.setDefault');
 
+    // Cart masih berupa keranjang aktif customer, bukan order.
     Route::get('cart', [CartController::class, 'index'])->name('cart.index');
     Route::post('cart/add/{product}', [CartController::class, 'add'])->name('cart.add');
     Route::patch('cart/items/{cartItem}', [CartController::class, 'update'])->name('cart.update');
     Route::delete('cart/items/{cartItem}', [CartController::class, 'remove'])->name('cart.remove');
     Route::delete('cart/clear', [CartController::class, 'clear'])->name('cart.clear');
+    // Checkout mengubah cart menjadi order, payment, dan shipment.
     Route::get('checkout', [CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('checkout', [CheckoutController::class, 'process'])->name('checkout.process');
+    // Endpoint AJAX RajaOngkir/Komerce untuk pilihan shipping di checkout dan address book.
     Route::get('rajaongkir/provinces', [RajaOngkirController::class, 'provinces'])->name('rajaongkir.provinces');
     Route::get('rajaongkir/cities', [RajaOngkirController::class, 'cities'])->name('rajaongkir.cities');
     Route::get('rajaongkir/districts', [RajaOngkirController::class, 'districts'])->name('rajaongkir.districts');
     Route::post('rajaongkir/cost', [RajaOngkirController::class, 'cost'])->name('rajaongkir.cost');
+    // Riwayat order customer dan chat per-order.
     Route::get('orders', [OrderController::class, 'history'])->name('order.history');
     Route::get('orders/{order}/chat', [ConversationController::class, 'show'])->name('chat.show');
     Route::post('orders/{order}/chat/messages', [MessageController::class, 'send'])->name('chat.send');
     Route::get('orders/{order}/chat/messages', [MessageController::class, 'fetch'])->name('chat.fetch');
     Route::get('orders/{order}', [OrderController::class, 'detail'])->name('order.detail');
+    // Payment manual customer: lihat status dan upload bukti transfer.
     Route::get('payments/{order}', [PaymentController::class, 'show'])->name('payment.show');
     Route::get('payments/{order}/upload-proof', [PaymentController::class, 'uploadProof'])->name('payment.uploadProof');
     Route::post('payments/{order}/upload-proof', [PaymentController::class, 'storeProof'])->name('payment.storeProof');

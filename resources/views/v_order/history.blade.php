@@ -35,6 +35,7 @@
         <div class="alert alert-success">{{ session('success') }}</div>
         @endif
 
+        {{-- Tabel riwayat hanya berisi order milik customer yang sedang login. --}}
         <div class="panel p-3 p-lg-4">
             <div class="table-responsive">
                 <table class="table align-middle">

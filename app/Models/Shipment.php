@@ -5,10 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Detail pengiriman/pengambilan untuk satu order.
+ */
 class Shipment extends Model
 {
     use HasFactory;
 
+    // Kolom ini menampung pickup, local delivery, dan courier shipping.
     protected $fillable = [
         'order_id',
         'shipping_type',
@@ -24,6 +28,7 @@ class Shipment extends Model
         'delivery_distance',
     ];
 
+    // Koordinat local delivery dan ongkir dibaca sebagai angka.
     protected $casts = [
         'shipping_cost' => 'decimal:2',
         'delivery_latitude' => 'decimal:7',
@@ -33,6 +38,7 @@ class Shipment extends Model
 
     public function order()
     {
+        // Shipment selalu melekat pada satu order.
         return $this->belongsTo(Order::class);
     }
 }

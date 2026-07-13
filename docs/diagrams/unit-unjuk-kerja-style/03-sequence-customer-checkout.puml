@@ -1,0 +1,64 @@
+@startuml
+title Sequence Customer Checkout
+
+skinparam style strictuml
+hide footbox
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam handwritten false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam ArrowColor Black
+
+skinparam sequence {
+    ParticipantStyle uml2
+    LifeLineBorderColor Black
+    LifeLineBackgroundColor White
+    ParticipantBorderColor Black
+    ParticipantBackgroundColor White
+    ActorBorderColor Black
+    ActorBackgroundColor White
+    ArrowColor Black
+}
+
+actor "Customer" as Customer
+boundary "Halaman Produk" as HalamanProduk
+control "CartController" as CartController
+control "CheckoutController" as CheckoutController
+entity "Order" as Order
+entity "Payment" as Payment
+
+Customer -> HalamanProduk : Buka Halaman Produk()
+activate HalamanProduk
+Customer -> HalamanProduk : Pilih Produk
+Customer -> HalamanProduk : Klik Tambah Keranjang()
+
+HalamanProduk -> CartController : Simpan Keranjang()
+activate CartController
+CartController --> HalamanProduk : Tampil Keranjang()
+deactivate CartController
+
+Customer -> HalamanProduk : Buka Checkout()
+HalamanProduk -> CheckoutController : Kirim Data Checkout()
+activate CheckoutController
+Customer -> HalamanProduk : Pilih Metode Pengiriman
+Customer -> HalamanProduk : Pilih Metode Pembayaran
+Customer -> HalamanProduk : Klik Buat Pesanan()
+
+CheckoutController -> Order : Simpan Order()
+activate Order
+Order --> CheckoutController : Data Pesanan Tersimpan
+deactivate Order
+
+CheckoutController -> Payment : Simpan Payment()
+activate Payment
+Payment --> CheckoutController : Data Pembayaran Tersimpan
+deactivate Payment
+
+CheckoutController --> HalamanProduk : Tampil Status Pesanan()
+deactivate CheckoutController
+HalamanProduk --> Customer : Status Pesanan
+deactivate HalamanProduk
+
+@enduml

@@ -1,0 +1,120 @@
+@startuml
+title LRS Breadlab
+
+skinparam shadowing true
+skinparam handwritten false
+skinparam backgroundColor white
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam ArrowColor #555555
+skinparam roundcorner 15
+skinparam class {
+  BackgroundColor #E7E8FF
+  BorderColor #555555
+  HeaderBackgroundColor #D7D9F4
+}
+
+class users {
+  <<column>>
+  * id <<PK>>
+  --
+  name
+  email <<index>>
+  password
+  role
+}
+
+class product_categories {
+  <<column>>
+  * id <<PK>>
+  --
+  name
+  slug <<index>>
+  is_active
+}
+
+class products {
+  <<column>>
+  * id <<PK>>
+  category_id <<FK>>
+  --
+  name
+  slug <<index>>
+  price
+  stock
+  status
+}
+
+class carts {
+  <<column>>
+  * id <<PK>>
+  customer_id <<FK>>
+  --
+  status
+  created_at
+}
+
+class cart_items {
+  <<column>>
+  * id <<PK>>
+  cart_id <<FK>>
+  product_id <<FK>>
+  --
+  quantity
+  price
+}
+
+class orders {
+  <<column>>
+  * id <<PK>>
+  customer_id <<FK>>
+  shipping_method_id <<FK>>
+  --
+  order_number <<index>>
+  status
+  payment_status
+  total_price
+}
+
+class order_items {
+  <<column>>
+  * id <<PK>>
+  order_id <<FK>>
+  product_id <<FK>>
+  --
+  product_name
+  quantity
+  price
+  subtotal
+}
+
+class payments {
+  <<column>>
+  * id <<PK>>
+  order_id <<FK>>
+  --
+  payment_method
+  payment_status
+  paid_at
+}
+
+class shipping_methods {
+  <<column>>
+  * id <<PK>>
+  --
+  name
+  code <<index>>
+  cost
+  is_active
+}
+
+users "1" -- "0..*" orders
+users "1" -- "0..*" carts
+carts "1" -- "1..*" cart_items
+products "1" -- "0..*" cart_items
+orders "1" -- "1..*" order_items
+products "1" -- "0..*" order_items
+orders "1" -- "0..*" payments
+product_categories "1" -- "0..*" products
+shipping_methods "1" -- "0..*" orders
+@enduml

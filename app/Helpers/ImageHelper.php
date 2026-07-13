@@ -2,8 +2,14 @@
 
 namespace App\Helpers;
 
+/**
+ * Helper sederhana untuk upload dan resize gambar tanpa package tambahan.
+ */
 class ImageHelper
 {
+    /**
+     * Menyimpan gambar dan melakukan resize jika ukuran diberikan.
+     */
     public static function uploadAndResize($file, $directory, $fileName, $width = null, $height = null)
     {
         $destinationPath = public_path($directory);

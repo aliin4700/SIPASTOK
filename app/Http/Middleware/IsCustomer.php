@@ -6,6 +6,9 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Middleware area customer.
+ */
 class IsCustomer
 {
     /**
@@ -15,6 +18,7 @@ class IsCustomer
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // Customer route tidak boleh diakses role internal seperti admin/cashier/staff.
         if (auth()->check() && (string) auth()->user()->role === 'customer') {
             return $next($request);
         }
