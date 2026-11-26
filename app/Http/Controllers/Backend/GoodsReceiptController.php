@@ -190,6 +190,12 @@ class GoodsReceiptController extends Controller
                     if (! $result['duplicate'] && $item->purchaseOrderItem) {
                         $item->purchaseOrderItem->increment('received_qty', $item->received_qty);
                     }
+
+                    if (! $result['duplicate'] && (float) $item->unit_cost > 0 && $item->item) {
+                        $item->item->update([
+                            'last_purchase_price' => (float) $item->unit_cost,
+                        ]);
+                    }
                 }
 
                 $goodsReceipt->update([

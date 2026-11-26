@@ -60,21 +60,38 @@ class MaterialRequestController extends Controller
             }
         }
 
+        $mode = $request->input('mode', 'issue_out');
+
         try {
-            $summary = DB::transaction(function () use ($request, $materialRequest) {
+            $summary = DB::transaction(function () use ($request, $materialRequest, $mode) {
                 $summary = ['issued' => 0, 'duplicate' => 0];
 
                 foreach ($materialRequest->items as $item) {
-                    $result = $this->stockMovementService->decreaseStock([
-                        'outlet_id' => $materialRequest->outlet_id,
-                        'inventory_item_id' => $item->inventory_item_id,
-                        'quantity' => $this->issueQuantity($item),
-                        'movement_type' => 'material_issue_out',
-                        'reference_type' => MaterialRequestItem::class,
-                        'reference_id' => $item->id,
-                        'user_id' => $request->user()->id,
-                        'notes' => 'Material issue from material request ' . ($materialRequest->request_number ?? $materialRequest->id),
-                    ]);
+                    $qty = $this->issueQuantity($item);
+
+                    if ($mode === 'restock_in') {
+                        $result = $this->stockMovementService->increaseStock([
+                            'outlet_id' => $materialRequest->outlet_id,
+                            'inventory_item_id' => $item->inventory_item_id,
+                            'quantity' => $qty,
+                            'movement_type' => 'transfer_in',
+                            'reference_type' => MaterialRequestItem::class,
+                            'reference_id' => $item->id,
+                            'user_id' => $request->user()->id,
+                            'notes' => 'Barang masuk / restock divisi dari Take Bahan ' . ($materialRequest->request_number ?? $materialRequest->id),
+                        ]);
+                    } else {
+                        $result = $this->stockMovementService->decreaseStock([
+                            'outlet_id' => $materialRequest->outlet_id,
+                            'inventory_item_id' => $item->inventory_item_id,
+                            'quantity' => $qty,
+                            'movement_type' => 'material_issue_out',
+                            'reference_type' => MaterialRequestItem::class,
+                            'reference_id' => $item->id,
+                            'user_id' => $request->user()->id,
+                            'notes' => 'Material issue from material request ' . ($materialRequest->request_number ?? $materialRequest->id),
+                        ]);
+                    }
 
                     $result['duplicate'] ? $summary['duplicate']++ : $summary['issued']++;
                 }

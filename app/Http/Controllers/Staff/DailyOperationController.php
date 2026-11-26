@@ -172,6 +172,22 @@ class DailyOperationController extends Controller
             return back()->with('error', 'Closing Stock Opname submitted/reviewed wajib ada sebelum tutup operasional.');
         }
 
+        $draftCounts = [
+            'Take Bahan' => $summary['materialRequests']->where('status', 'draft')->count(),
+            'Produksi / WIP' => $summary['productionRecords']->where('status', 'draft')->count(),
+            'Waste' => $summary['wasteRecords']->where('status', 'draft')->count(),
+            'Stock Opname' => $summary['stockOpnames']->where('status', 'draft')->count(),
+        ];
+        $activeDrafts = array_filter($draftCounts, fn (int $count) => $count > 0);
+
+        if (! empty($activeDrafts) && ! $request->boolean('force_close')) {
+            $draftDetails = collect($activeDrafts)
+                ->map(fn ($count, $label) => "{$label} ({$count} draft)")
+                ->implode(', ');
+
+            return back()->with('error', "Masih terdapat dokumen berstatus DRAFT yang belum disubmit atau dibatalkan: {$draftDetails}. Silakan Submit atau Cancel dokumen tersebut terlebih dahulu.");
+        }
+
         $data = $request->validate([
             'closing_notes' => ['nullable', 'string', 'max:5000'],
         ]);

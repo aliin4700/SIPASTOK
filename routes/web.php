@@ -40,6 +40,7 @@ use App\Http\Controllers\Backend\SupplierController as BackendSupplierController
 use App\Http\Controllers\Backend\PurchaseOrderController as BackendPurchaseOrderController;
 use App\Http\Controllers\Backend\GoodsReceiptController as BackendGoodsReceiptController;
 use App\Http\Controllers\Backend\RecipeController as BackendRecipeController;
+use App\Http\Controllers\Backend\SoldProductReportController as BackendSoldProductReportController;
 use App\Http\Controllers\Manager\CashierShiftReportController as ManagerCashierShiftReportController;
 use App\Http\Controllers\Manager\FinanceDashboardController as ManagerFinanceDashboardController;
 use App\Http\Controllers\Manager\SalesTargetController as ManagerSalesTargetController;
@@ -96,12 +97,7 @@ if (config('app.debug')) {
 
 // Area manager bersifat monitoring/read-only dan tetap bisa diakses admin/super_admin.
 Route::middleware(['auth', 'role:manager,admin,super_admin'])->group(function () {
-    Route::get('/manager/dashboard', function () {
-        return view('panel-placeholder', [
-            'title' => 'Manager Dashboard',
-            'message' => 'Panel monitoring manager sedang disiapkan.',
-        ]);
-    })->name('manager.dashboard');
+    Route::get('/manager/dashboard', [ManagerInventoryMonitoringController::class, 'dashboard'])->name('manager.dashboard');
 
     Route::get('/manager/finance', [ManagerFinanceDashboardController::class, 'dashboard'])->middleware('finance.access')->name('manager.finance.dashboard');
     Route::get('/manager/sales-targets', [ManagerSalesTargetController::class, 'index'])->middleware('finance.access')->name('manager.sales-targets.index');
@@ -112,21 +108,27 @@ Route::middleware(['auth', 'role:manager,admin,super_admin'])->group(function ()
     Route::get('/manager/inventory', [ManagerInventoryMonitoringController::class, 'inventory'])->name('manager.inventory.index');
     Route::get('/manager/daily-operations', [ManagerInventoryMonitoringController::class, 'dailyOperations'])->name('manager.daily-operations.index');
     Route::get('/manager/daily-operations/{dailyOperation}', [ManagerInventoryMonitoringController::class, 'dailyOperationShow'])->name('manager.daily-operations.show');
+    Route::post('/manager/daily-operations/{dailyOperation}/approve', [ManagerInventoryMonitoringController::class, 'dailyOperationApprove'])->name('manager.daily-operations.approve');
     Route::get('/manager/opening-alerts', [ManagerInventoryMonitoringController::class, 'openingAlerts'])->name('manager.opening-alerts.index');
     Route::get('/manager/material-requests', [ManagerMaterialRequestController::class, 'index'])->name('manager.material-requests.index');
     Route::get('/manager/material-requests/{materialRequest}', [ManagerMaterialRequestController::class, 'show'])->name('manager.material-requests.show');
+    Route::post('/manager/material-requests/{materialRequest}/issue-stock', [ManagerMaterialRequestController::class, 'issueStock'])->name('manager.material-requests.issue-stock');
     Route::get('/manager/waste-records', [ManagerWasteRecordController::class, 'index'])->name('manager.waste-records.index');
     Route::get('/manager/waste-records/{wasteRecord}', [ManagerWasteRecordController::class, 'show'])->name('manager.waste-records.show');
+    Route::post('/manager/waste-records/{wasteRecord}/apply-stock', [ManagerWasteRecordController::class, 'applyStock'])->name('manager.waste-records.apply-stock');
     Route::get('/manager/production-records', [ManagerProductionRecordController::class, 'index'])->name('manager.production-records.index');
     Route::get('/manager/production-records/{productionRecord}', [ManagerProductionRecordController::class, 'show'])->name('manager.production-records.show');
+    Route::post('/manager/production-records/{productionRecord}/apply-stock', [ManagerProductionRecordController::class, 'applyStock'])->name('manager.production-records.apply-stock');
     Route::get('/manager/stock-opnames', [ManagerStockOpnameController::class, 'index'])->name('manager.stock-opnames.index');
     Route::get('/manager/stock-opnames/{stockOpname}', [ManagerStockOpnameController::class, 'show'])->name('manager.stock-opnames.show');
+    Route::post('/manager/stock-opnames/{stockOpname}/review', [ManagerStockOpnameController::class, 'review'])->name('manager.stock-opnames.review');
     Route::get('/manager/suppliers', [ManagerSupplierController::class, 'index'])->name('manager.suppliers.index');
     Route::get('/manager/suppliers/{supplier}', [ManagerSupplierController::class, 'show'])->name('manager.suppliers.show');
     Route::get('/manager/purchase-orders', [ManagerPurchaseOrderController::class, 'index'])->name('manager.purchase-orders.index');
     Route::get('/manager/purchase-orders/{purchaseOrder}', [ManagerPurchaseOrderController::class, 'show'])->name('manager.purchase-orders.show');
     Route::get('/manager/goods-receipts', [ManagerGoodsReceiptController::class, 'index'])->name('manager.goods-receipts.index');
     Route::get('/manager/goods-receipts/{goodsReceipt}', [ManagerGoodsReceiptController::class, 'show'])->name('manager.goods-receipts.show');
+    Route::post('/manager/goods-receipts/{goodsReceipt}/apply-stock', [ManagerGoodsReceiptController::class, 'applyStock'])->name('manager.goods-receipts.apply-stock');
     Route::get('/manager/recipes', [ManagerRecipeController::class, 'index'])->name('manager.recipes.index');
     Route::get('/manager/recipes/{recipe}', [ManagerRecipeController::class, 'show'])->name('manager.recipes.show');
 });
@@ -212,9 +214,9 @@ Route::middleware(['auth', 'is.admin'])->group(function () {
     Route::post('backend/products/{product}/photos', [ProductController::class, 'storePhoto'])->name('backend.product.photo.store');
     Route::delete('backend/product-photos/{photo}', [ProductController::class, 'destroyPhoto'])->name('backend.product.photo.destroy');
 
-    // Route untuk laporan produk
-    Route::get('backend/reports/products', fn () => redirect()->route('backend.product.index'))->name('backend.report.product.index');
-    Route::post('backend/reports/products/print', fn () => redirect()->route('backend.product.index'))->name('backend.report.product.print');
+    // Route untuk laporan produk terjual
+    Route::get('backend/reports/sold-products', [BackendSoldProductReportController::class, 'index'])->name('backend.reports.sold-products.index');
+    Route::post('backend/reports/sold-products/print', [BackendSoldProductReportController::class, 'print'])->name('backend.reports.sold-products.print');
 
     Route::get('backend/orders', [AdminOrderController::class, 'index'])->name('backend.order.index');
     Route::get('backend/orders/{order}', [AdminOrderController::class, 'show'])->name('backend.order.show');

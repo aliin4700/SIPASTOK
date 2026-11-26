@@ -9,9 +9,11 @@ use App\Models\InventoryItem;
 use App\Models\InventoryStock;
 use App\Models\Outlet;
 use App\Models\StockOpname;
+use App\Models\StockOpnameItem;
 use App\Models\UserDivisionAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class StockOpnameController extends Controller
 {
@@ -91,10 +93,13 @@ class StockOpnameController extends Controller
         }
 
         $data = $request->validate([
+            'opname_type' => ['nullable', Rule::in(array_keys(StockOpname::TYPES))],
+            'is_blind_count' => ['nullable', 'boolean'],
             'notes' => ['nullable', 'string'],
             'items' => ['required', 'array'],
             'items.*.inventory_item_id' => ['nullable', 'exists:inventory_items,id'],
             'items.*.physical_stock' => ['nullable', 'numeric', 'min:0'],
+            'items.*.variance_reason' => ['nullable', Rule::in(array_keys(StockOpnameItem::VARIANCE_REASONS))],
             'items.*.notes' => ['nullable', 'string'],
         ]);
 
@@ -129,32 +134,45 @@ class StockOpnameController extends Controller
                 'division_id' => $divisionId,
                 'counted_by' => $request->user()->id,
                 'opname_date' => today(),
-                'opname_type' => 'closing',
+                'opname_type' => $data['opname_type'] ?? 'daily_closing',
+                'is_blind_count' => $request->has('is_blind_count') ? $request->boolean('is_blind_count') : true,
                 'status' => 'draft',
+                'total_variance_value' => 0,
                 'notes' => $data['notes'] ?? null,
             ]);
 
             $outletCode = $operation->outlet?->code ?? 'OUT';
             $divisionCode = $operation->division?->code ?? 'DIV';
-            $stockOpname->update([
-                'opname_number' => sprintf('SO-%s-%s-%s-%03d', $outletCode, $divisionCode, today()->format('Ymd'), $stockOpname->id),
-            ]);
+            $totalVarianceValue = 0.0;
 
             foreach ($rows as $row) {
                 $item = InventoryItem::find($row['inventory_item_id']);
                 $stock = InventoryStock::where('outlet_id', $outletId)->where('inventory_item_id', $item->id)->first();
                 $systemStock = (float) ($stock?->current_stock ?? 0);
                 $physicalStock = (float) $row['physical_stock'];
+                $differenceQty = $physicalStock - $systemStock;
+                $unitCost = (float) ($item->last_purchase_price ?? 0);
+                $varianceValue = $differenceQty * $unitCost;
 
                 $stockOpname->items()->create([
                     'inventory_item_id' => $item->id,
                     'system_stock' => $systemStock,
                     'physical_stock' => $physicalStock,
-                    'difference_qty' => $physicalStock - $systemStock,
+                    'difference_qty' => $differenceQty,
+                    'unit_cost' => $unitCost,
+                    'variance_value' => $varianceValue,
                     'unit' => $stock?->unit ?? $item->base_unit,
+                    'variance_reason' => $row['variance_reason'] ?? null,
                     'notes' => $row['notes'] ?? null,
                 ]);
+
+                $totalVarianceValue += $varianceValue;
             }
+
+            $stockOpname->update([
+                'opname_number' => sprintf('SO-%s-%s-%s-%03d', $outletCode, $divisionCode, today()->format('Ymd'), $stockOpname->id),
+                'total_variance_value' => $totalVarianceValue,
+            ]);
 
             return $stockOpname;
         });

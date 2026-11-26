@@ -41,17 +41,19 @@
         </div>
     </div>
 
-    @if($summary['materialRequestsSubmitted']->isEmpty())
-        <div class="alert alert-warning">No material request submitted today.</div>
-    @endif
-    @if($summary['productionRecordsSubmitted']->isEmpty())
-        <div class="alert alert-warning">No production record submitted today.</div>
-    @endif
-    @if($summary['wasteRecordsSubmitted']->isEmpty())
-        <div class="alert alert-warning">No waste record submitted today.</div>
+    @php
+        $draftDocsCount = $summary['materialRequests']->where('status', 'draft')->count()
+            + $summary['productionRecords']->where('status', 'draft')->count()
+            + $summary['wasteRecords']->where('status', 'draft')->count()
+            + $summary['stockOpnames']->where('status', 'draft')->count();
+    @endphp
+    @if($draftDocsCount > 0)
+        <div class="alert alert-danger">
+            <strong>Perhatian:</strong> Masih terdapat <strong>{{ $draftDocsCount }} dokumen berstatus DRAFT</strong> pada shift hari ini. Silakan buka dokumen tersebut lalu klik <strong>Submit</strong> atau <strong>Cancel</strong> sebelum menutup operasional.
+        </div>
     @endif
     @if($summary['stockOpnamesReady']->isEmpty())
-        <div class="alert alert-danger">No stock opname submitted/reviewed today. Ini wajib sebelum tutup operasional.</div>
+        <div class="alert alert-danger">Belum ada Closing Stock Opname yang berstatus <strong>submitted/reviewed</strong> hari ini. Ini wajib dilakukan sebelum tutup operasional.</div>
     @endif
 
     @include('partials.daily-operation-summary', ['summary' => $summary, 'panel' => 'staff'])

@@ -224,7 +224,7 @@
                         <li class="sidebar-item"> <a class="sidebar-link has-arrow waves-effect waves-dark" href="javascript:void(0)" aria-expanded="false"><i class="mdi mdi-receipt"></i><span class="hide-menu">Laporan </span></a>
                             <ul aria-expanded="false" class="collapse  first-level">
                                 <li class="sidebar-item"><a href="{{ route('backend.laporan.formuser') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> User </span></a></li>
-                                <li class="sidebar-item"><a href="{{ route('backend.report.product.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Produk </span></a></li>
+                                <li class="sidebar-item"><a href="{{ route('backend.reports.sold-products.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Produk </span></a></li>
                                 <li class="sidebar-item"><a href="{{ route('backend.cashier-shifts.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Cashier Shifts </span></a></li>
                                 <li class="sidebar-item"><a href="{{ route('backend.sales-targets.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Sales Target </span></a></li>
                                 <li class="sidebar-item"><a href="{{ route('backend.operational-expenses.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Operational Expense </span></a></li>

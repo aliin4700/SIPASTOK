@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Backend;
 use App\Http\Controllers\Controller;
 use App\Models\ProductionRecordItem;
 use App\Models\ProductionRecord;
+use App\Models\Recipe;
 use App\Models\StockMovement;
 use App\Services\Inventory\StockMovementService;
 use Illuminate\Http\Request;
@@ -60,9 +61,11 @@ class ProductionRecordController extends Controller
             }
         }
 
+        $deductBom = $request->boolean('deduct_bom', true);
+
         try {
-            $summary = DB::transaction(function () use ($request, $productionRecord) {
-                $summary = ['increased' => 0, 'duplicate' => 0];
+            $summary = DB::transaction(function () use ($request, $productionRecord, $deductBom) {
+                $summary = ['increased' => 0, 'bom_deducted' => 0, 'duplicate' => 0];
 
                 foreach ($productionRecord->items as $item) {
                     $result = $this->stockMovementService->increaseStock([
@@ -76,7 +79,43 @@ class ProductionRecordController extends Controller
                         'notes' => 'Production stock increase from production record ' . ($productionRecord->production_number ?? $productionRecord->id),
                     ]);
 
-                    $result['duplicate'] ? $summary['duplicate']++ : $summary['increased']++;
+                    if ($result['duplicate']) {
+                        $summary['duplicate']++;
+                        continue;
+                    }
+
+                    $summary['increased']++;
+
+                    if ($deductBom) {
+                        $recipe = Recipe::with('items.item')
+                            ->where('output_inventory_item_id', $item->inventory_item_id)
+                            ->where('is_active', true)
+                            ->first();
+
+                        if ($recipe && (float) $recipe->output_qty > 0) {
+                            $ratio = (float) $item->qty / (float) $recipe->output_qty;
+                            foreach ($recipe->items as $recipeItem) {
+                                $wasteFactor = 1 + ((float) ($recipeItem->waste_percentage ?? 0) / 100.0);
+                                $requiredQty = round((float) $recipeItem->qty * $ratio * $wasteFactor, 2);
+
+                                if ($requiredQty > 0) {
+                                    $this->stockMovementService->decreaseStock([
+                                        'outlet_id' => $productionRecord->outlet_id,
+                                        'inventory_item_id' => $recipeItem->inventory_item_id,
+                                        'quantity' => $requiredQty,
+                                        'movement_type' => 'production_out',
+                                        'reference_type' => ProductionRecordItem::class,
+                                        'reference_id' => $item->id,
+                                        'user_id' => $request->user()->id,
+                                        'allow_negative' => true,
+                                        'allow_duplicate' => true,
+                                        'notes' => 'Auto-deduct BOM (' . $recipe->name . ') for production ' . ($productionRecord->production_number ?? $productionRecord->id),
+                                    ]);
+                                    $summary['bom_deducted']++;
+                                }
+                            }
+                        }
+                    }
                 }
 
                 $productionRecord->update(['status' => 'applied']);
@@ -87,6 +126,6 @@ class ProductionRecordController extends Controller
             return back()->with('error', 'Apply stock gagal: ' . $exception->getMessage());
         }
 
-        return back()->with('success', "Production stock increase applied. Increased: {$summary['increased']}, duplicate ignored: {$summary['duplicate']}.");
+        return back()->with('success', "Production stock increase applied. Increased: {$summary['increased']}, BOM deducted: {$summary['bom_deducted']}, duplicate ignored: {$summary['duplicate']}.");
     }
 }

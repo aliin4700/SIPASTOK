@@ -42,17 +42,29 @@ class StockMovementService
 
             $item = InventoryItem::findOrFail($itemId);
             $stock = $this->lockedStock($outletId, $item);
+            $before = (float) $stock->current_stock;
             $duplicate = $this->duplicateMovement($stock, $movementType, $data);
 
             if ($duplicate) {
-                return $this->result($stock, $duplicate, true);
+                return [
+                    ...$this->result($stock, $duplicate, true),
+                    'stock_before' => (float) ($duplicate->stock_before ?? $before),
+                    'stock_after' => (float) ($duplicate->stock_after ?? $newStock),
+                ];
             }
 
-            $before = (float) $stock->current_stock;
             $difference = $newStock - $before;
 
+            if ($movementType === 'stock_opname_adjustment') {
+                $stock->update(['last_stock_opname_at' => now()]);
+            }
+
             if (abs($difference) < 0.00001) {
-                return $this->result($stock, null, false, true);
+                return [
+                    ...$this->result($stock->fresh(), null, false, true),
+                    'stock_before' => $before,
+                    'stock_after' => $newStock,
+                ];
             }
 
             $this->updateStock($stock, $newStock);
@@ -65,7 +77,11 @@ class StockMovementService
                 'stock_after' => $newStock,
             ]);
 
-            return $this->result($stock->fresh(), $movement);
+            return [
+                ...$this->result($stock->fresh(), $movement),
+                'stock_before' => $before,
+                'stock_after' => $newStock,
+            ];
         });
     }
 

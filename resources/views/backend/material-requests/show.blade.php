@@ -2,9 +2,9 @@
 
 @section('content')
 @if($materialRequest->status === 'submitted')
-    <div class="alert alert-warning">Issue stock akan mengurangi stok inventory sesuai item Take Bahan dan membuat stock movement.</div>
+    <div class="alert alert-warning">Pilih <strong>Terima Barang Masuk / Restock (+)</strong> untuk menambah stok divisi atau <strong>Issue Stock (-)</strong> untuk mengurangi stok gudang.</div>
 @elseif($materialRequest->status === 'issued')
-    <div class="alert alert-success">Material issue sudah diterapkan melalui stock movement.</div>
+    <div class="alert alert-success">Material request sudah diproses melalui stock movement.</div>
 @endif
 
 <div class="card mb-3">
@@ -19,10 +19,18 @@
         <div><strong>Catatan:</strong> {{ $materialRequest->notes ?? '-' }}</div>
 
         @if($materialRequest->status === 'submitted')
-            <form method="post" action="{{ route('backend.material-requests.issue-stock', $materialRequest) }}" class="mt-3">
-                @csrf
-                <button class="btn btn-success">Issue Stock</button>
-            </form>
+            <div class="d-flex flex-wrap gap-2 mt-3">
+                <form method="post" action="{{ route('backend.material-requests.issue-stock', $materialRequest) }}">
+                    @csrf
+                    <input type="hidden" name="mode" value="restock_in">
+                    <button class="btn btn-success fw-bold">+ Approve Barang Masuk / Restock Divisi (Tambah Stok)</button>
+                </form>
+                <form method="post" action="{{ route('backend.material-requests.issue-stock', $materialRequest) }}">
+                    @csrf
+                    <input type="hidden" name="mode" value="issue_out">
+                    <button class="btn btn-primary">&minus; Issue Stock (Kurangi Stok)</button>
+                </form>
+            </div>
         @endif
     </div>
 </div>
@@ -55,7 +63,7 @@
                             <td>{{ $item->unit }}</td>
                             <td>
                                 @if($movement)
-                                    <span class="badge badge-success">Issued</span>
+                                    <span class="badge badge-success">{{ $movement->movement_type === 'transfer_in' ? 'Restock In (+)' : 'Issued Out (-)' }}</span>
                                 @elseif($materialRequest->status === 'issued')
                                     <span class="badge badge-warning">No Movement</span>
                                 @else

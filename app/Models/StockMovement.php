@@ -17,6 +17,7 @@ class StockMovement extends Model
         'waste_out',
         'production_in',
         'production_out',
+        'production_material_out',
         'stock_opname_adjustment',
         'manual_adjustment',
         'transfer_in',

@@ -14,7 +14,7 @@ use Illuminate\Validation\Rule;
 
 class RecipeController extends Controller
 {
-    private const UNITS = ['pcs', 'butir', 'gr', 'kg', 'ml', 'liter', 'cm', 'pack', 'box', 'tray', 'botol', 'cup', 'slice', 'loaf', 'porsi'];
+    private const UNITS = ['pcs', 'butir', 'gr', 'kg', 'ml', 'liter', 'cm', 'pack', 'box', 'tray', 'botol', 'cup', 'slice', 'loaf', 'porsi', 'ekor', 'ikat', 'slop', 'unit'];
 
     public function index(Request $request)
     {
@@ -119,7 +119,9 @@ class RecipeController extends Controller
             'items.*.unit' => ['nullable', 'string', 'max:50'],
             'items.*.waste_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'items.*.notes' => ['nullable', 'string'],
-        ]) + ['is_active' => false];
+        ]);
+
+        $data['is_active'] = $request->boolean('is_active');
 
         $rows = collect($data['items'] ?? [])
             ->filter(fn ($row) => ! empty($row['inventory_item_id']) && is_numeric($row['qty'] ?? null) && (float) $row['qty'] > 0)

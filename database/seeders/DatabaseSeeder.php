@@ -11,6 +11,8 @@ use App\Models\Permission;
 use App\Models\Product;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\UserDivisionAccess;
+use App\Models\UserOutletAccess;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -141,6 +143,7 @@ class DatabaseSeeder extends Seeder
         foreach ([
             ['name' => 'Mejasem', 'code' => 'MJS'],
             ['name' => 'Slawi', 'code' => 'SLW'],
+            ['name' => 'Kagok CK', 'code' => 'KGK'],
         ] as $outlet) {
             Outlet::updateOrCreate(
                 ['code' => $outlet['code']],
@@ -150,11 +153,12 @@ class DatabaseSeeder extends Seeder
 
         foreach ([
             ['name' => 'Kitchen', 'code' => 'KIT'],
-            ['name' => 'Pastry', 'code' => 'PST'],
-            ['name' => 'Bakery', 'code' => 'BKR'],
             ['name' => 'Bar', 'code' => 'BAR'],
+            ['name' => 'Corner', 'code' => 'CRN'],
             ['name' => 'Floor', 'code' => 'FLR'],
-            ['name' => 'Packaging', 'code' => 'PCK'],
+            ['name' => 'Pastry', 'code' => 'PST'],
+            ['name' => 'Packaging', 'code' => 'PKG'],
+            ['name' => 'Central Kitchen', 'code' => 'CK'],
         ] as $division) {
             Division::updateOrCreate(
                 ['code' => $division['code']],
@@ -178,6 +182,53 @@ class DatabaseSeeder extends Seeder
             'phone' => '0812345678902',
             'password' => Hash::make('P@55word'),
         ]);
+
+        $managerUser = User::updateOrCreate(['email' => 'manager@medjacerita.com'], [
+            'name' => 'Manager Operasional Medja Cerita',
+            'role' => 'manager',
+            'status' => 'active',
+            'phone' => '0812345678904',
+            'password' => Hash::make('P@55word'),
+        ]);
+
+        foreach (Outlet::where('is_active', true)->get() as $activeOutlet) {
+            UserOutletAccess::updateOrCreate(
+                ['user_id' => $managerUser->id, 'outlet_id' => $activeOutlet->id],
+                [
+                    'can_monitor' => true,
+                    'can_cashier' => false,
+                    'can_manage_stock' => true,
+                    'can_manage_purchase' => true,
+                    'can_manage_finance' => true,
+                ]
+            );
+        }
+
+        $staffUser = User::updateOrCreate(['email' => 'staff@medjacerita.com'], [
+            'name' => 'Staff Kitchen Mejasem',
+            'role' => 'staff_outlet',
+            'status' => 'active',
+            'phone' => '0812345678905',
+            'password' => Hash::make('P@55word'),
+        ]);
+
+        $mejasemOutlet = Outlet::where('code', 'MJS')->first();
+        $kitchenDivision = Division::where('code', 'KIT')->first();
+
+        if ($mejasemOutlet && $kitchenDivision) {
+            UserDivisionAccess::updateOrCreate(
+                [
+                    'user_id' => $staffUser->id,
+                    'outlet_id' => $mejasemOutlet->id,
+                    'division_id' => $kitchenDivision->id,
+                ],
+                [
+                    'can_input_stock' => true,
+                    'can_input_waste' => true,
+                    'can_request_order' => true,
+                ]
+            );
+        }
 
         $customerUser = User::updateOrCreate(['email' => 'customer@breadlab.test'], [
             'name' => 'Customer BreadLab',

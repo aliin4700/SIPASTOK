@@ -3,27 +3,47 @@
 namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
+use App\Models\Division;
+use App\Models\Outlet;
 use App\Models\StockMovement;
 use App\Models\StockOpname;
 use App\Models\StockOpnameItem;
-use App\Services\Inventory\StockMovementService;
-use Illuminate\Support\Facades\DB;
+use App\Services\Inventory\StockOpnameReviewService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Throwable;
 
 class StockOpnameController extends Controller
 {
-    public function __construct(private StockMovementService $stockMovementService)
+    public function __construct(private StockOpnameReviewService $stockOpnameReviewService)
     {
     }
 
-    public function index()
+    public function index(Request $request)
     {
+        $filters = $request->validate([
+            'outlet_id' => ['nullable', 'exists:outlets,id'],
+            'division_id' => ['nullable', 'exists:divisions,id'],
+            'status' => ['nullable', Rule::in(StockOpname::STATUSES)],
+            'month' => ['nullable', 'string'],
+        ]);
+
+        $opnames = StockOpname::with(['outlet', 'division', 'counter', 'items'])
+            ->when($filters['outlet_id'] ?? null, fn ($q, $outletId) => $q->where('outlet_id', $outletId))
+            ->when($filters['division_id'] ?? null, fn ($q, $divisionId) => $q->where('division_id', $divisionId))
+            ->when($filters['status'] ?? null, fn ($q, $status) => $q->where('status', $status))
+            ->latest('opname_date')
+            ->latest('id')
+            ->paginate(20)
+            ->withQueryString();
+
         return view('backend.stock-opnames.index', [
             'judul' => 'Stock Opname',
-            'opnames' => StockOpname::with(['outlet', 'division', 'counter', 'items'])
-                ->latest()
-                ->paginate(20),
+            'opnames' => $opnames,
+            'outlets' => Outlet::where('is_active', true)->orderBy('name')->get(),
+            'divisions' => Division::where('is_active', true)->orderBy('name')->get(),
+            'statuses' => StockOpname::STATUSES,
+            'filters' => $filters,
         ]);
     }
 
@@ -44,55 +64,21 @@ class StockOpnameController extends Controller
 
     public function review(Request $request, StockOpname $stockOpname)
     {
-        if ($stockOpname->status !== 'submitted') {
-            return back()->with('error', 'Hanya stock opname submitted yang bisa direview.');
-        }
-
-        $stockOpname->load(['items.item']);
-
-        if ($stockOpname->items->isEmpty()) {
-            return back()->with('error', 'Stock opname belum memiliki item.');
-        }
-
-        foreach ($stockOpname->items as $item) {
-            if (! $item->item || ! is_numeric($item->physical_stock) || (float) $item->physical_stock < 0) {
-                return back()->with('error', 'Item opname tidak valid. Pastikan inventory item ada dan physical stock tidak negatif.');
-            }
-        }
+        $validated = $request->validate([
+            'review_notes' => ['nullable', 'string'],
+            'items' => ['nullable', 'array'],
+            'items.*.physical_stock' => ['nullable', 'numeric', 'min:0'],
+            'items.*.variance_reason' => ['nullable', Rule::in(array_keys(StockOpnameItem::VARIANCE_REASONS))],
+            'items.*.notes' => ['nullable', 'string'],
+        ]);
 
         try {
-            $summary = DB::transaction(function () use ($request, $stockOpname) {
-                $summary = ['adjusted' => 0, 'noop' => 0, 'duplicate' => 0];
-
-                foreach ($stockOpname->items as $item) {
-                    $result = $this->stockMovementService->adjustStock([
-                        'outlet_id' => $stockOpname->outlet_id,
-                        'inventory_item_id' => $item->inventory_item_id,
-                        'new_stock' => $item->physical_stock,
-                        'movement_type' => 'stock_opname_adjustment',
-                        'reference_type' => StockOpnameItem::class,
-                        'reference_id' => $item->id,
-                        'user_id' => $request->user()->id,
-                        'notes' => 'Adjustment from reviewed stock opname ' . ($stockOpname->opname_number ?? $stockOpname->id),
-                    ]);
-
-                    if ($result['duplicate']) {
-                        $summary['duplicate']++;
-                    } elseif ($result['noop']) {
-                        $summary['noop']++;
-                    } else {
-                        $summary['adjusted']++;
-                    }
-                }
-
-                $stockOpname->update([
-                    'status' => 'reviewed',
-                    'reviewed_by' => $request->user()->id,
-                    'reviewed_at' => now(),
-                ]);
-
-                return $summary;
-            });
+            $summary = $this->stockOpnameReviewService->approveAndAdjust(
+                $stockOpname,
+                $request->user(),
+                $validated['items'] ?? [],
+                $validated['review_notes'] ?? null
+            );
         } catch (Throwable $exception) {
             return back()->with('error', 'Review gagal: ' . $exception->getMessage());
         }

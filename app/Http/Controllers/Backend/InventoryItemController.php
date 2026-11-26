@@ -11,7 +11,7 @@ use Illuminate\Validation\Rule;
 
 class InventoryItemController extends Controller
 {
-    private const UNITS = ['pcs', 'butir', 'gr', 'kg', 'ml', 'liter', 'cm', 'pack', 'box', 'tray', 'botol', 'cup', 'slice', 'loaf', 'porsi'];
+    private const UNITS = ['pcs', 'butir', 'gr', 'kg', 'ml', 'liter', 'cm', 'pack', 'box', 'tray', 'botol', 'cup', 'slice', 'loaf', 'porsi', 'ekor', 'ikat', 'slop', 'unit'];
 
     public function index(Request $request)
     {
@@ -88,7 +88,7 @@ class InventoryItemController extends Controller
 
     private function validated(Request $request, ?InventoryItem $item = null): array
     {
-        return $request->validate([
+        $validated = $request->validate([
             'division_id' => ['nullable', 'exists:divisions,id'],
             'name' => ['required', 'string', 'max:255'],
             'code' => ['nullable', 'string', 'max:255', Rule::unique('inventory_items', 'code')->ignore($item)],
@@ -103,6 +103,11 @@ class InventoryItemController extends Controller
             'last_purchase_price' => ['nullable', 'numeric', 'min:0'],
             'is_active' => ['nullable', 'boolean'],
             'notes' => ['nullable', 'string'],
-        ]) + ['is_active' => false, 'lead_time_days' => 0];
+        ]);
+
+        $validated['is_active'] = $request->boolean('is_active');
+        $validated['lead_time_days'] = (int) ($validated['lead_time_days'] ?? 0);
+
+        return $validated;
     }
 }

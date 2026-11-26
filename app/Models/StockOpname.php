@@ -11,6 +11,13 @@ class StockOpname extends Model
 
     public const STATUSES = ['draft', 'submitted', 'cancelled', 'reviewed'];
 
+    public const TYPES = [
+        'daily_closing' => 'Closing Harian',
+        'weekly_audit' => 'Audit Mingguan',
+        'monthly_full' => 'Opname Bulanan Menyeluruh',
+        'spot_check' => 'Sidak / Spot Check',
+    ];
+
     protected $fillable = [
         'opname_number',
         'division_daily_operation_id',
@@ -19,8 +26,11 @@ class StockOpname extends Model
         'counted_by',
         'opname_date',
         'opname_type',
+        'is_blind_count',
         'status',
+        'total_variance_value',
         'notes',
+        'review_notes',
         'submitted_at',
         'cancelled_at',
         'reviewed_by',
@@ -29,6 +39,8 @@ class StockOpname extends Model
 
     protected $casts = [
         'opname_date' => 'date',
+        'is_blind_count' => 'boolean',
+        'total_variance_value' => 'decimal:2',
         'submitted_at' => 'datetime',
         'cancelled_at' => 'datetime',
         'reviewed_at' => 'datetime',
