@@ -12,7 +12,6 @@ class ProductionRecordItem extends Model
     protected $fillable = [
         'production_record_id',
         'inventory_item_id',
-        'product_id',
         'item_name',
         'item_type',
         'qty',
@@ -34,10 +33,5 @@ class ProductionRecordItem extends Model
     public function item()
     {
         return $this->belongsTo(InventoryItem::class, 'inventory_item_id');
-    }
-
-    public function product()
-    {
-        return $this->belongsTo(Product::class);
     }
 }

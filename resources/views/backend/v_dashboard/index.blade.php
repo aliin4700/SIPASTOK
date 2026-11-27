@@ -1,144 +1,222 @@
 @extends('backend.v_layouts.app')
 
 @section('content')
+@php
+    $iraPct = (float) ($cards['iraPercentage'] ?? 100);
+    $iraColor = $iraPct >= 95 ? 'text-success' : ($iraPct >= 85 ? 'text-warning' : 'text-danger');
+    $varianceVal = (float) ($cards['totalVarianceValue'] ?? 0);
+    $opnameTypes = \App\Models\StockOpname::TYPES;
+@endphp
+
 <style>
-    .breadlab-admin-panel { background: #fff; border: 1px solid #f0e4d3; border-radius: 8px; box-shadow: 0 10px 24px rgba(139, 69, 19, .08); padding: 24px; }
-    .summary-card { background: #fff; border: 1px solid #f0e4d3; border-radius: 8px; box-shadow: 0 10px 24px rgba(139, 69, 19, .08); padding: 20px; height: 100%; }
-    .summary-label { color: #6c757d; font-size: 13px; font-weight: 600; text-transform: uppercase; }
-    .summary-value { color: #24160f; font-size: 26px; font-weight: 700; margin-top: 8px; }
-    .chart-box { height: 280px; position: relative; }
-    .status-badge { border-radius: 999px; display: inline-flex; font-size: 12px; font-weight: 700; padding: 6px 10px; text-transform: capitalize; }
-    .status-pending, .status-waiting_payment, .status-waiting_confirmation { background: #fff3cd; color: #8a6400; }
-    .status-paid, .status-processing, .status-ready_for_pickup, .status-delivering, .status-shipped, .status-completed { background: #d1e7dd; color: #0f5132; }
-    .status-cancelled, .status-failed, .status-rejected, .status-expired { background: #f8d7da; color: #842029; }
+    .sipastok-panel {
+        background: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, .05);
+        padding: 20px;
+        height: 100%;
+    }
+    .summary-card {
+        background: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, .05);
+        padding: 18px;
+        height: 100%;
+    }
+    .summary-label {
+        color: #6c757d;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+    .summary-value {
+        color: #212529;
+        font-size: 24px;
+        font-weight: 700;
+        margin-top: 6px;
+    }
+    .chart-box {
+        height: 270px;
+        position: relative;
+    }
 </style>
 
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
     <div>
-        <h3 class="mb-1">Dashboard</h3>
-        <p class="text-muted mb-0">Ringkasan operasional BreadLab dari data order, payment, produk, dan chat.</p>
+        <h3 class="mb-1 fw-bold">Executive Dashboard SIPASTOK</h3>
+        <p class="text-muted mb-0">
+            Sistem Informasi Stok Opname &amp; Inventori Bahan Baku — Medja Cerita ({{ $cards['totalOutlets'] }} Outlet Aktif, Periode Evaluasi: <strong>{{ $evalMonthLabel }}</strong>)
+        </p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{{ route('backend.stock-opnames.index') }}" class="btn btn-primary btn-sm">
+            Review Stock Opname
+            @if($cards['pendingOpnamesCount'] > 0)
+                <span class="badge bg-warning text-dark ms-1">{{ $cards['pendingOpnamesCount'] }}</span>
+            @endif
+        </a>
+        <a href="{{ route('backend.inventory-items.index') }}" class="btn btn-outline-secondary btn-sm">Master Bahan Baku</a>
     </div>
 </div>
 
-{{-- Card statistik dashboard admin. --}}
+{{-- Kartu KPI Utama SIPASTOK --}}
 <div class="row g-3 mb-4">
     <div class="col-sm-6 col-xl">
-        <div class="summary-card">
-            <div class="summary-label">Total Pesanan</div>
-            <div class="summary-value">{{ number_format($cards['totalOrders'], 0, ',', '.') }}</div>
+        <div class="summary-card border-primary">
+            <div class="summary-label">Master Bahan Aktif</div>
+            <div class="summary-value text-primary">{{ number_format($cards['totalItems'], 0, ',', '.') }}</div>
+            <div class="small text-muted mt-1">Raw Material, WIP &amp; Packaging</div>
         </div>
     </div>
     <div class="col-sm-6 col-xl">
-        <div class="summary-card">
-            <div class="summary-label">Pendapatan Paid</div>
-            <div class="summary-value">Rp {{ number_format($cards['totalRevenue'], 0, ',', '.') }}</div>
+        <div class="summary-card border-warning">
+            <div class="summary-label">Menunggu Review</div>
+            <div class="summary-value text-warning">{{ number_format($cards['pendingOpnamesCount'], 0, ',', '.') }}</div>
+            <div class="small text-muted mt-1">Total Reviewed: {{ number_format($cards['reviewedOpnamesCount'], 0, ',', '.') }} sesi</div>
         </div>
     </div>
     <div class="col-sm-6 col-xl">
-        <div class="summary-card">
-            <div class="summary-label">Payment Pending</div>
-            <div class="summary-value">{{ number_format($cards['pendingPayments'], 0, ',', '.') }}</div>
+        <div class="summary-card border-success">
+            <div class="summary-label">Akurasi Stok (IRA {{ $evalMonthLabel }})</div>
+            <div class="summary-value {{ $iraColor }}">{{ number_format($iraPct, 2, ',', '.') }}%</div>
+            <div class="small text-muted mt-1">Target minimal &ge; 95,00%</div>
         </div>
     </div>
     <div class="col-sm-6 col-xl">
-        <div class="summary-card">
-            <div class="summary-label">Customer</div>
-            <div class="summary-value">{{ number_format($cards['totalCustomers'], 0, ',', '.') }}</div>
+        @php
+            $isDeficit = $varianceVal < -0.01;
+            $isSurplus = $varianceVal > 0.01;
+        @endphp
+        <div class="summary-card {{ $isDeficit ? 'border-danger' : ($isSurplus ? 'border-success' : '') }}">
+            <div class="d-flex justify-content-between align-items-start gap-1">
+                <div class="summary-label">Total Selisih Nilai ({{ $evalMonthLabel }})</div>
+                <span class="badge {{ $isDeficit ? 'bg-danger' : ($isSurplus ? 'bg-success' : 'bg-secondary') }}">
+                    {{ $isDeficit ? 'Selisih Minus' : ($isSurplus ? 'Surplus' : 'Balance') }}
+                </span>
+            </div>
+            <div class="summary-value {{ $isDeficit ? 'text-danger' : ($isSurplus ? 'text-success' : 'text-dark') }}">
+                Rp {{ number_format($varianceVal, 0, ',', '.') }}
+            </div>
+            <div class="small text-muted mt-1">Akumulasi opname reviewed</div>
         </div>
     </div>
     <div class="col-sm-6 col-xl">
-        <div class="summary-card">
-            <div class="summary-label">Produk</div>
-            <div class="summary-value">{{ number_format($cards['totalProducts'], 0, ',', '.') }}</div>
+        <div class="summary-card border-danger">
+            <div class="summary-label">Stok Kritis (&le; Min)</div>
+            <div class="summary-value text-danger">{{ number_format($cards['lowStockCount'], 0, ',', '.') }}</div>
+            <div class="small text-muted mt-1">Item perlu produksi / restock</div>
         </div>
     </div>
 </div>
 
-{{-- Grafik status order, status pembayaran, pendapatan, dan produk terlaris. --}}
+{{-- Grafik Analitik Inventori & Stok Opname --}}
 <div class="row g-4 mb-4">
-    <div class="col-lg-6">
-        <div class="breadlab-admin-panel">
-            <h4 class="h5 mb-3">Order Status</h4>
-            <div class="chart-box"><canvas id="orderStatusChart"></canvas></div>
-        </div>
-    </div>
-    <div class="col-lg-6">
-        <div class="breadlab-admin-panel">
-            <h4 class="h5 mb-3">Payment Status</h4>
-            <div class="chart-box"><canvas id="paymentStatusChart"></canvas></div>
-        </div>
-    </div>
-    <div class="col-lg-8">
-        <div class="breadlab-admin-panel">
-            <h4 class="h5 mb-3">Revenue Trend</h4>
-            <div class="chart-box"><canvas id="revenueTrendChart"></canvas></div>
+    <div class="col-lg-4">
+        <div class="sipastok-panel">
+            <h5 class="mb-3 fw-bold">Status Sesi Stock Opname</h5>
+            <div class="chart-box"><canvas id="opnameStatusChart"></canvas></div>
         </div>
     </div>
     <div class="col-lg-4">
-        <div class="breadlab-admin-panel">
-            <h4 class="h5 mb-3">Top Product</h4>
-            <div class="chart-box"><canvas id="topProductChart"></canvas></div>
+        <div class="sipastok-panel">
+            <h5 class="mb-3 fw-bold">Jumlah Item per Divisi</h5>
+            <div class="chart-box"><canvas id="itemsDivisionChart"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="sipastok-panel">
+            <h5 class="mb-3 fw-bold">Aktivitas Opname &amp; Mutasi (14 Hari)</h5>
+            <div class="chart-box"><canvas id="activityTrendChart"></canvas></div>
         </div>
     </div>
 </div>
 
-{{-- Data terbaru untuk tindak lanjut admin. --}}
+{{-- Sesi Stock Opname Terbaru & Peringatan Stok Kritis --}}
 <div class="row g-4">
-    <div class="col-xl-8">
-        <div class="breadlab-admin-panel">
-            <h4 class="h5 mb-3">Latest Orders</h4>
+    <div class="col-xl-7">
+        <div class="sipastok-panel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0 fw-bold">Sesi Stock Opname Terbaru</h5>
+                <a href="{{ route('backend.stock-opnames.index') }}" class="btn btn-sm btn-outline-primary">Lihat Semua</a>
+            </div>
             <div class="table-responsive">
-                <table class="table align-middle">
+                <table class="table table-bordered table-sm align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Order</th>
-                            <th>Customer</th>
-                            <th>Total</th>
-                            <th>Payment</th>
-                            <th>Status</th>
+                            <th>No Opname</th>
                             <th>Tanggal</th>
+                            <th>Outlet / Divisi</th>
+                            <th>Jenis</th>
+                            <th>Status</th>
+                            <th class="text-end">Item</th>
                             <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($latestOrders as $order)
-                        <tr>
-                            <td>{{ $order->order_number }}</td>
-                            <td>{{ $order->customer->user->name ?? '-' }}</td>
-                            <td>Rp {{ number_format($order->total_price, 0, ',', '.') }}</td>
-                            <td><span class="status-badge status-{{ $order->paymentStatus() }}">{{ str_replace('_', ' ', $order->paymentStatus()) }}</span></td>
-                            <td><span class="status-badge status-{{ $order->normalizedStatus() }}">{{ str_replace('_', ' ', $order->normalizedStatus()) }}</span></td>
-                            <td>{{ $order->created_at->format('d M Y') }}</td>
-                            <td><a href="{{ route('backend.order.show', $order) }}" class="btn btn-primary btn-sm">Detail</a></td>
-                        </tr>
+                        @forelse($latestOpnames as $opname)
+                            <tr>
+                                <td class="fw-semibold">{{ $opname->opname_number ?? '-' }}</td>
+                                <td>{{ $opname->opname_date?->format('d/m/Y') }}</td>
+                                <td>{{ $opname->outlet->name ?? '-' }} / <strong>{{ $opname->division->name ?? '-' }}</strong></td>
+                                <td>{{ $opnameTypes[$opname->opname_type] ?? $opname->opname_type }}</td>
+                                <td>
+                                    <span class="badge {{ $opname->status === 'reviewed' ? 'bg-success' : ($opname->status === 'submitted' ? 'bg-warning text-dark' : 'bg-info') }} text-uppercase">
+                                        {{ $opname->status }}
+                                    </span>
+                                </td>
+                                <td class="text-end">{{ $opname->items->count() }}</td>
+                                <td>
+                                    <a href="{{ route('backend.stock-opnames.show', $opname) }}" class="btn btn-sm {{ $opname->status === 'submitted' ? 'btn-warning' : 'btn-outline-primary' }}">
+                                        {{ $opname->status === 'submitted' ? 'Review' : 'Detail' }}
+                                    </a>
+                                </td>
+                            </tr>
                         @empty
-                        <tr>
-                            <td colspan="7" class="text-center text-muted">Belum ada pesanan.</td>
-                        </tr>
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-3">Belum ada sesi stock opname.</td>
+                            </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
-    <div class="col-xl-4">
-        <div class="breadlab-admin-panel">
-            <h4 class="h5 mb-3">Latest Chats</h4>
-            @forelse($latestChats as $conversation)
-            <div class="border-bottom pb-3 mb-3">
-                <div class="d-flex justify-content-between gap-3">
-                    <div>
-                        <div class="fw-semibold">{{ $conversation->customer->user->name ?? '-' }}</div>
-                        <div class="text-muted small">{{ $conversation->order->order_number ?? '-' }}</div>
-                    </div>
-                    <span class="badge bg-warning text-dark">{{ $conversation->unread_count }} unread</span>
-                </div>
-                <div class="text-muted small mt-2">{{ \Illuminate\Support\Str::limit($conversation->latestMessage->message ?? 'Belum ada pesan.', 70) }}</div>
-                <a href="{{ route('backend.chat.show', $conversation) }}" class="btn btn-outline-primary btn-sm mt-2">Buka Chat</a>
+
+    <div class="col-xl-5">
+        <div class="sipastok-panel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0 fw-bold">Peringatan Stok Kritis Outlet</h5>
+                <a href="{{ route('backend.inventory-stocks.index') }}" class="btn btn-sm btn-outline-danger">Cek Stok</a>
             </div>
-            @empty
-            <p class="text-muted mb-0">Belum ada chat.</p>
-            @endforelse
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Bahan Baku</th>
+                            <th>Outlet / Divisi</th>
+                            <th class="text-end">Stok</th>
+                            <th class="text-end">Min</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($criticalStocks as $stock)
+                            <tr>
+                                <td class="fw-semibold">{{ $stock->item->name ?? '-' }}</td>
+                                <td>{{ $stock->outlet->name ?? '-' }} / {{ $stock->item->division->name ?? '-' }}</td>
+                                <td class="text-end text-danger fw-bold">{{ number_format((float) $stock->current_stock, 2, ',', '.') }} {{ strtoupper($stock->unit) }}</td>
+                                <td class="text-end">{{ number_format((float) ($stock->item->min_stock ?? 0), 2, ',', '.') }} {{ strtoupper($stock->unit) }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">Semua stok bahan baku berada di atas batas minimum.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -146,45 +224,75 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     const charts = @json($charts);
-    const palette = ['#8B4513', '#D2691E', '#2962ff', '#198754', '#ffc107', '#dc3545', '#6f42c1', '#20c997', '#6c757d'];
+    const palette = ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#6f42c1', '#20c997', '#0dcaf0'];
 
-    // Helper kecil agar konfigurasi Chart.js dashboard tidak berulang.
-    function makeChart(id, type, labels, data, options = {}) {
-        const element = document.getElementById(id);
-        if (!element) {
-            return;
-        }
-
-        new Chart(element, {
-            type,
+    const statusEl = document.getElementById('opnameStatusChart');
+    if (statusEl) {
+        new Chart(statusEl, {
+            type: 'doughnut',
             data: {
-                labels,
+                labels: charts.opnameStatus.labels,
                 datasets: [{
-                    data,
-                    label: options.label || '',
-                    backgroundColor: type === 'line' ? 'rgba(139, 69, 19, .16)' : palette,
-                    borderColor: '#8B4513',
-                    borderWidth: 2,
-                    tension: .35,
-                    fill: type === 'line',
+                    data: charts.opnameStatus.data,
+                    backgroundColor: ['#198754', '#ffc107', '#0dcaf0', '#dc3545'],
+                }],
+            },
+            options: { responsive: true, maintainAspectRatio: false },
+        });
+    }
+
+    const divEl = document.getElementById('itemsDivisionChart');
+    if (divEl) {
+        new Chart(divEl, {
+            type: 'bar',
+            data: {
+                labels: charts.itemsByDivision.labels,
+                datasets: [{
+                    label: 'Item Aktif',
+                    data: charts.itemsByDivision.data,
+                    backgroundColor: palette,
                 }],
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: type !== 'bar' && type !== 'line' },
-                },
-                scales: type === 'doughnut' ? {} : {
-                    y: { beginAtZero: true },
-                },
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } },
             },
         });
     }
 
-    makeChart('orderStatusChart', 'doughnut', charts.orderStatus.labels, charts.orderStatus.data);
-    makeChart('paymentStatusChart', 'doughnut', charts.paymentStatus.labels, charts.paymentStatus.data);
-    makeChart('revenueTrendChart', 'line', charts.revenueTrend.labels, charts.revenueTrend.data, { label: 'Revenue' });
-    makeChart('topProductChart', 'bar', charts.topProducts.labels, charts.topProducts.data, { label: 'Terjual' });
+    const trendEl = document.getElementById('activityTrendChart');
+    if (trendEl) {
+        new Chart(trendEl, {
+            type: 'line',
+            data: {
+                labels: charts.activityTrend.labels,
+                datasets: [
+                    {
+                        label: 'Sesi Opname',
+                        data: charts.activityTrend.opnames,
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'rgba(13, 110, 253, 0.12)',
+                        tension: 0.35,
+                        fill: true,
+                    },
+                    {
+                        label: 'Mutasi Stok',
+                        data: charts.activityTrend.movements,
+                        borderColor: '#198754',
+                        backgroundColor: 'rgba(25, 135, 84, 0.08)',
+                        tension: 0.35,
+                        fill: true,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true } },
+            },
+        });
+    }
 </script>
 @endsection

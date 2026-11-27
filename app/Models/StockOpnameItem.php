@@ -25,6 +25,7 @@ class StockOpnameItem extends Model
         'physical_stock',
         'difference_qty',
         'unit_cost',
+        'variance_cost',
         'variance_value',
         'unit',
         'variance_reason',
@@ -35,7 +36,8 @@ class StockOpnameItem extends Model
         'system_stock' => 'decimal:2',
         'physical_stock' => 'decimal:2',
         'difference_qty' => 'decimal:2',
-        'unit_cost' => 'decimal:2',
+        'unit_cost' => 'decimal:4',
+        'variance_cost' => 'decimal:2',
         'variance_value' => 'decimal:2',
     ];
 

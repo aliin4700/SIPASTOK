@@ -1,11 +1,26 @@
 @extends('manager.layouts.app')
 
 @section('content')
-@if($materialRequest->status === 'issued')
-    <div class="alert alert-success">Mutasi stok untuk dokumen Take Bahan / Barang Masuk ini sudah diterapkan melalui stock movement.</div>
-@elseif($materialRequest->status === 'submitted')
+@if($errors->any())
+    <div class="alert alert-danger">
+        <ul class="mb-0 ps-3">
+            @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
+@php
+    $isProcessed = in_array($materialRequest->status, ['approved', 'issued'], true);
+    $hasMissingMovement = $materialRequest->items->contains(fn ($it) => ! isset($movementsByItemId[$it->id]));
+@endphp
+
+@if($isProcessed && ! $hasMissingMovement)
+    <div class="alert alert-success">Mutasi stok untuk dokumen Stok In / Barang Masuk ini sudah disetujui dan diterapkan ke saldo <code>inventory_stocks</code>.</div>
+@elseif($materialRequest->status === 'submitted' || ($isProcessed && $hasMissingMovement))
     <div class="alert alert-warning">
-        Dokumen ini berstatus <strong>SUBMITTED</strong>. Pilih apakah dokumen ini merupakan <strong>Penerimaan Barang Masuk / Restock Divisi (+ Tambah Stok)</strong> atau <strong>Pengeluaran Bahan (- Kurangi Stok)</strong>.
+        Dokumen ini siap diproses ke stok. Pilih apakah dokumen ini merupakan <strong>Penerimaan Barang Masuk / Restock Divisi (+ Tambah Stok)</strong> atau <strong>Pengeluaran Bahan (- Kurangi Stok)</strong>.
     </div>
 @endif
 
@@ -13,10 +28,10 @@
     <div class="card-body">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
             <div>
-                <h4 class="mb-1 fw-bold">Detail Take Bahan / Material Request: {{ $materialRequest->request_number ?? '-' }}</h4>
+                <h4 class="mb-1 fw-bold">Detail Stok In: {{ $materialRequest->request_number ?? '-' }}</h4>
                 <div class="text-muted small">Tanggal: {{ $materialRequest->request_date?->format('d/m/Y') }}</div>
             </div>
-            <span class="badge {{ $materialRequest->status === 'issued' ? 'bg-success' : ($materialRequest->status === 'submitted' ? 'bg-warning text-dark' : 'bg-info') }} text-uppercase fs-6">
+            <span class="badge {{ $isProcessed ? 'bg-success' : ($materialRequest->status === 'submitted' ? 'bg-warning text-dark' : 'bg-info text-dark') }} text-uppercase fs-6">
                 {{ $materialRequest->status }}
             </span>
         </div>
@@ -26,7 +41,7 @@
         <div><strong>Requester:</strong> {{ $materialRequest->requester->name ?? '-' }}</div>
         <div><strong>Catatan:</strong> {{ $materialRequest->notes ?? '-' }}</div>
 
-        @if($materialRequest->status === 'submitted')
+        @if($materialRequest->status === 'submitted' || ($isProcessed && $hasMissingMovement))
             <div class="d-flex flex-wrap gap-2 mt-3">
                 <form method="post" action="{{ route('manager.material-requests.issue-stock', $materialRequest) }}" onsubmit="return confirm('Tambahkan item ini sebagai Barang Masuk / Restock (+) ke stok divisi?');">
                     @csrf
@@ -47,6 +62,14 @@
         @endif
     </div>
 </div>
+
+@include('partials.material-request-receipt-viewer', [
+    'materialRequest' => $materialRequest,
+    'downloadRoute' => route('manager.material-requests.receipt.download', $materialRequest),
+    'updateRoute' => route('manager.material-requests.receipt.update', $materialRequest),
+    'deleteRoute' => route('manager.material-requests.receipt.destroy', $materialRequest),
+    'canManageReceipt' => $materialRequest->status !== 'cancelled',
+])
 
 <div class="card shadow-sm border-0">
     <div class="card-body">

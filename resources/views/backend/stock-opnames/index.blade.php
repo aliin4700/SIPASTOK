@@ -47,6 +47,9 @@
         <h4 class="mb-0 fw-bold">{{ $judul }} & Rekap Akurasi Stok (IRA)</h4>
         <div class="text-muted small">Monitoring Inventory Record Accuracy (IRA) & persetujuan penyesuaian stok opname seluruh outlet Medja Cerita.</div>
     </div>
+    <a href="{{ route('backend.esb-imports.index') }}" class="btn btn-outline-success btn-sm fw-semibold">
+        Impor Pemakaian ESB (Sales Material Usage) &rarr;
+    </a>
 </div>
 
 <!-- Filter Bar: Outlet, Divisi, Status, & Periode KPI -->

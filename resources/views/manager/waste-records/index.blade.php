@@ -27,10 +27,24 @@
                             <td>{{ $record->outlet->name ?? '-' }}</td>
                             <td>{{ $record->division->name ?? '-' }}</td>
                             <td>{{ $record->recorder->name ?? '-' }}</td>
-                            <td><span class="badge bg-info">{{ $record->status }}</span></td>
+                            <td>
+                                <span class="badge {{ in_array($record->status, ['approved', 'applied'], true) ? 'bg-success' : ($record->status === 'submitted' ? 'bg-warning text-dark' : 'bg-info text-dark') }} text-uppercase">
+                                    {{ $record->status }}
+                                </span>
+                            </td>
                             <td>{{ $record->items->count() }}</td>
                             <td>Rp {{ number_format((float) $record->items->sum('estimated_value'), 0, ',', '.') }}</td>
-                            <td><a href="{{ route('manager.waste-records.show', $record) }}" class="btn btn-sm btn-outline-primary">Detail</a></td>
+                            <td>
+                                <div class="d-flex flex-wrap gap-1">
+                                    <a href="{{ route('manager.waste-records.show', $record) }}" class="btn btn-sm btn-outline-primary">Detail</a>
+                                    @if($record->status === 'submitted')
+                                        <form method="post" action="{{ route('manager.waste-records.apply-stock', $record) }}" class="d-inline" onsubmit="return confirm('Setujui Waste ini dan potong saldo stok (- Waste)?');">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-danger fw-semibold">&#10003; Approve</button>
+                                        </form>
+                                    @endif
+                                </div>
+                            </td>
                         </tr>
                     @empty
                         <tr><td colspan="9" class="text-center text-muted">Belum ada waste record.</td></tr>

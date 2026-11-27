@@ -19,11 +19,10 @@ class RecipeController extends Controller
         ]);
 
         return view('manager.recipes.index', [
-            'recipes' => Recipe::with(['product', 'outputInventoryItem', 'division', 'items'])
+            'recipes' => Recipe::with(['outputInventoryItem', 'division', 'items'])
                 ->when($filters['search'] ?? null, fn ($query, $search) => $query->where(function ($inner) use ($search) {
                     $inner->where('name', 'like', "%{$search}%")
                         ->orWhere('recipe_code', 'like', "%{$search}%")
-                        ->orWhereHas('product', fn ($product) => $product->where('name', 'like', "%{$search}%"))
                         ->orWhereHas('outputInventoryItem', fn ($item) => $item->where('name', 'like', "%{$search}%"));
                 }))
                 ->when($filters['division_id'] ?? null, fn ($query, $divisionId) => $query->where('division_id', $divisionId))
@@ -38,7 +37,7 @@ class RecipeController extends Controller
     public function show(Recipe $recipe)
     {
         return view('manager.recipes.show', [
-            'recipe' => $recipe->load(['product', 'outputInventoryItem', 'division', 'createdBy', 'updatedBy', 'items.item']),
+            'recipe' => $recipe->load(['outputInventoryItem', 'division', 'createdBy', 'updatedBy', 'items.item']),
         ]);
     }
 }

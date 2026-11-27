@@ -24,7 +24,7 @@
                             <td>{{ $movement->outlet->name ?? '-' }}</td>
                             <td>{{ $movement->division->name ?? '-' }}</td>
                             <td>{{ $movement->item->name ?? '-' }}</td>
-                            <td>{{ str_replace('_', ' ', $movement->movement_type) }}</td>
+                            <td>{{ $movement->movement_type_label }}</td>
                             <td>{{ number_format((float) $movement->qty, 2, ',', '.') }} {{ $movement->unit }}</td>
                             <td>{{ $movement->creator->name ?? '-' }}</td>
                         </tr>

@@ -15,10 +15,14 @@ class InventoryItem extends Model
         'division_id',
         'name',
         'code',
+        'esb_item_code',
+        'esb_item_name',
         'item_type',
         'base_unit',
         'purchase_unit',
         'conversion_value',
+        'unit_conversion_factor',
+        'unit_cost',
         'min_stock',
         'max_stock',
         'lead_time_days',
@@ -30,6 +34,8 @@ class InventoryItem extends Model
 
     protected $casts = [
         'conversion_value' => 'decimal:4',
+        'unit_conversion_factor' => 'decimal:4',
+        'unit_cost' => 'decimal:4',
         'min_stock' => 'decimal:2',
         'max_stock' => 'decimal:2',
         'last_purchase_price' => 'decimal:2',

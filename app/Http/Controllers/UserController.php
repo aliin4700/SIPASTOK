@@ -56,7 +56,7 @@ class UserController extends Controller
             'foto.image' => 'Format gambar gunakan file dengan ekstensi jpeg, jpg, png, atau gif.',
             'foto.max' => 'Ukuran file gambar Maksimal adalah 1024 KB.'
         ]);
-        $validatedData['status'] = 'inactive';
+        $validatedData['status'] = 'active';
 
         // menggunakan ImageHelper
         if ($request->file('foto')) {
@@ -214,6 +214,6 @@ class UserController extends Controller
 
     private function roleNames(): array
     {
-        return ['super_admin', 'admin', 'manager', 'staff_outlet', 'cashier', 'customer'];
+        return ['super_admin', 'admin', 'manager', 'staff_outlet'];
     }
 }

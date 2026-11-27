@@ -3,9 +3,7 @@
 namespace App\Providers;
 
 use App\Models\InventoryStock;
-use App\Models\Message;
-use App\Models\Order;
-use App\Models\Payment;
+use App\Models\StockOpname;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -31,11 +29,9 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer('backend.v_layouts.app', function ($view) {
             try {
-                // Badge sidebar dibuat ringan: hanya count item yang butuh perhatian admin.
+                // Badge sidebar dibuat ringan: hanya count item dan opname yang butuh perhatian admin.
                 $view->with('backendSidebarBadges', [
-                    'orders' => Order::whereIn('status', ['pending', 'waiting_payment', 'paid', 'processing'])->count(),
-                    'payments' => Payment::where('payment_status', 'waiting_confirmation')->count(),
-                    'chats' => Message::where('sender_type', 'customer')->where('is_read', false)->count(),
+                    'pending_opnames' => StockOpname::where('status', 'submitted')->count(),
                     'inventory' => InventoryStock::whereHas('item', function ($query) {
                         $query->where('is_active', true)
                             ->whereColumn('inventory_stocks.current_stock', '<=', 'inventory_items.min_stock');

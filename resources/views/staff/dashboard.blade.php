@@ -103,7 +103,7 @@
                     <div>
                         <span class="badge {{ $operation ? 'bg-success' : 'bg-primary' }} me-1">Langkah 1</span>
                         <strong class="fs-6">Buka Operasional Harian</strong>
-                        <div class="small text-muted mt-1">Buka sesi shift hari ini agar form Take Bahan, Produksi, Waste, dan Stock Opname dapat digunakan.</div>
+                        <div class="small text-muted mt-1">Buka sesi shift hari ini agar form Stok In, Produksi, Waste, dan Stock Opname dapat digunakan.</div>
                     </div>
                     <div>
                         @if(! $operation)
@@ -135,11 +135,11 @@
                 <div class="list-group-item px-0 py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <div>
                         <span class="badge bg-secondary me-1">Langkah 3</span>
-                        <strong class="fs-6">Take Bahan / Barang Datang (Restock Divisi)</strong>
+                        <strong class="fs-6">Stok In / Barang Datang (Restock Divisi)</strong>
                         <div class="small text-muted mt-1">Catat pengambilan bahan atau barang masuk ke divisi hari ini ({{ $shiftStats['material_requests'] ?? 0 }} dokumen tercatat).</div>
                     </div>
                     <div class="d-flex gap-2">
-                        <a href="{{ route('staff.material-requests.create', $queryParams) }}" class="btn btn-outline-primary btn-sm fw-semibold">+ Input Take Bahan</a>
+                        <a href="{{ route('staff.material-requests.create', $queryParams) }}" class="btn btn-outline-primary btn-sm fw-semibold">+ Input Stok In</a>
                         <a href="{{ route('staff.material-requests.index', $queryParams) }}" class="btn btn-light btn-sm border">Riwayat</a>
                     </div>
                 </div>

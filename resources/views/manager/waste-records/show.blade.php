@@ -1,10 +1,15 @@
 @extends('manager.layouts.app')
 
 @section('content')
-@if($wasteRecord->status === 'applied')
-    <div class="alert alert-success">Potongan stok Waste sudah diterapkan ke inventori outlet melalui stock movement.</div>
-@elseif($wasteRecord->status === 'submitted')
-    <div class="alert alert-warning">Dokumen Waste ini berstatus <strong>SUBMITTED</strong>. Klik tombol <strong>Approve &amp; Potong Stok Waste</strong> di bawah untuk mengurangi stok sistem sebelum Stock Opname direview.</div>
+@php
+    $isProcessed = in_array($wasteRecord->status, ['approved', 'applied'], true);
+    $hasMissingMovement = $wasteRecord->items->contains(fn ($it) => ! isset($movementsByItemId[$it->id]));
+@endphp
+
+@if($isProcessed && ! $hasMissingMovement)
+    <div class="alert alert-success">Potongan stok Waste sudah disetujui dan diterapkan ke saldo <code>inventory_stocks</code> outlet.</div>
+@elseif($wasteRecord->status === 'submitted' || ($isProcessed && $hasMissingMovement))
+    <div class="alert alert-warning">Dokumen Waste ini siap diproses ke stok. Klik tombol <strong>Approve &amp; Potong Stok Waste</strong> di bawah untuk mengurangi stok sistem.</div>
 @endif
 
 <div class="card mb-3 shadow-sm border-0">
@@ -14,7 +19,7 @@
                 <h4 class="mb-1 fw-bold">Detail Waste Record: {{ $wasteRecord->waste_number ?? '-' }}</h4>
                 <div class="text-muted small">Tanggal: {{ $wasteRecord->waste_date?->format('d/m/Y') }}</div>
             </div>
-            <span class="badge {{ $wasteRecord->status === 'applied' ? 'bg-success' : ($wasteRecord->status === 'submitted' ? 'bg-warning text-dark' : 'bg-info') }} text-uppercase fs-6">
+            <span class="badge {{ $isProcessed ? 'bg-success' : ($wasteRecord->status === 'submitted' ? 'bg-warning text-dark' : 'bg-info') }} text-uppercase fs-6">
                 {{ $wasteRecord->status }}
             </span>
         </div>
@@ -24,7 +29,7 @@
         <div><strong>Recorder:</strong> {{ $wasteRecord->recorder->name ?? '-' }}</div>
         <div><strong>Catatan:</strong> {{ $wasteRecord->notes ?? '-' }}</div>
 
-        @if($wasteRecord->status === 'submitted')
+        @if($wasteRecord->status === 'submitted' || ($isProcessed && $hasMissingMovement))
             <form method="post" action="{{ route('manager.waste-records.apply-stock', $wasteRecord) }}" class="mt-3" onsubmit="return confirm('Terapkan pemotongan stok Waste (waste_out) sekarang?');">
                 @csrf
                 <button type="submit" class="btn btn-danger fw-bold">

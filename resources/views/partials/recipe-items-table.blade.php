@@ -15,7 +15,9 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @php($totalCost = 0)
+                    @php
+                        $totalCost = 0;
+                    @endphp
                     @foreach($recipe->items as $recipeItem)
                         @php
                             $unitCost = $recipeItem->item?->last_purchase_price;

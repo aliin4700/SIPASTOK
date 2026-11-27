@@ -9,9 +9,9 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 /**
- * Akun utama aplikasi.
+ * Akun utama aplikasi SIPASTOK.
  *
- * BreadLab tetap memakai users.role sebagai source of truth, sementara tabel
+ * SIPASTOK tetap memakai users.role sebagai source of truth, sementara tabel
  * roles/permissions dipakai sebagai referensi akses tambahan.
  */
 class User extends Authenticatable
@@ -50,21 +50,6 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
-    public function customer()
-    {
-        return $this->hasOne(Customer::class);
-    }
-
-    public function adminConversations()
-    {
-        return $this->hasMany(Conversation::class, 'admin_id');
-    }
-
-    public function sentMessages()
-    {
-        return $this->hasMany(Message::class, 'sender_id');
-    }
-
     public function roleRecord()
     {
         // Relasi memakai kolom string role agar kompatibel dengan data lama.
@@ -79,31 +64,6 @@ class User extends Authenticatable
     public function divisionAccesses()
     {
         return $this->hasMany(UserDivisionAccess::class);
-    }
-
-    public function cashierShifts()
-    {
-        return $this->hasMany(CashierShift::class, 'cashier_id');
-    }
-
-    public function cashierCashMovements()
-    {
-        return $this->hasMany(CashierCashMovement::class, 'cashier_id');
-    }
-
-    public function createdSalesTargets()
-    {
-        return $this->hasMany(SalesTarget::class, 'created_by');
-    }
-
-    public function recordedOperationalExpenses()
-    {
-        return $this->hasMany(OperationalExpense::class, 'recorded_by');
-    }
-
-    public function approvedOperationalExpenses()
-    {
-        return $this->hasMany(OperationalExpense::class, 'approved_by');
     }
 
     public function openedDivisionDailyOperations()

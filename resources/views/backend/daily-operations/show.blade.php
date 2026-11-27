@@ -1,7 +1,7 @@
 @extends('backend.v_layouts.app')
 
 @section('content')
-<div class="alert alert-warning">Approve daily operation hanya mengubah status. Stok dan stock movement belum diubah pada tahap ini.</div>
+<div class="alert alert-info">Menyetujui (Approve) Daily Operation akan otomatis memproses seluruh mutasi stok Stok In (+), Produksi (+), Waste (-), dan Stock Opname pada shift ini ke <code>inventory_stocks</code>.</div>
 
 <div class="card mb-3">
     <div class="card-body">

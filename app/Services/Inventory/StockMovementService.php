@@ -138,8 +138,12 @@ class StockMovementService
             $before = (float) $stock->current_stock;
             $after = $direction === 'increase' ? $before + $quantity : $before - $quantity;
 
-            if ($after < 0 && ! ($data['allow_negative'] ?? false)) {
-                throw new DomainException("Insufficient stock for item {$item->name}. Current stock: {$before}, requested: {$quantity}.");
+            if ($after < 0) {
+                if ($data['cap_at_zero'] ?? false) {
+                    $after = 0.0;
+                } elseif (! ($data['allow_negative'] ?? false)) {
+                    throw new DomainException("Insufficient stock for item {$item->name}. Current stock: {$before}, requested: {$quantity}.");
+                }
             }
 
             $this->updateStock($stock, $after);

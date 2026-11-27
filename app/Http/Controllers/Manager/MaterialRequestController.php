@@ -6,14 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\MaterialRequest;
 use App\Models\MaterialRequestItem;
 use App\Models\StockMovement;
-use App\Services\Inventory\StockMovementService;
+use App\Services\Inventory\OperationalApprovalService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class MaterialRequestController extends Controller
 {
-    public function __construct(private StockMovementService $stockMovementService)
+    public function __construct(private OperationalApprovalService $operationalApprovalService)
     {
     }
 
@@ -42,68 +42,98 @@ class MaterialRequestController extends Controller
 
     public function issueStock(Request $request, MaterialRequest $materialRequest)
     {
-        if ($materialRequest->status !== 'submitted') {
-            return back()->with('error', 'Hanya material request submitted yang bisa diproses.');
-        }
-
-        $materialRequest->load(['items.item']);
-
-        if ($materialRequest->items->isEmpty()) {
-            return back()->with('error', 'Material request belum memiliki item.');
-        }
-
-        foreach ($materialRequest->items as $item) {
-            if (! $item->item || $this->issueQuantity($item) <= 0) {
-                return back()->with('error', 'Item material request tidak valid. Pastikan inventory item ada dan qty lebih dari 0.');
-            }
-        }
-
         $mode = $request->input('mode', 'restock_in');
 
         try {
-            $summary = DB::transaction(function () use ($request, $materialRequest, $mode) {
-                $summary = ['processed' => 0, 'duplicate' => 0];
-
-                foreach ($materialRequest->items as $item) {
-                    $qty = $this->issueQuantity($item);
-
-                    if ($mode === 'issue_out') {
-                        $result = $this->stockMovementService->decreaseStock([
-                            'outlet_id' => $materialRequest->outlet_id,
-                            'inventory_item_id' => $item->inventory_item_id,
-                            'quantity' => $qty,
-                            'movement_type' => 'material_issue_out',
-                            'reference_type' => MaterialRequestItem::class,
-                            'reference_id' => $item->id,
-                            'user_id' => $request->user()->id,
-                            'notes' => 'Material issue out from request ' . ($materialRequest->request_number ?? $materialRequest->id),
-                        ]);
-                    } else {
-                        $result = $this->stockMovementService->increaseStock([
-                            'outlet_id' => $materialRequest->outlet_id,
-                            'inventory_item_id' => $item->inventory_item_id,
-                            'quantity' => $qty,
-                            'movement_type' => 'transfer_in',
-                            'reference_type' => MaterialRequestItem::class,
-                            'reference_id' => $item->id,
-                            'user_id' => $request->user()->id,
-                            'notes' => 'Barang masuk / restock divisi dari Take Bahan ' . ($materialRequest->request_number ?? $materialRequest->id),
-                        ]);
-                    }
-
-                    $result['duplicate'] ? $summary['duplicate']++ : $summary['processed']++;
-                }
-
-                $materialRequest->update(['status' => 'issued']);
-
-                return $summary;
-            });
+            $summary = $this->operationalApprovalService->approveMaterialRequest(
+                $materialRequest,
+                $request->user(),
+                $mode
+            );
         } catch (Throwable $exception) {
             return back()->with('error', 'Proses stok gagal: ' . $exception->getMessage());
         }
 
-        $label = $mode === 'issue_out' ? 'Pengeluaran bahan (-)' : 'Penerimaan / Restock bahan (+)';
-        return back()->with('success', "{$label} berhasil diterapkan. Diproses: {$summary['processed']} item, duplikat diabaikan: {$summary['duplicate']}.");
+        $label = $mode === 'issue_out' ? 'Pengeluaran bahan (-)' : 'Persetujuan Stok In (+)';
+        return back()->with('success', "{$label} berhasil diterapkan ke saldo stok. Diproses: {$summary['processed']} item, duplikat diabaikan: {$summary['duplicate']}.");
+    }
+
+    public function bulkApprove(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:material_requests,id'],
+        ], [
+            'ids.required' => 'Pilih minimal satu dokumen Stok In untuk disetujui.',
+        ]);
+
+        $records = MaterialRequest::whereIn('id', $validated['ids'])
+            ->where('status', 'submitted')
+            ->get();
+
+        $approved = 0;
+        $errors = [];
+
+        foreach ($records as $record) {
+            try {
+                $this->operationalApprovalService->approveMaterialRequest($record, $request->user(), 'restock_in');
+                $approved++;
+            } catch (Throwable $e) {
+                $errors[] = ($record->request_number ?? '#' . $record->id) . ': ' . $e->getMessage();
+            }
+        }
+
+        if ($approved === 0 && $errors !== []) {
+            return back()->with('error', 'Gagal menyetujui dokumen terpilih: ' . implode(' | ', array_slice($errors, 0, 3)));
+        }
+
+        $msg = "Berhasil menyetujui {$approved} dokumen Stok In sekaligus (+ Restock ke stok).";
+        if ($errors !== []) {
+            $msg .= ' (' . count($errors) . ' dokumen gagal diproses).';
+        }
+
+        return back()->with('success', $msg);
+    }
+
+    public function updateReceipt(Request $request, MaterialRequest $materialRequest)
+    {
+        if ($materialRequest->status === 'cancelled') {
+            return back()->with('error', 'Dokumen yang sudah dibatalkan tidak dapat diperbarui lampirannya.');
+        }
+
+        $request->validate(
+            ['receipt' => MaterialRequest::RECEIPT_REQUIRED_VALIDATION_RULES],
+            MaterialRequest::RECEIPT_VALIDATION_MESSAGES
+        );
+
+        $materialRequest->replaceReceipt($request->file('receipt'));
+
+        return back()->with('success', 'Bukti struk / nota berhasil diperbarui.');
+    }
+
+    public function deleteReceipt(MaterialRequest $materialRequest)
+    {
+        if ($materialRequest->status === 'cancelled') {
+            return back()->with('error', 'Dokumen yang sudah dibatalkan tidak dapat dihapus lampirannya.');
+        }
+
+        $materialRequest->clearReceipt();
+
+        return back()->with('success', 'Bukti struk / nota berhasil dihapus.');
+    }
+
+    public function downloadReceipt(MaterialRequest $materialRequest)
+    {
+        abort_if(
+            ! $materialRequest->receipt_path || ! Storage::disk('public')->exists($materialRequest->receipt_path),
+            404,
+            'File bukti struk tidak ditemukan.'
+        );
+
+        return Storage::disk('public')->download(
+            $materialRequest->receipt_path,
+            $materialRequest->receipt_original_name ?: basename($materialRequest->receipt_path)
+        );
     }
 
     private function issueQuantity(MaterialRequestItem $item): float

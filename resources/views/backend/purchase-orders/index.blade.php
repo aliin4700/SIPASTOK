@@ -52,6 +52,7 @@
                         <th>Tanggal</th>
                         <th>Status</th>
                         <th>Total Item</th>
+                        <th class="text-right">Total Qty</th>
                         <th>Aksi</th>
                     </tr>
                 </thead>
@@ -63,11 +64,12 @@
                             <td>{{ $purchaseOrder->outlet->name ?? '-' }}</td>
                             <td>{{ $purchaseOrder->order_date?->format('d/m/Y') }}</td>
                             <td><span class="badge badge-info">{{ $purchaseOrder->status }}</span></td>
-                            <td>{{ $purchaseOrder->items->count() }}</td>
+                            <td>{{ $purchaseOrder->items_count }}</td>
+                            <td class="text-right">{{ number_format((float) ($purchaseOrder->items_sum_ordered_qty ?? 0), 2, ',', '.') }}</td>
                             <td><a href="{{ route('backend.purchase-orders.show', $purchaseOrder) }}" class="btn btn-info btn-sm">Detail</a></td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" class="text-center text-muted">Belum ada purchase order.</td></tr>
+                        <tr><td colspan="8" class="text-center text-muted">Belum ada purchase order.</td></tr>
                     @endforelse
                 </tbody>
             </table>

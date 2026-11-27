@@ -11,10 +11,16 @@ use App\Models\MaterialRequest;
 use App\Models\Outlet;
 use App\Models\UserDivisionAccess;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class MaterialRequestController extends Controller
 {
+    /** Stok In hanya untuk Raw Material. */
+    private const REQUEST_ITEM_TYPES = ['raw_material'];
+
     public function index(Request $request)
     {
         [$outletId, $divisionId, $message] = $this->context($request);
@@ -46,16 +52,7 @@ class MaterialRequestController extends Controller
         $items = collect();
         $stocks = collect();
         if (! $message && $operation?->status === 'open') {
-            $items = InventoryItem::where('is_active', true)
-                ->where('division_id', $divisionId)
-                ->whereIn('item_type', ['raw_material', 'wip', 'packaging'])
-                ->orderBy('name')
-                ->get();
-
-            $stocks = InventoryStock::where('outlet_id', $outletId)
-                ->whereIn('inventory_item_id', $items->pluck('id'))
-                ->get()
-                ->keyBy('inventory_item_id');
+            [$items, $stocks] = $this->formItemsAndStocks((int) $outletId, (int) $divisionId);
         }
 
         return view('staff.material-requests.create', [
@@ -79,69 +76,49 @@ class MaterialRequestController extends Controller
 
         $operation = $this->openOperation($outletId, $divisionId);
         if (! $operation || $operation->status !== 'open') {
-            return back()->withInput()->with('error', 'Buka Operasional Hari Ini terlebih dahulu sebelum membuat Take Bahan.');
+            return back()->withInput()->with('error', 'Buka Operasional Hari Ini terlebih dahulu sebelum membuat Stok In.');
         }
 
-        $data = $request->validate([
-            'notes' => ['nullable', 'string'],
-            'items' => ['required', 'array'],
-            'items.*.inventory_item_id' => ['nullable', 'exists:inventory_items,id'],
-            'items.*.requested_qty' => ['nullable', 'numeric', 'min:0.01'],
-            'items.*.unit' => ['nullable', 'string', 'max:50'],
-            'items.*.notes' => ['nullable', 'string'],
-        ]);
-
-        $rows = collect($data['items'])
-            ->filter(fn ($row) => ! empty($row['inventory_item_id']) && ! empty($row['requested_qty']))
-            ->values();
-
-        if ($rows->isEmpty()) {
-            return back()->withInput()->with('error', 'Isi minimal satu item Take Bahan.');
+        $data = $this->validateRequestPayload($request);
+        [$rows, $rowError] = $this->validatedItemRows($data['items'], (int) $divisionId);
+        if ($rowError) {
+            return back()->withInput()->with('error', $rowError);
         }
 
-        $validItemIds = InventoryItem::where('is_active', true)
-            ->where('division_id', $divisionId)
-            ->whereIn('item_type', ['raw_material', 'wip', 'packaging'])
-            ->pluck('id')
-            ->all();
+        $receiptData = $request->hasFile('receipt')
+            ? MaterialRequest::storeUploadedReceipt($request->file('receipt'))
+            : ['receipt_path' => null, 'receipt_original_name' => null];
 
-        foreach ($rows as $row) {
-            if (! in_array((int) $row['inventory_item_id'], $validItemIds, true)) {
-                return back()->withInput()->with('error', 'Item harus aktif dan sesuai divisi.');
-            }
-        }
-
-        $materialRequest = DB::transaction(function () use ($request, $rows, $operation, $outletId, $divisionId, $data) {
-            $materialRequest = MaterialRequest::create([
-                'division_daily_operation_id' => $operation->id,
-                'outlet_id' => $outletId,
-                'division_id' => $divisionId,
-                'requested_by' => $request->user()->id,
-                'request_date' => today(),
-                'status' => 'draft',
-                'notes' => $data['notes'] ?? null,
-            ]);
-
-            $outletCode = $operation->outlet?->code ?? 'OUT';
-            $divisionCode = $operation->division?->code ?? 'DIV';
-            $materialRequest->update([
-                'request_number' => sprintf('MR-%s-%s-%s-%03d', $outletCode, $divisionCode, today()->format('Ymd'), $materialRequest->id),
-            ]);
-
-            foreach ($rows as $row) {
-                $item = InventoryItem::find($row['inventory_item_id']);
-                $materialRequest->items()->create([
-                    'inventory_item_id' => $item->id,
-                    'requested_qty' => $row['requested_qty'],
-                    'unit' => $row['unit'] ?: $item->base_unit,
-                    'notes' => $row['notes'] ?? null,
+        try {
+            $materialRequest = DB::transaction(function () use ($request, $rows, $operation, $outletId, $divisionId, $data, $receiptData) {
+                $materialRequest = MaterialRequest::create([
+                    'division_daily_operation_id' => $operation->id,
+                    'outlet_id' => $outletId,
+                    'division_id' => $divisionId,
+                    'requested_by' => $request->user()->id,
+                    'request_date' => today(),
+                    'status' => 'draft',
+                    'notes' => $data['notes'] ?? null,
+                    'receipt_path' => $receiptData['receipt_path'],
+                    'receipt_original_name' => $receiptData['receipt_original_name'],
                 ]);
-            }
 
-            return $materialRequest;
-        });
+                $outletCode = $operation->outlet?->code ?? 'OUT';
+                $divisionCode = $operation->division?->code ?? 'DIV';
+                $materialRequest->update([
+                    'request_number' => sprintf('MR-%s-%s-%s-%03d', $outletCode, $divisionCode, today()->format('Ymd'), $materialRequest->id),
+                ]);
 
-        return redirect()->route('staff.material-requests.show', $materialRequest)->with('success', 'Take Bahan berhasil dibuat.');
+                $this->syncRequestItems($materialRequest, $rows);
+
+                return $materialRequest;
+            });
+        } catch (Throwable $exception) {
+            MaterialRequest::deleteStoredReceipt($receiptData['receipt_path']);
+            throw $exception;
+        }
+
+        return redirect()->route('staff.material-requests.show', $materialRequest)->with('success', 'Stok In berhasil dibuat.');
     }
 
     public function show(Request $request, MaterialRequest $materialRequest)
@@ -151,6 +128,81 @@ class MaterialRequestController extends Controller
         return view('staff.material-requests.show', [
             'materialRequest' => $materialRequest->load(['outlet', 'division', 'requester', 'dailyOperation', 'items.item']),
         ]);
+    }
+
+    public function edit(Request $request, MaterialRequest $materialRequest)
+    {
+        abort_unless($this->canAccess($request, $materialRequest), 403);
+
+        if ($materialRequest->status !== 'draft') {
+            return redirect()
+                ->route('staff.material-requests.show', $materialRequest)
+                ->with('error', 'Hanya dokumen berstatus draft yang dapat diedit.');
+        }
+
+        $materialRequest->load(['outlet', 'division', 'items.item']);
+        [$items, $stocks] = $this->formItemsAndStocks(
+            (int) $materialRequest->outlet_id,
+            (int) $materialRequest->division_id
+        );
+
+        return view('staff.material-requests.edit', [
+            'materialRequest' => $materialRequest,
+            'items' => $items,
+            'stocks' => $stocks,
+        ]);
+    }
+
+    public function update(Request $request, MaterialRequest $materialRequest)
+    {
+        abort_unless($this->canAccess($request, $materialRequest), 403);
+
+        if ($materialRequest->status !== 'draft') {
+            return redirect()
+                ->route('staff.material-requests.show', $materialRequest)
+                ->with('error', 'Hanya dokumen berstatus draft yang dapat diedit.');
+        }
+
+        $data = $this->validateRequestPayload($request, includeRemoveReceipt: true);
+        [$rows, $rowError] = $this->validatedItemRows($data['items'], (int) $materialRequest->division_id);
+        if ($rowError) {
+            return back()->withInput()->with('error', $rowError);
+        }
+
+        $oldReceiptPath = $materialRequest->receipt_path;
+        $newReceiptData = $request->hasFile('receipt')
+            ? MaterialRequest::storeUploadedReceipt($request->file('receipt'))
+            : null;
+        $removeReceipt = ! $newReceiptData && $request->boolean('remove_receipt');
+
+        try {
+            DB::transaction(function () use ($materialRequest, $data, $rows, $newReceiptData, $removeReceipt) {
+                $attributes = [
+                    'notes' => $data['notes'] ?? null,
+                ];
+
+                if ($newReceiptData) {
+                    $attributes['receipt_path'] = $newReceiptData['receipt_path'];
+                    $attributes['receipt_original_name'] = $newReceiptData['receipt_original_name'];
+                } elseif ($removeReceipt) {
+                    $attributes['receipt_path'] = null;
+                    $attributes['receipt_original_name'] = null;
+                }
+
+                $materialRequest->update($attributes);
+                $materialRequest->items()->delete();
+                $this->syncRequestItems($materialRequest, $rows);
+            });
+        } catch (Throwable $exception) {
+            MaterialRequest::deleteStoredReceipt($newReceiptData['receipt_path'] ?? null);
+            throw $exception;
+        }
+
+        if ($oldReceiptPath && ($newReceiptData || $removeReceipt)) {
+            MaterialRequest::deleteStoredReceipt($oldReceiptPath);
+        }
+
+        return redirect()->route('staff.material-requests.show', $materialRequest)->with('success', 'Stok In berhasil diperbarui.');
     }
 
     public function submit(Request $request, MaterialRequest $materialRequest)
@@ -166,7 +218,7 @@ class MaterialRequestController extends Controller
             'submitted_at' => now(),
         ]);
 
-        return back()->with('success', 'Take Bahan berhasil disubmit.');
+        return back()->with('success', 'Stok In berhasil disubmit.');
     }
 
     public function cancel(Request $request, MaterialRequest $materialRequest)
@@ -174,12 +226,144 @@ class MaterialRequestController extends Controller
         abort_unless($this->canAccess($request, $materialRequest), 403);
 
         if (! in_array($materialRequest->status, ['draft', 'submitted'], true)) {
-            return back()->with('error', 'Take Bahan ini tidak bisa dibatalkan.');
+            return back()->with('error', 'Stok In ini tidak bisa dibatalkan.');
         }
 
         $materialRequest->update(['status' => 'cancelled']);
 
-        return back()->with('success', 'Take Bahan berhasil dibatalkan.');
+        return back()->with('success', 'Stok In berhasil dibatalkan.');
+    }
+
+    public function updateReceipt(Request $request, MaterialRequest $materialRequest)
+    {
+        abort_unless($this->canAccess($request, $materialRequest), 403);
+
+        if (! in_array($materialRequest->status, ['draft', 'submitted'], true)) {
+            return back()->with('error', 'Bukti struk tidak dapat diubah pada status ini.');
+        }
+
+        $request->validate(
+            ['receipt' => MaterialRequest::RECEIPT_REQUIRED_VALIDATION_RULES],
+            MaterialRequest::RECEIPT_VALIDATION_MESSAGES
+        );
+
+        $materialRequest->replaceReceipt($request->file('receipt'));
+
+        return back()->with('success', 'Bukti struk / nota berhasil disimpan.');
+    }
+
+    public function deleteReceipt(Request $request, MaterialRequest $materialRequest)
+    {
+        abort_unless($this->canAccess($request, $materialRequest), 403);
+
+        if (! in_array($materialRequest->status, ['draft', 'submitted'], true)) {
+            return back()->with('error', 'Bukti struk tidak dapat dihapus pada status ini.');
+        }
+
+        $materialRequest->clearReceipt();
+
+        return back()->with('success', 'Bukti struk / nota berhasil dihapus.');
+    }
+
+    public function downloadReceipt(Request $request, MaterialRequest $materialRequest)
+    {
+        abort_unless($this->canAccess($request, $materialRequest), 403);
+
+        abort_if(
+            ! $materialRequest->receipt_path || ! Storage::disk('public')->exists($materialRequest->receipt_path),
+            404,
+            'File bukti struk tidak ditemukan.'
+        );
+
+        return Storage::disk('public')->download(
+            $materialRequest->receipt_path,
+            $materialRequest->receipt_original_name ?: basename($materialRequest->receipt_path)
+        );
+    }
+
+    private function validateRequestPayload(Request $request, bool $includeRemoveReceipt = false): array
+    {
+        $rules = [
+            'notes' => ['nullable', 'string'],
+            'receipt' => MaterialRequest::RECEIPT_VALIDATION_RULES,
+            'items' => ['required', 'array'],
+            'items.*.inventory_item_id' => ['nullable', 'exists:inventory_items,id'],
+            'items.*.requested_qty' => ['nullable', 'numeric', 'min:0.01'],
+            'items.*.unit' => ['nullable', 'string', 'max:50'],
+            'items.*.notes' => ['nullable', 'string'],
+        ];
+
+        if ($includeRemoveReceipt) {
+            $rules['remove_receipt'] = ['nullable', 'boolean'];
+        }
+
+        return $request->validate($rules, MaterialRequest::RECEIPT_VALIDATION_MESSAGES);
+    }
+
+    /**
+     * @return array{0: Collection, 1: ?string}
+     */
+    private function validatedItemRows(array $items, int $divisionId): array
+    {
+        $rows = collect($items)
+            ->filter(fn ($row) => ! empty($row['inventory_item_id']) && ! empty($row['requested_qty']))
+            ->values();
+
+        if ($rows->isEmpty()) {
+            return [$rows, 'Isi minimal satu item Stok In.'];
+        }
+
+        $validItemIds = InventoryItem::where('is_active', true)
+            ->where('division_id', $divisionId)
+            ->whereIn('item_type', self::REQUEST_ITEM_TYPES)
+            ->pluck('id')
+            ->all();
+
+        foreach ($rows as $row) {
+            if (! in_array((int) $row['inventory_item_id'], $validItemIds, true)) {
+                return [$rows, 'Item Stok In harus berkategori Raw Material, aktif, dan sesuai divisi.'];
+            }
+        }
+
+        return [$rows, null];
+    }
+
+    private function syncRequestItems(MaterialRequest $materialRequest, Collection $rows): void
+    {
+        $itemsById = InventoryItem::whereIn('id', $rows->pluck('inventory_item_id'))->get()->keyBy('id');
+
+        foreach ($rows as $row) {
+            $item = $itemsById->get((int) $row['inventory_item_id']);
+            if (! $item) {
+                continue;
+            }
+
+            $materialRequest->items()->create([
+                'inventory_item_id' => $item->id,
+                'requested_qty' => $row['requested_qty'],
+                'unit' => ! empty($row['unit']) ? $row['unit'] : $item->base_unit,
+                'notes' => $row['notes'] ?? null,
+            ]);
+        }
+    }
+
+    /**
+     * @return array{0: Collection, 1: Collection}
+     */
+    private function formItemsAndStocks(int $outletId, int $divisionId): array
+    {
+        $items = InventoryItem::where('is_active', true)
+            ->where('division_id', $divisionId)
+            ->whereIn('item_type', self::REQUEST_ITEM_TYPES)
+            ->orderBy('name')
+            ->get();
+
+        $stocks = InventoryStock::where('outlet_id', $outletId)
+            ->whereIn('inventory_item_id', $items->pluck('id'))
+            ->get()
+            ->keyBy('inventory_item_id');
+
+        return [$items, $stocks];
     }
 
     private function context(Request $request, bool $validateAdminInput = false): array

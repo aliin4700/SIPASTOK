@@ -39,8 +39,6 @@
                                             'admin' => 'Admin',
                                             'manager' => 'Manager',
                                             'staff_outlet' => 'Staff Outlet',
-                                            'cashier' => 'Cashier',
-                                            'customer' => 'Customer',
                                         ];
                                     @endphp
                                     <span class="badge badge-info">{{ $roleLabels[(string) $row->role] ?? $row->role }}</span>

@@ -35,8 +35,6 @@
                                             'admin' => 'Admin',
                                             'manager' => 'Manager',
                                             'staff_outlet' => 'Staff Outlet',
-                                            'cashier' => 'Cashier',
-                                            'customer' => 'Customer',
                                         ] as $roleValue => $roleLabel)
                                             <option value="{{ $roleValue }}" {{ old('role') == $roleValue ? 'selected' : '' }}>{{ $roleLabel }}</option>
                                         @endforeach

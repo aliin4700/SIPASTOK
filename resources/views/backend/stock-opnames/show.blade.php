@@ -3,6 +3,7 @@
 @section('content')
 @php
     $totalItems = $stockOpname->items->count();
+    $filledItems = $stockOpname->items->filter(fn ($item) => $item->physical_stock !== null && $item->physical_stock !== '')->count();
     $matchedItems = $stockOpname->items->filter(fn ($item) => abs((float) $item->difference_qty) < 0.0001)->count();
     $varianceItems = $totalItems - $matchedItems;
     $negativeItems = $stockOpname->items->filter(fn ($item) => (float) $item->difference_qty < -0.0001)->count();
@@ -10,6 +11,11 @@
     $opnameTypeLabel = \App\Models\StockOpname::TYPES[$stockOpname->opname_type] ?? $stockOpname->opname_type;
     $varianceReasons = \App\Models\StockOpnameItem::VARIANCE_REASONS;
     $isSubmitted = $stockOpname->status === 'submitted';
+    $pendingRequests = $pendingRequests ?? collect();
+    $pendingProductions = $pendingProductions ?? collect();
+    $pendingWastes = $pendingWastes ?? collect();
+    $hasEsbImport = $hasEsbImport ?? true;
+    $hasIncompleteData = $pendingRequests->isNotEmpty() || $pendingProductions->isNotEmpty() || $pendingWastes->isNotEmpty() || ! $hasEsbImport;
 @endphp
 
 <style>
@@ -120,7 +126,7 @@
             <div class="d-flex flex-wrap gap-2">
                 @foreach($pendingRequests as $mr)
                     <a href="{{ route('backend.material-requests.show', $mr) }}" class="btn btn-sm btn-outline-dark bg-white">
-                        Take Bahan: {{ $mr->request_number }} &rarr;
+                        Stok In: {{ $mr->request_number }} &rarr;
                     </a>
                 @endforeach
                 @foreach($pendingProductions as $pr)
@@ -224,13 +230,19 @@
 <div class="card">
     <div class="card-body">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-            <h5 class="mb-0 fw-bold">Rincian Item Opname</h5>
+            <div>
+                <h5 class="mb-0 fw-bold">Rincian Item Opname</h5>
+                <small class="text-muted">Diurutkan otomatis dari nilai absolut selisih Rupiah (|variance_cost|) terbesar ke terkecil.</small>
+            </div>
             <div class="d-flex flex-wrap gap-2 no-print" id="auditFilterButtons">
                 <button type="button" class="btn btn-sm btn-primary active" data-audit-filter="all">
                     Semua Item ({{ $totalItems }})
                 </button>
+                <button type="button" class="btn btn-sm btn-outline-info" data-audit-filter="filled">
+                    Hanya Item yang Diisi ({{ $filledItems }})
+                </button>
                 <button type="button" class="btn btn-sm btn-outline-warning" data-audit-filter="variance">
-                    Hanya Selisih (Variance: {{ $varianceItems }})
+                    Hanya Item Berselisih ({{ $varianceItems }})
                 </button>
                 <button type="button" class="btn btn-sm btn-outline-danger" data-audit-filter="negative">
                     Selisih Minus / Rugi ({{ $negativeItems }})
@@ -248,8 +260,8 @@
                         <th class="text-end" style="min-width: 140px;">Stok Fisik</th>
                         <th class="text-end">Selisih</th>
                         <th>Unit</th>
-                        <th class="text-end">Harga Satuan (Rp)</th>
-                        <th class="text-end">Nilai Selisih (Rp)</th>
+                        <th class="text-end">Unit Cost (Rp)</th>
+                        <th class="text-end">Selisih Rupiah (Rp)</th>
                         <th style="min-width: 200px;">Alasan Selisih</th>
                         <th>Movement</th>
                         <th style="min-width: 160px;">Catatan</th>
@@ -261,9 +273,10 @@
                             $movement = $movementsByItemId[$item->id] ?? null;
                             $diff = (float) $item->difference_qty;
                             $isZero = abs($diff) < 0.0001;
+                            $isFilled = $item->physical_stock !== null && $item->physical_stock !== '';
                             $rowClass = $isZero ? '' : ($diff < 0 ? 'row-variance-minus' : 'row-variance-plus');
                         @endphp
-                        <tr class="detail-item-row {{ $rowClass }}" data-diff="{{ $diff }}">
+                        <tr class="detail-item-row {{ $rowClass }}" data-diff="{{ $diff }}" data-filled="{{ $isFilled ? '1' : '0' }}">
                             <td class="item-title-cell">
                                 <div class="fw-bold">{{ $item->item->name ?? '-' }}</div>
                                 @if($item->item?->code)
@@ -289,9 +302,15 @@
                                 @endif
                             </td>
                             <td data-label="Satuan">{{ strtoupper($item->unit) }}</td>
-                            <td data-label="Harga Satuan" class="text-end">Rp {{ number_format((float) $item->unit_cost, 2, ',', '.') }}</td>
-                            <td data-label="Nilai Selisih (Rp)" class="text-end {{ (float) $item->variance_value < 0 ? 'text-danger fw-bold' : '' }}">
-                                Rp {{ number_format((float) $item->variance_value, 2, ',', '.') }}
+                            @php
+                                $itemUnitCost = (float) $item->unit_cost > 0 ? (float) $item->unit_cost : (float) ($item->item?->unit_cost ?? 0);
+                                $itemVarianceCost = abs((float) ($item->variance_cost ?? 0)) > 0.0001
+                                    ? (float) $item->variance_cost
+                                    : (abs((float) ($item->variance_value ?? 0)) > 0.0001 ? (float) $item->variance_value : round($diff * $itemUnitCost, 2));
+                            @endphp
+                            <td data-label="Unit Cost (Rp)" class="text-end">Rp {{ number_format($itemUnitCost, 2, ',', '.') }}</td>
+                            <td data-label="Selisih Rupiah (Rp)" class="text-end {{ $itemVarianceCost < 0 ? 'text-danger fw-bold' : ($itemVarianceCost > 0 ? 'text-success fw-semibold' : '') }}">
+                                Rp {{ number_format($itemVarianceCost, 2, ',', '.') }}
                             </td>
                             <td data-label="Alasan Selisih">
                                 @if($isSubmitted)
@@ -351,6 +370,27 @@
             </div>
         </div>
 
+        @if($isSubmitted && $hasIncompleteData)
+            <div class="alert alert-warning border-warning mt-3 no-print">
+                <div class="fw-bold mb-1">&#9888; Peringatan Kelengkapan Data Sebelum Approve Opname</div>
+                <ul class="mb-2 ps-3 small">
+                    @if($pendingRequests->isNotEmpty())
+                        <li>Masih ada <strong>{{ $pendingRequests->count() }}</strong> dokumen <strong>Stok In</strong> berstatus <em>pending/submitted</em> pada outlet &amp; tanggal ini. <a href="{{ route('backend.material-requests.index') }}" class="fw-semibold">Buka Stok In &rarr;</a></li>
+                    @endif
+                    @if($pendingProductions->isNotEmpty())
+                        <li>Masih ada <strong>{{ $pendingProductions->count() }}</strong> dokumen <strong>Input Produksi</strong> berstatus <em>pending/submitted</em> pada outlet &amp; tanggal ini. <a href="{{ route('backend.production-records.index') }}" class="fw-semibold">Buka Input Produksi &rarr;</a></li>
+                    @endif
+                    @if($pendingWastes->isNotEmpty())
+                        <li>Masih ada <strong>{{ $pendingWastes->count() }}</strong> dokumen <strong>Catatan Waste</strong> berstatus <em>pending/submitted</em> pada outlet &amp; tanggal ini. <a href="{{ route('backend.waste-records.index') }}" class="fw-semibold">Buka Catatan Waste &rarr;</a></li>
+                    @endif
+                    @if(! $hasEsbImport)
+                        <li>Belum ada catatan <strong>Impor Pemakaian ESB (Sales Material Usage)</strong> untuk outlet <strong>{{ $stockOpname->outlet->name ?? '-' }}</strong> tanggal <strong>{{ $stockOpname->opname_date?->format('d/m/Y') }}</strong>. <a href="{{ route('backend.esb-imports.index') }}" class="fw-semibold">Impor ESB Sekarang &rarr;</a></li>
+                    @endif
+                </ul>
+                <div class="small text-muted">Sebaiknya selesaikan persetujuan dokumen &amp; impor ESB terlebih dahulu agar angka Stok Sistem akurat sebelum Anda menekan tombol Approve.</div>
+            </div>
+        @endif
+
         <div class="d-flex flex-wrap gap-2 mt-3 no-print">
             @if($isSubmitted)
                 <button type="submit" class="btn btn-success btn-lg px-4 fw-bold shadow-sm">
@@ -380,8 +420,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
             rows.forEach(function (row) {
                 const diff = parseFloat(row.getAttribute('data-diff') || '0');
+                const filled = row.getAttribute('data-filled') === '1';
                 let show = true;
-                if (mode === 'variance') {
+                if (mode === 'filled') {
+                    show = filled;
+                } else if (mode === 'variance') {
                     show = Math.abs(diff) >= 0.0001;
                 } else if (mode === 'negative') {
                     show = diff < -0.0001;

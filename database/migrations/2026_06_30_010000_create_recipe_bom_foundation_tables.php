@@ -12,7 +12,6 @@ return new class extends Migration
             $table->id();
             $table->string('recipe_code')->nullable()->unique();
             $table->string('name');
-            $table->foreignId('product_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('output_inventory_item_id')->nullable()->constrained('inventory_items')->nullOnDelete();
             $table->decimal('output_qty', 15, 2)->default(1);
             $table->string('output_unit')->nullable();

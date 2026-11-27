@@ -12,9 +12,9 @@ use ZipArchive;
 
 class ImportMasterItemsCommand extends Command
 {
-    protected $signature = 'breadlab:import-master-items {--force-stock : Overwrite existing current_stock greater than 0} {--dry-run : Preview without saving}';
+    protected $signature = 'sipastok:import-master-items {--force-stock : Overwrite existing current_stock greater than 0} {--dry-run : Preview without saving}';
 
-    protected $description = 'Import BreadLab temporary master item dataset from XLSX/CSV into inventory tables.';
+    protected $description = 'Import SIPASTOK master item dataset from XLSX/CSV into inventory tables.';
 
     private array $summary = [
         'items_created' => 0,
@@ -28,7 +28,7 @@ class ImportMasterItemsCommand extends Command
     public function handle(): int
     {
         $base = storage_path('app/imports');
-        $xlsx = $base . '/breadlab_master_item_sementara.xlsx';
+        $xlsx = $base . '/sipastok_master_item.xlsx';
         $itemsCsv = $base . '/inventory_items.csv';
         $stocksCsv = $base . '/inventory_stocks_seed.csv';
 

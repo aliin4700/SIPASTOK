@@ -2,18 +2,19 @@
 
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
     /**
-     * A basic test example.
+     * Memastikan entry point aplikasi mengarah ke halaman login SIPASTOK.
      */
     public function test_the_application_returns_a_successful_response(): void
     {
         $response = $this->get('/');
+        $response->assertRedirect(route('login'));
 
-        $response->assertRedirect(route('beranda'));
+        $loginResponse = $this->get('/login');
+        $loginResponse->assertStatus(200);
     }
 }

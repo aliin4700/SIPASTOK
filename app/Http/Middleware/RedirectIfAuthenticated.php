@@ -25,9 +25,8 @@ class RedirectIfAuthenticated
                 return redirect(match ((string) $user->role) {
                     'super_admin', 'admin' => route('backend.dashboard'),
                     'manager' => route('manager.dashboard'),
-                    'cashier' => route('cashier.index'),
                     'staff_outlet' => route('staff.dashboard'),
-                    default => route('beranda'),
+                    default => route('staff.dashboard'),
                 });
             }
         }

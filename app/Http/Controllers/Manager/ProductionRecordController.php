@@ -5,16 +5,14 @@ namespace App\Http\Controllers\Manager;
 use App\Http\Controllers\Controller;
 use App\Models\ProductionRecord;
 use App\Models\ProductionRecordItem;
-use App\Models\Recipe;
 use App\Models\StockMovement;
-use App\Services\Inventory\StockMovementService;
+use App\Services\Inventory\OperationalApprovalService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Throwable;
 
 class ProductionRecordController extends Controller
 {
-    public function __construct(private StockMovementService $stockMovementService)
+    public function __construct(private OperationalApprovalService $operationalApprovalService)
     {
     }
 
@@ -43,87 +41,55 @@ class ProductionRecordController extends Controller
 
     public function applyStock(Request $request, ProductionRecord $productionRecord)
     {
-        if ($productionRecord->status !== 'submitted') {
-            return back()->with('error', 'Hanya production record submitted yang bisa apply stock.');
-        }
-
-        $productionRecord->load(['items.item']);
-
-        if ($productionRecord->items->isEmpty()) {
-            return back()->with('error', 'Production record belum memiliki item.');
-        }
-
-        foreach ($productionRecord->items as $item) {
-            if (! $item->item || ! is_numeric($item->qty) || (float) $item->qty <= 0) {
-                return back()->with('error', 'Item produksi tidak valid. Pastikan inventory item ada dan qty lebih dari 0.');
-            }
-        }
-
         $deductBom = $request->boolean('deduct_bom', true);
 
         try {
-            $summary = DB::transaction(function () use ($request, $productionRecord, $deductBom) {
-                $summary = ['increased' => 0, 'bom_deducted' => 0, 'duplicate' => 0];
-
-                foreach ($productionRecord->items as $item) {
-                    $result = $this->stockMovementService->increaseStock([
-                        'outlet_id' => $productionRecord->outlet_id,
-                        'inventory_item_id' => $item->inventory_item_id,
-                        'quantity' => $item->qty,
-                        'movement_type' => 'production_in',
-                        'reference_type' => ProductionRecordItem::class,
-                        'reference_id' => $item->id,
-                        'user_id' => $request->user()->id,
-                        'notes' => 'Production stock increase from production record ' . ($productionRecord->production_number ?? $productionRecord->id),
-                    ]);
-
-                    if ($result['duplicate']) {
-                        $summary['duplicate']++;
-                        continue;
-                    }
-
-                    $summary['increased']++;
-
-                    if ($deductBom) {
-                        $recipe = Recipe::with('items.item')
-                            ->where('output_inventory_item_id', $item->inventory_item_id)
-                            ->where('is_active', true)
-                            ->first();
-
-                        if ($recipe && (float) $recipe->output_qty > 0) {
-                            $ratio = (float) $item->qty / (float) $recipe->output_qty;
-                            foreach ($recipe->items as $recipeItem) {
-                                $wasteFactor = 1 + ((float) ($recipeItem->waste_percentage ?? 0) / 100.0);
-                                $requiredQty = round((float) $recipeItem->qty * $ratio * $wasteFactor, 2);
-
-                                if ($requiredQty > 0) {
-                                    $this->stockMovementService->decreaseStock([
-                                        'outlet_id' => $productionRecord->outlet_id,
-                                        'inventory_item_id' => $recipeItem->inventory_item_id,
-                                        'quantity' => $requiredQty,
-                                        'movement_type' => 'production_out',
-                                        'reference_type' => ProductionRecordItem::class,
-                                        'reference_id' => $item->id,
-                                        'user_id' => $request->user()->id,
-                                        'allow_negative' => true,
-                                        'allow_duplicate' => true,
-                                        'notes' => 'Auto-deduct BOM (' . $recipe->name . ') for production ' . ($productionRecord->production_number ?? $productionRecord->id),
-                                    ]);
-                                    $summary['bom_deducted']++;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                $productionRecord->update(['status' => 'applied']);
-
-                return $summary;
-            });
+            $summary = $this->operationalApprovalService->approveProductionRecord(
+                $productionRecord,
+                $request->user(),
+                $deductBom
+            );
         } catch (Throwable $exception) {
             return back()->with('error', 'Apply stock gagal: ' . $exception->getMessage());
         }
 
-        return back()->with('success', "Stok Produksi/WIP berhasil ditambahkan (+{$summary['increased']} item, potongan bahan BOM: {$summary['bom_deducted']}, duplikat diabaikan: {$summary['duplicate']}).");
+        return back()->with('success', "Stok Produksi/WIP berhasil disetujui & ditambahkan (+{$summary['increased']} item, potongan bahan BOM: {$summary['bom_deducted']}, duplikat diabaikan: {$summary['duplicate']}).");
+    }
+
+    public function bulkApprove(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:production_records,id'],
+        ], [
+            'ids.required' => 'Pilih minimal satu dokumen Input Produksi untuk disetujui.',
+        ]);
+
+        $records = ProductionRecord::whereIn('id', $validated['ids'])
+            ->where('status', 'submitted')
+            ->get();
+
+        $approved = 0;
+        $errors = [];
+
+        foreach ($records as $record) {
+            try {
+                $this->operationalApprovalService->approveProductionRecord($record, $request->user(), true);
+                $approved++;
+            } catch (Throwable $e) {
+                $errors[] = ($record->production_number ?? '#' . $record->id) . ': ' . $e->getMessage();
+            }
+        }
+
+        if ($approved === 0 && $errors !== []) {
+            return back()->with('error', 'Gagal menyetujui dokumen terpilih: ' . implode(' | ', array_slice($errors, 0, 3)));
+        }
+
+        $msg = "Berhasil menyetujui {$approved} dokumen Input Produksi sekaligus (+ Stok WIP & potong BOM).";
+        if ($errors !== []) {
+            $msg .= ' (' . count($errors) . ' dokumen gagal diproses).';
+        }
+
+        return back()->with('success', $msg);
     }
 }

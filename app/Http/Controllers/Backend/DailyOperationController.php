@@ -8,10 +8,15 @@ use App\Models\MaterialRequest;
 use App\Models\ProductionRecord;
 use App\Models\StockOpname;
 use App\Models\WasteRecord;
+use App\Services\Inventory\OperationalApprovalService;
 use Illuminate\Http\Request;
+use Throwable;
 
 class DailyOperationController extends Controller
 {
+    public function __construct(private OperationalApprovalService $operationalApprovalService)
+    {
+    }
     public function index()
     {
         return view('backend.daily-operations.index', [
@@ -33,17 +38,19 @@ class DailyOperationController extends Controller
 
     public function approve(Request $request, DivisionDailyOperation $dailyOperation)
     {
-        if ($dailyOperation->status !== 'submitted') {
-            return back()->with('error', 'Hanya daily operation submitted yang bisa diapprove.');
+        try {
+            $counts = $this->operationalApprovalService->approveDailyOperation(
+                $dailyOperation,
+                $request->user()
+            );
+        } catch (Throwable $exception) {
+            return back()->with('error', 'Approve operasional gagal: ' . $exception->getMessage());
         }
 
-        $dailyOperation->update([
-            'status' => 'approved',
-            'approved_by' => $request->user()->id,
-            'approved_at' => now(),
-        ]);
-
-        return back()->with('success', 'Daily operation approved. Stok belum berubah.');
+        return back()->with(
+            'success',
+            "Daily operation disetujui & saldo stok diperbarui (Stok In: +{$counts['material_requests']}, Produksi: +{$counts['productions']}, Waste: -{$counts['wastes']}, Opname: {$counts['stock_opnames']})."
+        );
     }
 
     private function summary(DivisionDailyOperation $operation): array

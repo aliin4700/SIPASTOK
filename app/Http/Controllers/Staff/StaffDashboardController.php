@@ -46,10 +46,10 @@ class StaffDashboardController extends Controller
                 ->whereHas('item', fn($query) => $query
                     ->where('is_active', true)
                     ->where('division_id', $divisionId)
-                    ->whereIn('item_type', ['wip', 'raw_material', 'packaging']))
+                    ->whereIn('item_type', ['wip', 'finished_goods', 'raw_material', 'packaging']))
                 ->get();
 
-            $counts['wip'] = $this->alertCount($stocks, 'wip');
+            $counts['wip'] = $this->alertCount($stocks, ['wip', 'finished_goods']);
             $counts['raw'] = $this->alertCount($stocks, 'raw_material');
             $counts['packaging'] = $this->alertCount($stocks, 'packaging');
 
@@ -112,10 +112,12 @@ class StaffDashboardController extends Controller
         return [$matched->outlet_id, $matched->division_id, null];
     }
 
-    private function alertCount($stocks, string $type): int
+    private function alertCount($stocks, array|string $type): int
     {
+        $types = (array) $type;
+
         return $stocks
-            ->filter(fn($stock) => $stock->item?->item_type === $type)
+            ->filter(fn($stock) => in_array($stock->item?->item_type, $types, true))
             ->filter(fn($stock) => (float) $stock->current_stock <= (float) $stock->item->min_stock)
             ->count();
     }

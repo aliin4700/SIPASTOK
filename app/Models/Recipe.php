@@ -12,7 +12,6 @@ class Recipe extends Model
     protected $fillable = [
         'recipe_code',
         'name',
-        'product_id',
         'output_inventory_item_id',
         'output_qty',
         'output_unit',
@@ -27,11 +26,6 @@ class Recipe extends Model
         'output_qty' => 'decimal:2',
         'is_active' => 'boolean',
     ];
-
-    public function product()
-    {
-        return $this->belongsTo(Product::class);
-    }
 
     public function outputInventoryItem()
     {

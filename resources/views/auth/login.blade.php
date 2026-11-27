@@ -4,7 +4,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $judul ?? 'Login BreadLab' }} - BreadLab</title>
+    <title>{{ $judul ?? 'Login SIPASTOK' }} — Medja Cerita</title>
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('sipastok/logo.png') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 
@@ -16,9 +17,9 @@
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-4 p-md-5">
                             <div class="mb-4 text-center">
-                                <img src="{{ asset('breadlab/logo.png') }}" alt="BreadLab Bakery" class="img-fluid mb-3" style="max-height: 72px;">
-                                <h1 class="h4 mb-1">Login BreadLab</h1>
-                                <p class="text-muted mb-0">Masuk ke akun BreadLab Anda.</p>
+                                <img src="{{ asset('sipastok/logo.png') }}" alt="Logo SIPASTOK" class="img-fluid mb-3" style="max-height: 72px;">
+                                <h1 class="h4 fw-bold mb-1">Login SIPASTOK</h1>
+                                <p class="text-muted small mb-0">Sistem Informasi Stok Opname Bahan Baku — Medja Cerita</p>
                             </div>
 
                             @if(session('error'))
@@ -33,11 +34,11 @@
                             <div class="alert alert-success" role="alert">{{ session('success') }}</div>
                             @endif
 
-                            <form action="{{ route('login.store') }}" method="post" class="mb-3">
+                            <form action="{{ route('login.store') }}" method="post">
                                 @csrf
                                 <div class="mb-3">
                                     <label for="email" class="form-label">Email</label>
-                                    <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email') }}" required autofocus>
+                                    <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email') }}" required autofocus placeholder="nama@medjacerita.com">
                                     @error('email')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -45,7 +46,7 @@
 
                                 <div class="mb-3">
                                     <label for="password" class="form-label">Password</label>
-                                    <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password" required>
+                                    <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password" required placeholder="Masukkan password">
                                     @error('password')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -56,20 +57,13 @@
                                     <label class="form-check-label" for="remember">Ingat saya</label>
                                 </div>
 
-                                <button type="submit" class="btn btn-primary w-100">Login</button>
+                                <button type="submit" class="btn btn-primary w-100 fw-semibold py-2">Masuk ke SIPASTOK</button>
                             </form>
-
-                            <a href="{{ route('auth.redirect') }}" class="btn btn-outline-danger w-100 mb-3">Login dengan Google</a>
-
-                            <p class="text-center text-muted mb-0">
-                                Belum punya akun?
-                                <a href="{{ route('register') }}">Register</a>
-                            </p>
                         </div>
                     </div>
 
-                    <div class="text-center mt-3">
-                        <a href="{{ route('beranda') }}" class="text-decoration-none">Kembali ke beranda</a>
+                    <div class="text-center text-muted small mt-3">
+                        &copy; {{ date('Y') }} SIPASTOK &bull; Medja Cerita
                     </div>
                 </div>
             </div>

@@ -12,8 +12,6 @@ class StockMovement extends Model
     public const TYPES = [
         'purchase_in',
         'material_issue_out',
-        'pos_sale_out',
-        'sales_out',
         'waste_out',
         'production_in',
         'production_out',
@@ -23,7 +21,28 @@ class StockMovement extends Model
         'transfer_in',
         'transfer_out',
         'return_in',
+        'esb_sales_out',
     ];
+
+    public const LABELS = [
+        'purchase_in' => 'Pembelian (PO / GR)',
+        'material_issue_out' => 'Pengeluaran Bahan',
+        'waste_out' => 'Waste / Susut',
+        'production_in' => 'Hasil Produksi (WIP)',
+        'production_out' => 'Produksi Keluar',
+        'production_material_out' => 'Pemakaian Bahan BOM',
+        'stock_opname_adjustment' => 'Penyesuaian Stock Opname',
+        'manual_adjustment' => 'Penyesuaian Manual',
+        'transfer_in' => 'Stok In',
+        'transfer_out' => 'Transfer Keluar',
+        'return_in' => 'Retur Masuk',
+        'esb_sales_out' => 'Pemakaian Penjualan ESB',
+    ];
+
+    public function getMovementTypeLabelAttribute(): string
+    {
+        return self::LABELS[$this->movement_type] ?? str_replace('_', ' ', (string) $this->movement_type);
+    }
 
     protected $fillable = [
         'outlet_id',

@@ -23,3 +23,5 @@ vendor/
 storage/logs/
 .codex
 wiki/.obsidian/
+# Database dump
+db_breadlab.sql

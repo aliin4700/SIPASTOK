@@ -66,6 +66,7 @@
                         <th>Divisi</th>
                         <th>Tipe</th>
                         <th>Satuan Dasar</th>
+                        <th class="text-right">Unit Cost (Rp)</th>
                         <th>Minimum Stock</th>
                         <th>Status</th>
                         <th>Aksi</th>
@@ -73,12 +74,21 @@
                 </thead>
                 <tbody>
                     @forelse($items as $item)
+                        @php
+                            $displayCost = (float) ($item->unit_cost > 0 ? $item->unit_cost : ($item->last_purchase_price ?? 0));
+                        @endphp
                         <tr>
-                            <td><strong>{{ $item->name }}</strong></td>
+                            <td>
+                                <strong>{{ $item->name }}</strong>
+                                @if($item->esb_item_name && strcasecmp($item->esb_item_name, $item->name) !== 0)
+                                    <div class="text-muted small">ESB: {{ $item->esb_item_name }}</div>
+                                @endif
+                            </td>
                             <td>{{ $item->code ?? '-' }}</td>
                             <td>{{ $item->division->name ?? 'Umum' }}</td>
                             <td>{{ str_replace('_', ' ', $item->item_type) }}</td>
-                            <td>{{ $item->base_unit }}</td>
+                            <td>{{ strtoupper($item->base_unit) }}</td>
+                            <td class="text-right">Rp {{ number_format($displayCost, 2, ',', '.') }}</td>
                             <td>{{ number_format((float) $item->min_stock, 2, ',', '.') }}</td>
                             <td><span class="badge badge-{{ $item->is_active ? 'success' : 'secondary' }}">{{ $item->is_active ? 'Aktif' : 'Nonaktif' }}</span></td>
                             <td>
@@ -91,7 +101,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="8" class="text-center text-muted">Belum ada inventory item.</td></tr>
+                        <tr><td colspan="9" class="text-center text-muted">Belum ada inventory item.</td></tr>
                     @endforelse
                 </tbody>
             </table>

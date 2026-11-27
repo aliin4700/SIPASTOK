@@ -47,6 +47,9 @@
         <h4 class="mb-0 fw-bold">Stock Opname Monitoring & Rekap IRA (SIPASTOK)</h4>
         <div class="text-muted small">Rekapitulasi Inventory Record Accuracy (IRA) & verifikasi stok opname bahan baku seluruh outlet Medja Cerita.</div>
     </div>
+    <a href="{{ route('manager.esb-imports.index') }}" class="btn btn-outline-success btn-sm fw-semibold">
+        Impor Pemakaian ESB (Sales Material Usage) &rarr;
+    </a>
 </div>
 
 <!-- Filter Bar: Outlet, Divisi, Status, & Periode KPI -->

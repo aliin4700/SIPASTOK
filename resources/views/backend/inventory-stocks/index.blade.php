@@ -27,11 +27,17 @@
                         <th>Current</th>
                         <th>Reserved</th>
                         <th>Available</th>
+                        <th class="text-right">Unit Cost (Rp)</th>
+                        <th class="text-right">Total Nilai Stok (Rp)</th>
                         <th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($stocks as $stock)
+                        @php
+                            $unitCost = (float) (($stock->item?->unit_cost ?? 0) > 0 ? $stock->item->unit_cost : ($stock->item?->last_purchase_price ?? 0));
+                            $stockValue = (float) $stock->current_stock * $unitCost;
+                        @endphp
                         <tr>
                             <td>{{ $stock->outlet->name ?? '-' }}</td>
                             <td>
@@ -41,10 +47,12 @@
                             <td>{{ number_format((float) $stock->current_stock, 2, ',', '.') }} {{ $stock->unit }}</td>
                             <td>{{ number_format((float) $stock->reserved_stock, 2, ',', '.') }} {{ $stock->unit }}</td>
                             <td>{{ number_format((float) $stock->available_stock, 2, ',', '.') }} {{ $stock->unit }}</td>
+                            <td class="text-right">Rp {{ number_format($unitCost, 2, ',', '.') }}</td>
+                            <td class="text-right font-weight-bold">Rp {{ number_format($stockValue, 2, ',', '.') }}</td>
                             <td><a href="{{ route('backend.inventory-stocks.edit', $stock) }}" class="btn btn-cyan btn-sm">Edit</a></td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="text-center text-muted">Belum ada data stok. Stok dibuat otomatis saat inventory item dibuat pada tahap berikutnya atau dapat diisi lewat seed/import.</td></tr>
+                        <tr><td colspan="8" class="text-center text-muted">Belum ada data stok. Stok dibuat otomatis saat inventory item dibuat pada tahap berikutnya atau dapat diisi lewat seed/import.</td></tr>
                     @endforelse
                 </tbody>
             </table>

@@ -4,10 +4,14 @@ namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
 use App\Models\Division;
+use App\Models\EsbSalesImport;
+use App\Models\MaterialRequest;
 use App\Models\Outlet;
+use App\Models\ProductionRecord;
 use App\Models\StockMovement;
 use App\Models\StockOpname;
 use App\Models\StockOpnameItem;
+use App\Models\WasteRecord;
 use App\Services\Inventory\StockOpnameReviewService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -49,16 +53,45 @@ class StockOpnameController extends Controller
 
     public function show(StockOpname $stockOpname)
     {
-        $stockOpname->load(['outlet', 'division', 'counter', 'reviewer', 'dailyOperation', 'items.item']);
+        $stockOpname->load([
+            'outlet',
+            'division',
+            'counter',
+            'reviewer',
+            'dailyOperation',
+            'items' => fn ($q) => $q->with('item')->orderByRaw('ABS(variance_cost) DESC, ABS(variance_value) DESC, id ASC'),
+        ]);
+
         $movementsByItemId = StockMovement::where('reference_type', StockOpnameItem::class)
             ->whereIn('reference_id', $stockOpname->items->pluck('id'))
             ->get()
             ->keyBy('reference_id');
 
+        $pendingStatuses = ['pending', 'submitted'];
+        $pendingRequests = MaterialRequest::where('outlet_id', $stockOpname->outlet_id)
+            ->whereDate('request_date', $stockOpname->opname_date)
+            ->whereIn('status', $pendingStatuses)
+            ->get();
+        $pendingProductions = ProductionRecord::where('outlet_id', $stockOpname->outlet_id)
+            ->whereDate('production_date', $stockOpname->opname_date)
+            ->whereIn('status', $pendingStatuses)
+            ->get();
+        $pendingWastes = WasteRecord::where('outlet_id', $stockOpname->outlet_id)
+            ->whereDate('waste_date', $stockOpname->opname_date)
+            ->whereIn('status', $pendingStatuses)
+            ->get();
+        $hasEsbImport = EsbSalesImport::where('outlet_id', $stockOpname->outlet_id)
+            ->whereDate('report_date', $stockOpname->opname_date)
+            ->exists();
+
         return view('backend.stock-opnames.show', [
             'judul' => 'Detail Stock Opname',
             'stockOpname' => $stockOpname,
             'movementsByItemId' => $movementsByItemId,
+            'pendingRequests' => $pendingRequests,
+            'pendingProductions' => $pendingProductions,
+            'pendingWastes' => $pendingWastes,
+            'hasEsbImport' => $hasEsbImport,
         ]);
     }
 

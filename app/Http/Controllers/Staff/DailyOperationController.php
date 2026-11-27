@@ -173,7 +173,7 @@ class DailyOperationController extends Controller
         }
 
         $draftCounts = [
-            'Take Bahan' => $summary['materialRequests']->where('status', 'draft')->count(),
+            'Stok In' => $summary['materialRequests']->where('status', 'draft')->count(),
             'Produksi / WIP' => $summary['productionRecords']->where('status', 'draft')->count(),
             'Waste' => $summary['wasteRecords']->where('status', 'draft')->count(),
             'Stock Opname' => $summary['stockOpnames']->where('status', 'draft')->count(),

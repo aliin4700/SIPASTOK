@@ -1,10 +1,15 @@
 @extends('backend.v_layouts.app')
 
 @section('content')
-@if($productionRecord->status === 'submitted')
-    <div class="alert alert-warning">Apply stock akan menambah stok inventory sesuai item hasil produksi. Raw material belum dikurangi pada tahap ini.</div>
-@elseif($productionRecord->status === 'applied')
-    <div class="alert alert-success">Production stock increase sudah diterapkan melalui stock movement.</div>
+@php
+    $isProcessed = in_array($productionRecord->status, ['approved', 'applied'], true);
+    $hasMissingMovement = $productionRecord->items->contains(fn ($it) => ! isset($movementsByItemId[$it->id]));
+@endphp
+
+@if($productionRecord->status === 'submitted' || ($isProcessed && $hasMissingMovement))
+    <div class="alert alert-warning">Apply stock akan menambah stok inventory sesuai item hasil produksi dan otomatis memotong bahan baku jika item memiliki Resep / BOM aktif (<code>output_inventory_item_id</code>).</div>
+@elseif($isProcessed)
+    <div class="alert alert-success">Production stock increase sudah disetujui dan saldo <code>inventory_stocks</code> telah diperbarui.</div>
 @endif
 
 <div class="card mb-3">
@@ -16,13 +21,19 @@
         <div><strong>Divisi:</strong> {{ $productionRecord->division->name ?? '-' }}</div>
         <div><strong>Producer:</strong> {{ $productionRecord->producer->name ?? '-' }}</div>
         <div><strong>Tipe:</strong> {{ str_replace('_', ' ', $productionRecord->production_type) }}</div>
-        <div><strong>Status:</strong> <span class="badge badge-info">{{ $productionRecord->status }}</span></div>
+        <div><strong>Status:</strong> <span class="badge {{ $isProcessed ? 'badge-success' : 'badge-info' }} text-uppercase">{{ $productionRecord->status }}</span></div>
         <div><strong>Catatan:</strong> {{ $productionRecord->notes ?? '-' }}</div>
 
-        @if($productionRecord->status === 'submitted')
-            <form method="post" action="{{ route('backend.production-records.apply-stock', $productionRecord) }}" class="mt-3">
+        @if($productionRecord->status === 'submitted' || ($isProcessed && $hasMissingMovement))
+            <form method="post" action="{{ route('backend.production-records.apply-stock', $productionRecord) }}" class="mt-3 p-3 bg-light border rounded">
                 @csrf
-                <button class="btn btn-success">Apply Stock Increase</button>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" name="deduct_bom" value="1" id="backendDeductBomCheck" checked>
+                    <label class="form-check-label small font-weight-bold" for="backendDeductBomCheck">
+                        Otomatis potong bahan baku mentah sesuai Resep / BOM (jika item produksi memiliki resep aktif)
+                    </label>
+                </div>
+                <button class="btn btn-success">Apply Stock Increase (+ Produksi)</button>
             </form>
         @endif
     </div>

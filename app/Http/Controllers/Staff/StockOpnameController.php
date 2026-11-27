@@ -151,8 +151,8 @@ class StockOpnameController extends Controller
                 $systemStock = (float) ($stock?->current_stock ?? 0);
                 $physicalStock = (float) $row['physical_stock'];
                 $differenceQty = $physicalStock - $systemStock;
-                $unitCost = (float) ($item->last_purchase_price ?? 0);
-                $varianceValue = $differenceQty * $unitCost;
+                $unitCost = (float) ($item->unit_cost > 0 ? $item->unit_cost : ($item->last_purchase_price ?? 0));
+                $varianceValue = round($differenceQty * $unitCost, 2);
 
                 $stockOpname->items()->create([
                     'inventory_item_id' => $item->id,
@@ -160,6 +160,7 @@ class StockOpnameController extends Controller
                     'physical_stock' => $physicalStock,
                     'difference_qty' => $differenceQty,
                     'unit_cost' => $unitCost,
+                    'variance_cost' => $varianceValue,
                     'variance_value' => $varianceValue,
                     'unit' => $stock?->unit ?? $item->base_unit,
                     'variance_reason' => $row['variance_reason'] ?? null,

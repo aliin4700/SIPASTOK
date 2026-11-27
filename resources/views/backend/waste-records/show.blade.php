@@ -1,10 +1,15 @@
 @extends('backend.v_layouts.app')
 
 @section('content')
-@if($wasteRecord->status === 'submitted')
+@php
+    $isProcessed = in_array($wasteRecord->status, ['approved', 'applied'], true);
+    $hasMissingMovement = $wasteRecord->items->contains(fn ($it) => ! isset($movementsByItemId[$it->id]));
+@endphp
+
+@if($wasteRecord->status === 'submitted' || ($isProcessed && $hasMissingMovement))
     <div class="alert alert-warning">Apply stock akan mengurangi stok inventory sesuai item waste dan membuat stock movement.</div>
-@elseif($wasteRecord->status === 'applied')
-    <div class="alert alert-success">Waste stock deduction sudah diterapkan melalui stock movement.</div>
+@elseif($isProcessed)
+    <div class="alert alert-success">Waste stock deduction sudah disetujui dan saldo <code>inventory_stocks</code> telah diperbarui.</div>
 @endif
 
 <div class="card mb-3">
@@ -15,10 +20,10 @@
         <div><strong>Outlet:</strong> {{ $wasteRecord->outlet->name ?? '-' }}</div>
         <div><strong>Divisi:</strong> {{ $wasteRecord->division->name ?? '-' }}</div>
         <div><strong>Recorder:</strong> {{ $wasteRecord->recorder->name ?? '-' }}</div>
-        <div><strong>Status:</strong> <span class="badge badge-info">{{ $wasteRecord->status }}</span></div>
+        <div><strong>Status:</strong> <span class="badge {{ $isProcessed ? 'badge-success' : 'badge-info' }} text-uppercase">{{ $wasteRecord->status }}</span></div>
         <div><strong>Catatan:</strong> {{ $wasteRecord->notes ?? '-' }}</div>
 
-        @if($wasteRecord->status === 'submitted')
+        @if($wasteRecord->status === 'submitted' || ($isProcessed && $hasMissingMovement))
             <form method="post" action="{{ route('backend.waste-records.apply-stock', $wasteRecord) }}" class="mt-3">
                 @csrf
                 <button class="btn btn-success">Apply Stock Deduction</button>

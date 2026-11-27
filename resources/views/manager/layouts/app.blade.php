@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title ?? 'Panel Monitoring Manager — SIPASTOK Medja Cerita' }}</title>
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('breadlab/logo.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('sipastok/logo.png') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         .manager-navbar {
@@ -47,7 +47,7 @@
     <nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top manager-navbar">
         <div class="container-fluid">
             <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="{{ route('manager.dashboard') }}">
-                <img src="{{ asset('breadlab/logo.png') }}" alt="Logo" style="height: 28px;" onerror="this.style.display='none'">
+                <img src="{{ asset('sipastok/logo.png') }}" alt="Logo" style="height: 28px;" onerror="this.style.display='none'">
                 <span>SIPASTOK <span class="text-primary">Manager</span></span>
             </a>
 
@@ -84,7 +84,7 @@
                     </li>
                     <li class="nav-item">
                         <a href="{{ route('manager.material-requests.index') }}" class="nav-link manager-nav-link {{ request()->routeIs('manager.material-requests.*') ? 'active' : '' }}">
-                            Take Bahan
+                            Stok In
                         </a>
                     </li>
                     <li class="nav-item">
@@ -92,22 +92,23 @@
                             Catatan Waste
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="{{ route('manager.esb-imports.index') }}" class="nav-link manager-nav-link {{ request()->routeIs('manager.esb-imports.*') ? 'active' : '' }}">
+                            Impor ESB
+                        </a>
+                    </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle manager-nav-link" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             Modul Lainnya
                         </a>
                         <ul class="dropdown-menu">
+                            <li><a class="dropdown-item {{ request()->routeIs('manager.esb-imports.*') ? 'active' : '' }}" href="{{ route('manager.esb-imports.index') }}">Impor Pemakaian ESB</a></li>
                             <li><a class="dropdown-item" href="{{ route('manager.production-records.index') }}">Produksi / WIP</a></li>
                             <li><a class="dropdown-item" href="{{ route('manager.recipes.index') }}">Recipes / BOM</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ route('manager.suppliers.index') }}">Suppliers</a></li>
                             <li><a class="dropdown-item" href="{{ route('manager.purchase-orders.index') }}">Purchase Orders</a></li>
                             <li><a class="dropdown-item" href="{{ route('manager.goods-receipts.index') }}">Goods Receipts</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ route('manager.cashier-shifts.index') }}">Cashier Shifts</a></li>
-                            <li><a class="dropdown-item" href="{{ route('manager.finance.dashboard') }}">Finance Dashboard</a></li>
-                            <li><a class="dropdown-item" href="{{ route('manager.sales-targets.index') }}">Sales Targets</a></li>
-                            <li><a class="dropdown-item" href="{{ route('manager.operational-expenses.index') }}">Operational Expenses</a></li>
                         </ul>
                     </li>
                 </ul>

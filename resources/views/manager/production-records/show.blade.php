@@ -1,10 +1,15 @@
 @extends('manager.layouts.app')
 
 @section('content')
-@if($productionRecord->status === 'applied')
-    <div class="alert alert-success">Penambahan stok hasil Produksi / WIP sudah diterapkan ke inventori melalui stock movement.</div>
-@elseif($productionRecord->status === 'submitted')
-    <div class="alert alert-warning">Dokumen Produksi / WIP ini berstatus <strong>SUBMITTED</strong>. Klik tombol <strong>Approve &amp; Tambah Stok Produksi</strong> di bawah untuk memperbarui saldo WIP outlet.</div>
+@php
+    $isProcessed = in_array($productionRecord->status, ['approved', 'applied'], true);
+    $hasMissingMovement = $productionRecord->items->contains(fn ($it) => ! isset($movementsByItemId[$it->id]));
+@endphp
+
+@if($isProcessed && ! $hasMissingMovement)
+    <div class="alert alert-success">Penambahan stok hasil Produksi / WIP sudah disetujui dan diterapkan ke saldo <code>inventory_stocks</code>.</div>
+@elseif($productionRecord->status === 'submitted' || ($isProcessed && $hasMissingMovement))
+    <div class="alert alert-warning">Dokumen Produksi / WIP ini siap diproses ke stok. Klik tombol <strong>Approve &amp; Tambah Stok Produksi</strong> di bawah untuk memperbarui saldo WIP outlet.</div>
 @endif
 
 <div class="card mb-3 shadow-sm border-0">
@@ -14,7 +19,7 @@
                 <h4 class="mb-1 fw-bold">Detail Production Record: {{ $productionRecord->production_number ?? '-' }}</h4>
                 <div class="text-muted small">Tanggal: {{ $productionRecord->production_date?->format('d/m/Y') }}</div>
             </div>
-            <span class="badge {{ $productionRecord->status === 'applied' ? 'bg-success' : ($productionRecord->status === 'submitted' ? 'bg-warning text-dark' : 'bg-info') }} text-uppercase fs-6">
+            <span class="badge {{ $isProcessed ? 'bg-success' : ($productionRecord->status === 'submitted' ? 'bg-warning text-dark' : 'bg-info') }} text-uppercase fs-6">
                 {{ $productionRecord->status }}
             </span>
         </div>
@@ -25,7 +30,7 @@
         <div><strong>Tipe:</strong> {{ str_replace('_', ' ', $productionRecord->production_type) }}</div>
         <div><strong>Catatan:</strong> {{ $productionRecord->notes ?? '-' }}</div>
 
-        @if($productionRecord->status === 'submitted')
+        @if($productionRecord->status === 'submitted' || ($isProcessed && $hasMissingMovement))
             <form method="post" action="{{ route('manager.production-records.apply-stock', $productionRecord) }}" class="mt-3 p-3 bg-light border rounded" onsubmit="return confirm('Setujui hasil produksi ini dan tambahkan ke saldo stok WIP?');">
                 @csrf
                 <div class="form-check mb-2">

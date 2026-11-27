@@ -46,10 +46,8 @@ class UserAccessController extends Controller
             $values = $request->input("outlet_access.{$outlet->id}", []);
             $access = [
                 'can_monitor' => isset($values['can_monitor']),
-                'can_cashier' => isset($values['can_cashier']),
                 'can_manage_stock' => isset($values['can_manage_stock']),
                 'can_manage_purchase' => isset($values['can_manage_purchase']),
-                'can_manage_finance' => isset($values['can_manage_finance']),
             ];
 
             if (in_array(true, $access, true)) {

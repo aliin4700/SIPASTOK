@@ -12,11 +12,17 @@ use App\Models\ProductionRecord;
 use App\Models\StockOpname;
 use App\Models\StockOpnameItem;
 use App\Models\WasteRecord;
+use App\Services\Inventory\OperationalApprovalService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class InventoryMonitoringController extends Controller
 {
+    public function __construct(private OperationalApprovalService $operationalApprovalService)
+    {
+    }
     public function dashboard(Request $request)
     {
         $outlets = Outlet::where('is_active', true)->orderBy('name')->get();
@@ -75,10 +81,15 @@ class InventoryMonitoringController extends Controller
             ? ($totalItemsMatched / $totalItemsCounted) * 100.0
             : 100.0;
 
-        $totalVarianceValue = (float) $reviewedOpnames->sum(function (StockOpname $opname) {
-            $headerVal = (float) $opname->total_variance_value;
-            return abs($headerVal) > 0.0001 ? $headerVal : (float) $opname->items->sum('variance_value');
-        });
+        $totalVarianceValue = (float) DB::table('stock_opname_items as soi')
+            ->join('stock_opnames as so', 'so.id', '=', 'soi.stock_opname_id')
+            ->join('inventory_items as ii', 'ii.id', '=', 'soi.inventory_item_id')
+            ->whereYear('so.opname_date', $year)
+            ->whereMonth('so.opname_date', $month)
+            ->whereIn('so.status', ['reviewed', 'approved'])
+            ->when($selectedOutletId, fn ($q) => $q->where('so.outlet_id', $selectedOutletId))
+            ->selectRaw('COALESCE(SUM(COALESCE(NULLIF(soi.variance_cost, 0), soi.difference_qty * ii.unit_cost)), 0) as total_variance')
+            ->value('total_variance');
 
         // 4. Peringatan Stok Minimum (lowStockCount & 5 item paling kritis)
         $lowStockCollection = InventoryStock::with(['item.division', 'outlet'])
@@ -154,12 +165,72 @@ class InventoryMonitoringController extends Controller
 
     public function inventory(Request $request)
     {
+        $user = $request->user();
+        $isAdmin = $user && $user->hasAnyRole(['admin', 'super_admin']);
+
+        $allowedOutletIds = [];
+        $allowedDivisionIds = [];
+
+        if (! $isAdmin && $user) {
+            $allowedOutletIds = $user->outletAccesses()->pluck('outlet_id')->unique()->values()->all();
+            $allowedDivisionIds = $user->divisionAccesses()->pluck('division_id')->unique()->values()->all();
+        }
+
+        $outlets = Outlet::where('is_active', true)
+            ->when(! empty($allowedOutletIds), fn ($query) => $query->whereIn('id', $allowedOutletIds))
+            ->orderBy('name')
+            ->get();
+
+        $selectedOutletId = $request->filled('outlet_id') ? $request->integer('outlet_id') : null;
+        if ($selectedOutletId && ! empty($allowedOutletIds) && ! in_array($selectedOutletId, $allowedOutletIds, true)) {
+            $selectedOutletId = null;
+        }
+
+        if (! $isAdmin && $user && ! empty($allowedDivisionIds) && $selectedOutletId) {
+            $outletDivisionIds = $user->divisionAccesses()
+                ->where('outlet_id', $selectedOutletId)
+                ->pluck('division_id')
+                ->unique()
+                ->values()
+                ->all();
+            if (! empty($outletDivisionIds)) {
+                $allowedDivisionIds = $outletDivisionIds;
+            }
+        }
+
+        $divisions = Division::where('is_active', true)
+            ->when(! empty($allowedDivisionIds), fn ($query) => $query->whereIn('id', $allowedDivisionIds))
+            ->orderBy('name')
+            ->get();
+
+        $selectedDivisionId = $request->filled('division_id') ? $request->integer('division_id') : null;
+        if ($selectedDivisionId && ! empty($allowedDivisionIds) && ! in_array($selectedDivisionId, $allowedDivisionIds, true)) {
+            $selectedDivisionId = null;
+        }
+
+        $search = trim((string) ($request->input('search') ?? $request->input('q') ?? ''));
+
+        $stocks = InventoryStock::with(['outlet', 'item.division'])
+            ->when(! empty($allowedOutletIds), fn ($query) => $query->whereIn('outlet_id', $allowedOutletIds))
+            ->when($selectedOutletId, fn ($query) => $query->where('outlet_id', $selectedOutletId))
+            ->when(! empty($allowedDivisionIds), fn ($query) => $query->whereHas('item', fn ($itemQuery) => $itemQuery->whereIn('division_id', $allowedDivisionIds)))
+            ->when($selectedDivisionId, fn ($query) => $query->whereHas('item', fn ($itemQuery) => $itemQuery->where('division_id', $selectedDivisionId)))
+            ->when($search !== '', fn ($query) => $query->whereHas('item', function ($itemQuery) use ($search) {
+                $itemQuery->where(function ($inner) use ($search) {
+                    $inner->where('name', 'like', "%{$search}%")
+                        ->orWhere('code', 'like', "%{$search}%");
+                });
+            }))
+            ->paginate(30)
+            ->withQueryString();
+
         return view('manager.inventory.index', [
-            'outlets' => Outlet::where('is_active', true)->orderBy('name')->get(),
-            'stocks' => InventoryStock::with(['outlet', 'item.division'])
-                ->when($request->filled('outlet_id'), fn ($query) => $query->where('outlet_id', $request->outlet_id))
-                ->paginate(30)
-                ->withQueryString(),
+            'outlets' => $outlets,
+            'divisions' => $divisions,
+            'selectedOutletId' => $selectedOutletId,
+            'selectedDivisionId' => $selectedDivisionId,
+            'search' => $search,
+            'stocks' => $stocks,
         ]);
     }
 
@@ -182,17 +253,19 @@ class InventoryMonitoringController extends Controller
 
     public function dailyOperationApprove(Request $request, DivisionDailyOperation $dailyOperation)
     {
-        if ($dailyOperation->status !== 'submitted') {
-            return back()->with('error', 'Hanya daily operation berstatus submitted yang bisa diapprove.');
+        try {
+            $counts = $this->operationalApprovalService->approveDailyOperation(
+                $dailyOperation,
+                $request->user()
+            );
+        } catch (Throwable $exception) {
+            return back()->with('error', 'Approve operasional gagal: ' . $exception->getMessage());
         }
 
-        $dailyOperation->update([
-            'status' => 'approved',
-            'approved_by' => $request->user()->id,
-            'approved_at' => now(),
-        ]);
-
-        return back()->with('success', 'Operasional harian berhasil disetujui (Approved).');
+        return back()->with(
+            'success',
+            "Operasional harian berhasil disetujui & stok diperbarui (Stok In: +{$counts['material_requests']}, Produksi: +{$counts['productions']}, Waste: -{$counts['wastes']}, Opname: {$counts['stock_opnames']})."
+        );
     }
 
     public function openingAlerts(Request $request)

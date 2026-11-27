@@ -52,8 +52,6 @@
                         'admin' => 'Admin',
                         'manager' => 'Manager',
                         'staff_outlet' => 'Staff Outlet',
-                        'cashier' => 'Cashier',
-                        'customer' => 'Customer',
                     ];
                 @endphp
                 {{ $roleLabels[(string) $row->role] ?? $row->role }}

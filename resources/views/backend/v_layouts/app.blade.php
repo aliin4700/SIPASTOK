@@ -9,8 +9,8 @@
     <meta name="description" content="">
     <meta name="author" content="">
     <!-- Favicon icon -->
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('breadlab/logo.png') }}">
-    <title>BreadLab Bakery Admin</title>
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('sipastok/logo.png') }}">
+    <title>SIPASTOK Admin — Medja Cerita</title>
     <!-- Custom CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="{{ asset('backend/extra-libs/multicheck/multicheck.css') }}">
@@ -68,14 +68,14 @@
                         <b class="logo-icon p-l-10">
                             <!--You can put here icon as well // <i class="wi wi-sunset"></i> //-->
                             <!-- Dark Logo icon -->
-                            <img src="{{ asset('breadlab/logo.png') }}" alt="BreadLab Bakery" class="light-logo" style="height: 38px;" />
+                            <img src="{{ asset('sipastok/logo.png') }}" alt="SIPASTOK" class="light-logo" style="height: 38px;" />
 
                         </b>
                         <!--End Logo icon -->
                         <!-- Logo text -->
                         <span class="logo-text">
                             <!-- dark Logo text -->
-                            <strong class="text-white ml-2">BreadLab</strong>
+                            <strong class="text-white ml-2">SIPASTOK</strong>
 
                         </span>
                         <!-- Logo icon -->
@@ -116,25 +116,13 @@
                     <!-- ============================================================== -->
                     <!-- Right side toggle and nav items -->
                     <!-- ============================================================== -->
-                    <ul class="navbar-nav float-right">
-                        <!-- ============================================================== -->
-                        <!-- Comment -->
-                        <!-- ============================================================== -->
-
-                        <!-- ============================================================== -->
-                        <!-- End Comment -->
-                        <!-- ============================================================== -->
-                        <!-- ============================================================== -->
-                        <!-- Messages -->
-                        <!-- ============================================================== -->
-
-                        <!-- ============================================================== -->
-                        <!-- End Messages -->
-                        <!-- ============================================================== -->
-
-                        <!-- ============================================================== -->
-                        <!-- User profile and search -->
-                        <!-- ============================================================== -->
+                    <ul class="navbar-nav float-right align-items-center">
+                        <li class="nav-item d-none d-sm-inline-block mr-2">
+                            <a href="{{ route('manager.dashboard') }}" class="btn btn-sm btn-outline-light">Panel Manager</a>
+                        </li>
+                        <li class="nav-item d-none d-sm-inline-block mr-2">
+                            <a href="{{ route('staff.dashboard') }}" class="btn btn-sm btn-outline-info">Panel Staff</a>
+                        </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle text-muted waves-effect waves-dark pro-pic" href="" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 @php
@@ -183,56 +171,65 @@
                         };
                     @endphp
                     <ul id="sidebarnav" class="p-t-30">
-                        <li class="sidebar-item"> <a class="sidebar-link waves-effect waves-dark sidebar-link" href="{{ route('backend.dashboard') }}" aria-expanded="false"><i class="mdi mdi-view-dashboard"></i><span class="hide-menu">Dashboard</span></a>
+                        <li class="sidebar-item">
+                            <a class="sidebar-link waves-effect waves-dark sidebar-link" href="{{ route('backend.dashboard') }}" aria-expanded="false">
+                                <i class="mdi mdi-view-dashboard"></i><span class="hide-menu">Dashboard SIPASTOK</span>
+                            </a>
                         </li>
-                        <li class="sidebar-item"> <a class="sidebar-link waves-effect waves-dark sidebar-link" href="{{ route('backend.user.index') }}" aria-expanded="false"><i class="mdi mdi-account"></i><span class="hide-menu">User</span></a>
+                        <li class="sidebar-item">
+                            <a class="sidebar-link waves-effect waves-dark sidebar-link" href="{{ route('backend.stock-opnames.index') }}" aria-expanded="false">
+                                <i class="mdi mdi-clipboard-check"></i><span class="hide-menu">Stock Opname</span>{!! $sidebarBadge('pending_opnames') !!}
+                            </a>
                         </li>
-                        <li class="sidebar-item"> <a class="sidebar-link waves-effect waves-dark sidebar-link" href="{{ route('backend.customer.index') }}" aria-expanded="false"><i class="mdi mdi-account-multiple"></i><span class="hide-menu">Customer</span></a>
+                        <li class="sidebar-item">
+                            <a class="sidebar-link waves-effect waves-dark sidebar-link" href="{{ route('backend.daily-operations.index') }}" aria-expanded="false">
+                                <i class="mdi mdi-calendar-clock"></i><span class="hide-menu">Operasional Harian</span>
+                            </a>
                         </li>
-                        <li class="sidebar-item"> <a class="sidebar-link has-arrow waves-effect waves-dark" href="javascript:void(0)" aria-expanded="false"><i class="mdi mdi-basket"></i><span class="hide-menu">Produk </span></a>
-                            <ul aria-expanded="false" class="collapse  first-level">
-                                <li class="sidebar-item"><a href="{{ route('backend.category.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Kategori </span></a>
-                                </li>
-                                <li class="sidebar-item"><a href="{{ route('backend.product.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Produk </span></a>
-                                </li>
+                        <li class="sidebar-item">
+                            <a class="sidebar-link has-arrow waves-effect waves-dark" href="javascript:void(0)" aria-expanded="false">
+                                <i class="mdi mdi-warehouse"></i><span class="hide-menu">Master &amp; Saldo Stok</span>{!! $sidebarBadge('inventory') !!}
+                            </a>
+                            <ul aria-expanded="false" class="collapse first-level">
+                                <li class="sidebar-item"><a href="{{ route('backend.inventory-items.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu">Master Bahan Baku</span></a></li>
+                                <li class="sidebar-item"><a href="{{ route('backend.inventory-stocks.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu">Saldo Stok Outlet</span></a></li>
+                                <li class="sidebar-item"><a href="{{ route('backend.stock-movements.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu">Kartu Mutasi Stok</span></a></li>
+                                <li class="sidebar-item"><a href="{{ route('backend.recipes.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu">Resep / BOM WIP</span></a></li>
                             </ul>
                         </li>
-                        <li class="sidebar-item"> <a class="sidebar-link waves-effect waves-dark sidebar-link" href="{{ route('backend.order.index') }}" aria-expanded="false"><i class="mdi mdi-receipt"></i><span class="hide-menu">Pesanan</span>{!! $sidebarBadge('orders') !!}</a>
-                        </li>
-                        <li class="sidebar-item"> <a class="sidebar-link waves-effect waves-dark sidebar-link" href="{{ route('backend.payment.index') }}" aria-expanded="false"><i class="mdi mdi-credit-card"></i><span class="hide-menu">Pembayaran</span>{!! $sidebarBadge('payments') !!}</a>
-                        </li>
-                        <li class="sidebar-item"> <a class="sidebar-link waves-effect waves-dark sidebar-link" href="{{ route('backend.finance.dashboard') }}" aria-expanded="false"><i class="mdi mdi-chart-line"></i><span class="hide-menu">Finance</span></a>
-                        </li>
-                        <li class="sidebar-item"> <a class="sidebar-link has-arrow waves-effect waves-dark" href="javascript:void(0)" aria-expanded="false"><i class="mdi mdi-warehouse"></i><span class="hide-menu">Inventory </span>{!! $sidebarBadge('inventory') !!}</a>
-                            <ul aria-expanded="false" class="collapse  first-level">
-                                <li class="sidebar-item"><a href="{{ route('backend.inventory-items.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Master Item </span></a></li>
-                                <li class="sidebar-item"><a href="{{ route('backend.inventory-stocks.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Stok Outlet </span></a></li>
-                                <li class="sidebar-item"><a href="{{ route('backend.stock-movements.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Stock Movement </span></a></li>
-                                <li class="sidebar-item"><a href="{{ route('backend.material-requests.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Material Request </span></a></li>
-                                <li class="sidebar-item"><a href="{{ route('backend.suppliers.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Suppliers </span></a></li>
-                                <li class="sidebar-item"><a href="{{ route('backend.purchase-orders.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Purchase Order </span></a></li>
-                                <li class="sidebar-item"><a href="{{ route('backend.goods-receipts.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Goods Receipt </span></a></li>
-                                <li class="sidebar-item"><a href="{{ route('backend.waste-records.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Waste Record </span></a></li>
-                                <li class="sidebar-item"><a href="{{ route('backend.production-records.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Production Record </span></a></li>
-                                <li class="sidebar-item"><a href="{{ route('backend.recipes.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Recipes / BOM </span></a></li>
-                                <li class="sidebar-item"><a href="{{ route('backend.stock-opnames.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Stock Opname </span></a></li>
-                                <li class="sidebar-item"><a href="{{ route('backend.daily-operations.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Daily Operation </span></a></li>
+                        <li class="sidebar-item">
+                            <a class="sidebar-link has-arrow waves-effect waves-dark" href="javascript:void(0)" aria-expanded="false">
+                                <i class="mdi mdi-swap-horizontal"></i><span class="hide-menu">Mutasi &amp; Pengadaan</span>
+                            </a>
+                            <ul aria-expanded="false" class="collapse first-level">
+                                <li class="sidebar-item"><a href="{{ route('backend.esb-imports.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu">Impor Pemakaian ESB</span></a></li>
+                                <li class="sidebar-item"><a href="{{ route('backend.material-requests.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu">Stok In / Restock</span></a></li>
+                                <li class="sidebar-item"><a href="{{ route('backend.production-records.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu">Produksi / WIP</span></a></li>
+                                <li class="sidebar-item"><a href="{{ route('backend.waste-records.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu">Catatan Waste</span></a></li>
+                                <li class="sidebar-item"><a href="{{ route('backend.suppliers.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu">Data Supplier</span></a></li>
+                                <li class="sidebar-item"><a href="{{ route('backend.purchase-orders.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu">Purchase Order</span></a></li>
+                                <li class="sidebar-item"><a href="{{ route('backend.goods-receipts.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu">Goods Receipt</span></a></li>
                             </ul>
                         </li>
-                        <li class="sidebar-item"> <a class="sidebar-link waves-effect waves-dark sidebar-link" href="{{ route('backend.chat.index') }}" aria-expanded="false"><i class="mdi mdi-message-text"></i><span class="hide-menu">Chat</span>{!! $sidebarBadge('chats') !!}</a>
-                        </li>
-                        <li class="sidebar-item"> <a class="sidebar-link has-arrow waves-effect waves-dark" href="javascript:void(0)" aria-expanded="false"><i class="mdi mdi-receipt"></i><span class="hide-menu">Laporan </span></a>
-                            <ul aria-expanded="false" class="collapse  first-level">
-                                <li class="sidebar-item"><a href="{{ route('backend.laporan.formuser') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> User </span></a></li>
-                                <li class="sidebar-item"><a href="{{ route('backend.reports.sold-products.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Produk </span></a></li>
-                                <li class="sidebar-item"><a href="{{ route('backend.cashier-shifts.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Cashier Shifts </span></a></li>
-                                <li class="sidebar-item"><a href="{{ route('backend.sales-targets.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Sales Target </span></a></li>
-                                <li class="sidebar-item"><a href="{{ route('backend.operational-expenses.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu"> Operational Expense </span></a></li>
-
+                        <li class="sidebar-item">
+                            <a class="sidebar-link has-arrow waves-effect waves-dark" href="javascript:void(0)" aria-expanded="false">
+                                <i class="mdi mdi-account-multiple"></i><span class="hide-menu">Pengguna &amp; Akses</span>
+                            </a>
+                            <ul aria-expanded="false" class="collapse first-level">
+                                <li class="sidebar-item"><a href="{{ route('backend.user.index') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu">Manajemen User</span></a></li>
+                                <li class="sidebar-item"><a href="{{ route('backend.laporan.formuser') }}" class="sidebar-link"><i class="mdi mdi-chevron-right"></i><span class="hide-menu">Laporan Data User</span></a></li>
                             </ul>
                         </li>
-
-
+                        <li class="sidebar-item">
+                            <a class="sidebar-link waves-effect waves-dark sidebar-link" href="{{ route('manager.dashboard') }}" aria-expanded="false">
+                                <i class="mdi mdi-monitor-dashboard"></i><span class="hide-menu">Panel Manager</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a class="sidebar-link waves-effect waves-dark sidebar-link" href="{{ route('staff.dashboard') }}" aria-expanded="false">
+                                <i class="mdi mdi-account-check"></i><span class="hide-menu">Panel Staff Outlet</span>
+                            </a>
+                        </li>
                     </ul>
                 </nav>
                 <!-- End Sidebar navigation -->
@@ -282,7 +279,7 @@
             <!-- footer -->
             <!-- ============================================================== -->
             <footer class="footer text-center">
-                &copy; {{ date('Y') }} BreadLab Bakery Admin
+                &copy; {{ date('Y') }} SIPASTOK — Sistem Informasi Stok Opname Bahan Baku Medja Cerita
             </footer>
 
             <!-- ============================================================== -->

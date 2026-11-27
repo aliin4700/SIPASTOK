@@ -10,7 +10,7 @@ class OutletAccess
 {
     public function handle(Request $request, Closure $next, ?string $ability = null): Response
     {
-        $allowedAbilities = ['can_monitor', 'can_cashier', 'can_manage_stock', 'can_manage_purchase', 'can_manage_finance'];
+        $allowedAbilities = ['can_monitor', 'can_manage_stock', 'can_manage_purchase'];
 
         if ($ability && !in_array($ability, $allowedAbilities, true)) {
             abort(403, 'Kemampuan akses outlet tidak valid.');

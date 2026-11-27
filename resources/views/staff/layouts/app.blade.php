@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SIPASTOK Staff Panel — Medja Cerita</title>
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('breadlab/logo.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('sipastok/logo.png') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         .staff-navbar {
@@ -44,7 +44,7 @@
     <nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top staff-navbar">
         <div class="container-fluid">
             <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="{{ route('staff.dashboard') }}">
-                <img src="{{ asset('breadlab/logo.png') }}" alt="Logo" style="height: 28px;" onerror="this.style.display='none'">
+                <img src="{{ asset('sipastok/logo.png') }}" alt="Logo" style="height: 28px;" onerror="this.style.display='none'">
                 <span>SIPASTOK <span class="text-primary">Staff</span></span>
             </a>
 
@@ -64,7 +64,7 @@
                         <a href="{{ route('staff.opening-alerts.index') }}" class="nav-link staff-nav-link {{ request()->routeIs('staff.opening-alerts.*') ? 'active' : '' }}">2. Opening Alert</a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ route('staff.material-requests.index') }}" class="nav-link staff-nav-link {{ request()->routeIs('staff.material-requests.*') ? 'active' : '' }}">3. Take Bahan</a>
+                        <a href="{{ route('staff.material-requests.index') }}" class="nav-link staff-nav-link {{ request()->routeIs('staff.material-requests.*') ? 'active' : '' }}">3. Stok In</a>
                     </li>
                     <li class="nav-item">
                         <a href="{{ route('staff.production.index') }}" class="nav-link staff-nav-link {{ request()->routeIs('staff.production.*') ? 'active' : '' }}">4. Produksi / WIP</a>

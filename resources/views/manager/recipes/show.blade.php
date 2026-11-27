@@ -1,14 +1,13 @@
 @extends('manager.layouts.app')
 
 @section('content')
-<div class="alert alert-warning">Recipe/BOM saat ini hanya master data. Belum mengurangi stok dan belum terhubung ke POS.</div>
+<div class="alert alert-info">Recipe/BOM ini digunakan sebagai acuan pemotongan bahan baku otomatis saat Produksi / WIP disetujui.</div>
 
 <div class="card mb-3">
     <div class="card-body">
         <h4 class="mb-3">Detail Recipe / BOM</h4>
         <div><strong>Kode:</strong> {{ $recipe->recipe_code ?? '-' }}</div>
         <div><strong>Nama:</strong> {{ $recipe->name }}</div>
-        <div><strong>Product:</strong> {{ $recipe->product->name ?? '-' }}</div>
         <div><strong>Output Item:</strong> {{ $recipe->outputInventoryItem->name ?? '-' }}</div>
         <div><strong>Output:</strong> {{ number_format((float) $recipe->output_qty, 2, ',', '.') }} {{ $recipe->output_unit }}</div>
         <div><strong>Divisi:</strong> {{ $recipe->division->name ?? '-' }}</div>

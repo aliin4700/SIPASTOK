@@ -114,8 +114,12 @@
                 <div>
                     <div class="d-flex justify-content-between align-items-start gap-1 mb-1">
                         <span class="text-muted small text-uppercase fw-semibold">Total Selisih Nilai</span>
-                        <span class="badge {{ $totalVarianceValue < 0 ? 'bg-danger' : ($totalVarianceValue > 0 ? 'bg-info text-dark' : 'bg-secondary') }}">
-                            {{ $totalVarianceValue < 0 ? 'Defisit' : ($totalVarianceValue > 0 ? 'Surplus' : 'Balance') }}
+                        @php
+                            $isDeficit = $totalVarianceValue < -0.01;
+                            $isSurplus = $totalVarianceValue > 0.01;
+                        @endphp
+                        <span class="badge {{ $isDeficit ? 'bg-danger' : ($isSurplus ? 'bg-success' : 'bg-secondary') }}">
+                            {{ $isDeficit ? 'Selisih Minus' : ($isSurplus ? 'Surplus' : 'Balance') }}
                         </span>
                     </div>
                     <h3 class="fw-bold mb-1 {{ $totalVarianceValue < 0 ? 'text-danger' : 'text-dark' }}">

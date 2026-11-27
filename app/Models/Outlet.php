@@ -11,6 +11,7 @@ class Outlet extends Model
 
     protected $fillable = [
         'name',
+        'esb_branch_name',
         'code',
         'address',
         'phone',
@@ -29,26 +30,6 @@ class Outlet extends Model
     public function divisionAccesses()
     {
         return $this->hasMany(UserDivisionAccess::class);
-    }
-
-    public function cashierShifts()
-    {
-        return $this->hasMany(CashierShift::class);
-    }
-
-    public function cashierCashMovements()
-    {
-        return $this->hasMany(CashierCashMovement::class);
-    }
-
-    public function salesTargets()
-    {
-        return $this->hasMany(SalesTarget::class);
-    }
-
-    public function operationalExpenses()
-    {
-        return $this->hasMany(OperationalExpense::class);
     }
 
     public function inventoryStocks()

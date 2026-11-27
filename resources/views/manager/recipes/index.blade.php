@@ -7,7 +7,7 @@
 
         <form method="get" class="row mb-3">
             <div class="col-md-4 mb-2">
-                <input type="text" name="search" value="{{ request('search') }}" class="form-control" placeholder="Kode, nama, produk, output">
+                <input type="text" name="search" value="{{ request('search') }}" class="form-control" placeholder="Kode, nama, atau output item">
             </div>
             <div class="col-md-3 mb-2">
                 <select name="division_id" class="form-control">
@@ -35,7 +35,6 @@
                     <tr>
                         <th>Kode</th>
                         <th>Nama</th>
-                        <th>Produk</th>
                         <th>Output Item</th>
                         <th>Output</th>
                         <th>Divisi</th>
@@ -49,7 +48,6 @@
                         <tr>
                             <td>{{ $recipe->recipe_code ?? '-' }}</td>
                             <td>{{ $recipe->name }}</td>
-                            <td>{{ $recipe->product->name ?? '-' }}</td>
                             <td>{{ $recipe->outputInventoryItem->name ?? '-' }}</td>
                             <td>{{ number_format((float) $recipe->output_qty, 2, ',', '.') }} {{ $recipe->output_unit }}</td>
                             <td>{{ $recipe->division->name ?? '-' }}</td>
@@ -58,7 +56,7 @@
                             <td><a href="{{ route('manager.recipes.show', $recipe) }}" class="btn btn-sm btn-outline-primary">Detail</a></td>
                         </tr>
                     @empty
-                        <tr><td colspan="9" class="text-center text-muted">Belum ada recipe/BOM.</td></tr>
+                        <tr><td colspan="8" class="text-center text-muted">Belum ada recipe/BOM.</td></tr>
                     @endforelse
                 </tbody>
             </table>

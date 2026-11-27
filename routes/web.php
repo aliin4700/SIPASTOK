@@ -1,122 +1,84 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\BerandaController;
-use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EsbSalesImportController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\CartController;
-use App\Http\Controllers\CheckoutController;
-use App\Http\Controllers\OrderController;
-use App\Http\Controllers\AdminOrderController;
-use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\RajaOngkirController;
-use App\Http\Controllers\ConversationController;
-use App\Http\Controllers\MessageController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\CustomerController;
-use App\Http\Controllers\CustomerAddressController;
-use App\Http\Controllers\Cashier\CashierDashboardController;
-use App\Http\Controllers\Cashier\CashierShiftController;
-use App\Http\Controllers\Cashier\CashierShiftReportController;
-use App\Http\Controllers\Cashier\CashierOrderController;
-use App\Http\Controllers\Cashier\CashFlowController;
-use App\Http\Controllers\Cashier\CashierReceiptController;
-use App\Http\Controllers\Backend\CashierShiftReportController as BackendCashierShiftReportController;
-use App\Http\Controllers\Backend\UserAccessController as BackendUserAccessController;
-use App\Http\Controllers\Backend\FinanceDashboardController as BackendFinanceDashboardController;
-use App\Http\Controllers\Backend\SalesTargetController as BackendSalesTargetController;
-use App\Http\Controllers\Backend\OperationalExpenseController as BackendOperationalExpenseController;
-use App\Http\Controllers\Backend\InventoryItemController as BackendInventoryItemController;
-use App\Http\Controllers\Backend\InventoryStockController as BackendInventoryStockController;
-use App\Http\Controllers\Backend\StockMovementController as BackendStockMovementController;
-use App\Http\Controllers\Backend\MaterialRequestController as BackendMaterialRequestController;
-use App\Http\Controllers\Backend\WasteRecordController as BackendWasteRecordController;
-use App\Http\Controllers\Backend\ProductionRecordController as BackendProductionRecordController;
-use App\Http\Controllers\Backend\StockOpnameController as BackendStockOpnameController;
 use App\Http\Controllers\Backend\DailyOperationController as BackendDailyOperationController;
-use App\Http\Controllers\Backend\SupplierController as BackendSupplierController;
-use App\Http\Controllers\Backend\PurchaseOrderController as BackendPurchaseOrderController;
 use App\Http\Controllers\Backend\GoodsReceiptController as BackendGoodsReceiptController;
+use App\Http\Controllers\Backend\InventoryItemController as BackendInventoryItemController;
+use App\Http\Controllers\Backend\InventoryLookupApiController as BackendInventoryLookupApiController;
+use App\Http\Controllers\Backend\InventoryStockController as BackendInventoryStockController;
+use App\Http\Controllers\Backend\MaterialRequestController as BackendMaterialRequestController;
+use App\Http\Controllers\Backend\ProductionRecordController as BackendProductionRecordController;
+use App\Http\Controllers\Backend\PurchaseOrderController as BackendPurchaseOrderController;
 use App\Http\Controllers\Backend\RecipeController as BackendRecipeController;
-use App\Http\Controllers\Backend\SoldProductReportController as BackendSoldProductReportController;
-use App\Http\Controllers\Manager\CashierShiftReportController as ManagerCashierShiftReportController;
-use App\Http\Controllers\Manager\FinanceDashboardController as ManagerFinanceDashboardController;
-use App\Http\Controllers\Manager\SalesTargetController as ManagerSalesTargetController;
-use App\Http\Controllers\Manager\OperationalExpenseController as ManagerOperationalExpenseController;
+use App\Http\Controllers\Backend\StockMovementController as BackendStockMovementController;
+use App\Http\Controllers\Backend\StockOpnameController as BackendStockOpnameController;
+use App\Http\Controllers\Backend\SupplierController as BackendSupplierController;
+use App\Http\Controllers\Backend\UserAccessController as BackendUserAccessController;
+use App\Http\Controllers\Backend\WasteRecordController as BackendWasteRecordController;
+use App\Http\Controllers\Manager\GoodsReceiptController as ManagerGoodsReceiptController;
 use App\Http\Controllers\Manager\InventoryMonitoringController as ManagerInventoryMonitoringController;
 use App\Http\Controllers\Manager\MaterialRequestController as ManagerMaterialRequestController;
-use App\Http\Controllers\Manager\WasteRecordController as ManagerWasteRecordController;
 use App\Http\Controllers\Manager\ProductionRecordController as ManagerProductionRecordController;
+use App\Http\Controllers\Manager\PurchaseOrderController as ManagerPurchaseOrderController;
+use App\Http\Controllers\Manager\RecipeController as ManagerRecipeController;
 use App\Http\Controllers\Manager\StockOpnameController as ManagerStockOpnameController;
 use App\Http\Controllers\Manager\SupplierController as ManagerSupplierController;
-use App\Http\Controllers\Manager\PurchaseOrderController as ManagerPurchaseOrderController;
-use App\Http\Controllers\Manager\GoodsReceiptController as ManagerGoodsReceiptController;
-use App\Http\Controllers\Manager\RecipeController as ManagerRecipeController;
-use App\Http\Controllers\Staff\StaffDashboardController as StaffDashboardController;
+use App\Http\Controllers\Manager\WasteRecordController as ManagerWasteRecordController;
 use App\Http\Controllers\Staff\DailyOperationController as StaffDailyOperationController;
-use App\Http\Controllers\Staff\OpeningAlertController as StaffOpeningAlertController;
 use App\Http\Controllers\Staff\MaterialRequestController as StaffMaterialRequestController;
-use App\Http\Controllers\Staff\WasteRecordController as StaffWasteRecordController;
+use App\Http\Controllers\Staff\OpeningAlertController as StaffOpeningAlertController;
 use App\Http\Controllers\Staff\ProductionRecordController as StaffProductionRecordController;
+use App\Http\Controllers\Staff\StaffDashboardController as StaffDashboardController;
 use App\Http\Controllers\Staff\StockOpnameController as StaffStockOpnameController;
+use App\Http\Controllers\Staff\WasteRecordController as StaffWasteRecordController;
 
-// Entry point publik selalu diarahkan ke beranda katalog.
+// Entry point SIPASTOK diarahkan ke login atau dashboard sesuai role yang aktif.
 Route::get('/', function () {
-    // return view('welcome');
-    // return redirect()->route('backend.login');
-    return redirect()->route('beranda');
+    if (auth()->check()) {
+        return redirect(match ((string) auth()->user()->role) {
+            'super_admin', 'admin' => route('backend.dashboard'),
+            'manager' => route('manager.dashboard'),
+            'staff_outlet' => route('staff.dashboard'),
+            default => route('login'),
+        });
+    }
+
+    return redirect()->route('login');
 });
 
-// Satu form login dipakai untuk customer dan role internal.
+// Satu form login dipakai untuk seluruh role internal SIPASTOK.
 Route::middleware('guest')->group(function () {
-    Route::get('/login', [CustomerController::class, 'login'])->name('login');
-    Route::post('/login', [CustomerController::class, 'authenticate'])->name('login.store');
-    Route::get('/register', [CustomerController::class, 'register'])->name('register');
-    Route::post('/register', [CustomerController::class, 'storeRegister'])->name('register.store');
-    Route::get('/auth/redirect', [CustomerController::class, 'redirect'])->name('auth.redirect');
-
+    Route::get('/login', [LoginController::class, 'login'])->name('login');
+    Route::post('/login', [LoginController::class, 'authenticate'])->name('login.store');
     Route::get('backend/login', fn () => redirect()->route('login'))->name('backend.login');
 });
 
-Route::get('/auth/google/callback', [CustomerController::class, 'callback'])->name('auth.callback');
-Route::post('/logout', [CustomerController::class, 'logout'])->name('logout')->middleware('auth');
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
 
-// Route debug RajaOngkir hanya aktif di mode development agar detail API tidak terbuka di production.
-if (config('app.debug')) {
-    Route::get('/debug/rajaongkir/config', [RajaOngkirController::class, 'debugConfig'])
-        ->name('debug.rajaongkir.config');
-    Route::get('/debug/rajaongkir/province', [RajaOngkirController::class, 'debugProvince'])
-        ->name('debug.rajaongkir.province');
-    Route::get('/debug/rajaongkir/cities', [RajaOngkirController::class, 'debugCities'])
-        ->name('debug.rajaongkir.cities');
-    Route::get('/debug/rajaongkir/cost', [RajaOngkirController::class, 'debugCost'])
-        ->name('debug.rajaongkir.cost');
-}
-
-// Area manager bersifat monitoring/read-only dan tetap bisa diakses admin/super_admin.
+// Panel Manager: monitoring IRA, audit stok opname, dan persetujuan operasional outlet.
 Route::middleware(['auth', 'role:manager,admin,super_admin'])->group(function () {
     Route::get('/manager/dashboard', [ManagerInventoryMonitoringController::class, 'dashboard'])->name('manager.dashboard');
-
-    Route::get('/manager/finance', [ManagerFinanceDashboardController::class, 'dashboard'])->middleware('finance.access')->name('manager.finance.dashboard');
-    Route::get('/manager/sales-targets', [ManagerSalesTargetController::class, 'index'])->middleware('finance.access')->name('manager.sales-targets.index');
-    Route::get('/manager/operational-expenses', [ManagerOperationalExpenseController::class, 'index'])->middleware('finance.access')->name('manager.operational-expenses.index');
-
-    Route::get('/manager/cashier-shifts', [ManagerCashierShiftReportController::class, 'index'])->name('manager.cashier-shifts.index');
-    Route::get('/manager/cashier-shifts/{shift}', [ManagerCashierShiftReportController::class, 'show'])->name('manager.cashier-shifts.show');
     Route::get('/manager/inventory', [ManagerInventoryMonitoringController::class, 'inventory'])->name('manager.inventory.index');
     Route::get('/manager/daily-operations', [ManagerInventoryMonitoringController::class, 'dailyOperations'])->name('manager.daily-operations.index');
     Route::get('/manager/daily-operations/{dailyOperation}', [ManagerInventoryMonitoringController::class, 'dailyOperationShow'])->name('manager.daily-operations.show');
     Route::post('/manager/daily-operations/{dailyOperation}/approve', [ManagerInventoryMonitoringController::class, 'dailyOperationApprove'])->name('manager.daily-operations.approve');
     Route::get('/manager/opening-alerts', [ManagerInventoryMonitoringController::class, 'openingAlerts'])->name('manager.opening-alerts.index');
     Route::get('/manager/material-requests', [ManagerMaterialRequestController::class, 'index'])->name('manager.material-requests.index');
+    Route::post('/manager/material-requests/bulk-approve', [ManagerMaterialRequestController::class, 'bulkApprove'])->name('manager.material-requests.bulk-approve');
     Route::get('/manager/material-requests/{materialRequest}', [ManagerMaterialRequestController::class, 'show'])->name('manager.material-requests.show');
     Route::post('/manager/material-requests/{materialRequest}/issue-stock', [ManagerMaterialRequestController::class, 'issueStock'])->name('manager.material-requests.issue-stock');
+    Route::post('/manager/material-requests/{materialRequest}/receipt', [ManagerMaterialRequestController::class, 'updateReceipt'])->name('manager.material-requests.receipt.update');
+    Route::delete('/manager/material-requests/{materialRequest}/receipt', [ManagerMaterialRequestController::class, 'deleteReceipt'])->name('manager.material-requests.receipt.destroy');
+    Route::get('/manager/material-requests/{materialRequest}/receipt/download', [ManagerMaterialRequestController::class, 'downloadReceipt'])->name('manager.material-requests.receipt.download');
     Route::get('/manager/waste-records', [ManagerWasteRecordController::class, 'index'])->name('manager.waste-records.index');
     Route::get('/manager/waste-records/{wasteRecord}', [ManagerWasteRecordController::class, 'show'])->name('manager.waste-records.show');
     Route::post('/manager/waste-records/{wasteRecord}/apply-stock', [ManagerWasteRecordController::class, 'applyStock'])->name('manager.waste-records.apply-stock');
     Route::get('/manager/production-records', [ManagerProductionRecordController::class, 'index'])->name('manager.production-records.index');
+    Route::post('/manager/production-records/bulk-approve', [ManagerProductionRecordController::class, 'bulkApprove'])->name('manager.production-records.bulk-approve');
     Route::get('/manager/production-records/{productionRecord}', [ManagerProductionRecordController::class, 'show'])->name('manager.production-records.show');
     Route::post('/manager/production-records/{productionRecord}/apply-stock', [ManagerProductionRecordController::class, 'applyStock'])->name('manager.production-records.apply-stock');
     Route::get('/manager/stock-opnames', [ManagerStockOpnameController::class, 'index'])->name('manager.stock-opnames.index');
@@ -131,30 +93,13 @@ Route::middleware(['auth', 'role:manager,admin,super_admin'])->group(function ()
     Route::post('/manager/goods-receipts/{goodsReceipt}/apply-stock', [ManagerGoodsReceiptController::class, 'applyStock'])->name('manager.goods-receipts.apply-stock');
     Route::get('/manager/recipes', [ManagerRecipeController::class, 'index'])->name('manager.recipes.index');
     Route::get('/manager/recipes/{recipe}', [ManagerRecipeController::class, 'show'])->name('manager.recipes.show');
+    Route::get('/manager/esb-imports', [EsbSalesImportController::class, 'index'])->name('manager.esb-imports.index');
+    Route::post('/manager/esb-imports/preview', [EsbSalesImportController::class, 'preview'])->name('manager.esb-imports.preview');
+    Route::post('/manager/esb-imports/execute', [EsbSalesImportController::class, 'execute'])->name('manager.esb-imports.execute');
+    Route::post('/manager/esb-imports/quick-create-item', [EsbSalesImportController::class, 'quickCreateItem'])->name('manager.esb-imports.quick-create-item');
 });
 
-// Panel cashier dipisahkan dari backend admin agar POS tidak bercampur dengan modul konfigurasi.
-Route::prefix('cashier')->name('cashier.')->middleware(['auth', 'role:cashier,admin,super_admin'])->group(function () {
-    Route::get('/', [CashierDashboardController::class, 'index'])->name('index');
-    Route::get('/shift', [CashierShiftController::class, 'index'])->name('shift.index');
-    Route::get('/shift/report', [CashierShiftReportController::class, 'report'])->name('shift.report');
-    Route::post('/shift/open', [CashierShiftController::class, 'open'])->name('shift.open');
-    Route::post('/shift/close', [CashierShiftController::class, 'close'])->name('shift.close');
-    Route::get('/orders', [CashierOrderController::class, 'index'])->name('orders.index');
-    Route::post('/orders/cart/add', [CashierOrderController::class, 'addToCart'])->name('orders.cart.add');
-    Route::patch('/orders/cart/update', [CashierOrderController::class, 'updateCart'])->name('orders.cart.update');
-    Route::delete('/orders/cart/remove', [CashierOrderController::class, 'removeFromCart'])->name('orders.cart.remove');
-    Route::delete('/orders/cart/clear', [CashierOrderController::class, 'clearCart'])->name('orders.cart.clear');
-    Route::post('/orders/finalize', [CashierOrderController::class, 'finalize'])->name('orders.finalize');
-    Route::get('/orders/history', [CashierOrderController::class, 'history'])->name('orders.history');
-    Route::get('/cash-flow', [CashFlowController::class, 'index'])->name('cash-flow.index');
-    Route::post('/cash-flow', [CashFlowController::class, 'store'])->name('cash-flow.store');
-    Route::get('/receipts', [CashierReceiptController::class, 'index'])->name('receipts.index');
-    Route::get('/receipts/{order}', [CashierReceiptController::class, 'show'])->name('receipts.show');
-    Route::get('/receipts/{order}/print', [CashierReceiptController::class, 'print'])->name('receipts.print');
-});
-
-// Panel staff outlet hanya menampilkan pekerjaan operasional sesuai akses outlet/divisi.
+// Panel Staff Outlet: operasional harian divisi & pencatatan stok opname.
 Route::middleware(['auth', 'role:staff_outlet,admin,super_admin'])->group(function () {
     Route::get('/staff/dashboard', [StaffDashboardController::class, 'index'])->name('staff.dashboard');
     Route::get('/staff/daily-operations', [StaffDailyOperationController::class, 'index'])->name('staff.daily-operations.index');
@@ -167,8 +112,13 @@ Route::middleware(['auth', 'role:staff_outlet,admin,super_admin'])->group(functi
     Route::get('/staff/material-requests/create', [StaffMaterialRequestController::class, 'create'])->name('staff.material-requests.create');
     Route::post('/staff/material-requests', [StaffMaterialRequestController::class, 'store'])->name('staff.material-requests.store');
     Route::get('/staff/material-requests/{materialRequest}', [StaffMaterialRequestController::class, 'show'])->name('staff.material-requests.show');
+    Route::get('/staff/material-requests/{materialRequest}/edit', [StaffMaterialRequestController::class, 'edit'])->name('staff.material-requests.edit');
+    Route::put('/staff/material-requests/{materialRequest}', [StaffMaterialRequestController::class, 'update'])->name('staff.material-requests.update');
     Route::post('/staff/material-requests/{materialRequest}/submit', [StaffMaterialRequestController::class, 'submit'])->name('staff.material-requests.submit');
     Route::post('/staff/material-requests/{materialRequest}/cancel', [StaffMaterialRequestController::class, 'cancel'])->name('staff.material-requests.cancel');
+    Route::post('/staff/material-requests/{materialRequest}/receipt', [StaffMaterialRequestController::class, 'updateReceipt'])->name('staff.material-requests.receipt.update');
+    Route::delete('/staff/material-requests/{materialRequest}/receipt', [StaffMaterialRequestController::class, 'deleteReceipt'])->name('staff.material-requests.receipt.destroy');
+    Route::get('/staff/material-requests/{materialRequest}/receipt/download', [StaffMaterialRequestController::class, 'downloadReceipt'])->name('staff.material-requests.receipt.download');
     Route::get('/staff/waste', [StaffWasteRecordController::class, 'index'])->name('staff.waste.index');
     Route::get('/staff/waste/create', [StaffWasteRecordController::class, 'create'])->name('staff.waste.create');
     Route::post('/staff/waste', [StaffWasteRecordController::class, 'store'])->name('staff.waste.store');
@@ -189,65 +139,39 @@ Route::middleware(['auth', 'role:staff_outlet,admin,super_admin'])->group(functi
     Route::post('/staff/stock-opnames/{stockOpname}/cancel', [StaffStockOpnameController::class, 'cancel'])->name('staff.stock-opnames.cancel');
 });
 
-// Backend admin berisi konfigurasi, monitoring, inventory, finance, dan verifikasi operasional.
+// Backend Admin SIPASTOK: master data bahan baku, pengadaan, verifikasi stok opname, & manajemen user.
 Route::middleware(['auth', 'is.admin'])->group(function () {
     Route::get('/admin', fn () => redirect()->route('backend.dashboard'))->name('backend.beranda');
     Route::get('backend/beranda', fn () => redirect()->route('backend.dashboard'));
     Route::get('backend/dashboard', [DashboardController::class, 'index'])->name('backend.dashboard');
     Route::post('backend/logout', [LoginController::class, 'logoutBackend'])->name('backend.logout');
 
-    // Route untuk User
-    // Route::resource('backend/user', UserController::class)->middleware('auth');
+    // Manajemen User & Hak Akses Outlet/Divisi
     Route::get('backend/users/{user}/access', [BackendUserAccessController::class, 'edit'])->name('backend.user.access.edit');
     Route::put('backend/users/{user}/access', [BackendUserAccessController::class, 'update'])->name('backend.user.access.update');
     Route::resource('backend/user', UserController::class, ['as' => 'backend']);
-    // Route untuk laporan user
     Route::get('backend/laporan/formuser', [UserController::class, 'formUser'])->name('backend.laporan.formuser');
     Route::post('backend/laporan/cetakuser', [UserController::class, 'cetakUser'])->name('backend.laporan.cetakuser');
 
-    // Route untuk customer
-    Route::get('backend/customers', [CustomerController::class, 'index'])->name('backend.customer.index');
-    Route::get('backend/customers/{customer}', [CustomerController::class, 'show'])->name('backend.customer.show');
-
-    Route::resource('backend/categories', CategoryController::class)->except(['show'])->names('backend.category');
-    Route::resource('backend/products', ProductController::class)->names('backend.product');
-    Route::post('backend/products/{product}/photos', [ProductController::class, 'storePhoto'])->name('backend.product.photo.store');
-    Route::delete('backend/product-photos/{photo}', [ProductController::class, 'destroyPhoto'])->name('backend.product.photo.destroy');
-
-    // Route untuk laporan produk terjual
-    Route::get('backend/reports/sold-products', [BackendSoldProductReportController::class, 'index'])->name('backend.reports.sold-products.index');
-    Route::post('backend/reports/sold-products/print', [BackendSoldProductReportController::class, 'print'])->name('backend.reports.sold-products.print');
-
-    Route::get('backend/orders', [AdminOrderController::class, 'index'])->name('backend.order.index');
-    Route::get('backend/orders/{order}', [AdminOrderController::class, 'show'])->name('backend.order.show');
-    Route::patch('backend/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('backend.order.updateStatus');
-    Route::patch('backend/orders/{order}/tracking', [AdminOrderController::class, 'updateTracking'])->name('backend.order.updateTracking');
-
-    Route::get('backend/payments', [PaymentController::class, 'index'])->name('backend.payment.index');
-    Route::get('backend/payments/{payment}', [PaymentController::class, 'adminShow'])->name('backend.payment.show');
-    Route::patch('backend/payments/{payment}/verify', [PaymentController::class, 'verify'])->name('backend.payment.verify');
-    Route::patch('backend/payments/{payment}/reject', [PaymentController::class, 'reject'])->name('backend.payment.reject');
-    Route::patch('backend/payments/{payment}/confirm-cash', [PaymentController::class, 'confirmCash'])->name('backend.payment.confirmCash');
-
-    Route::get('backend/cashier-shifts', [BackendCashierShiftReportController::class, 'index'])->name('backend.cashier-shifts.index');
-    Route::get('backend/cashier-shifts/{shift}', [BackendCashierShiftReportController::class, 'show'])->name('backend.cashier-shifts.show');
-    Route::patch('backend/cashier-shifts/{shift}/review', [BackendCashierShiftReportController::class, 'review'])->name('backend.cashier-shifts.review');
-
-    Route::get('backend/finance', [BackendFinanceDashboardController::class, 'dashboard'])->middleware('finance.access')->name('backend.finance.dashboard');
-    Route::resource('backend/sales-targets', BackendSalesTargetController::class)->except(['show'])->names('backend.sales-targets');
-    Route::resource('backend/operational-expenses', BackendOperationalExpenseController::class)->except(['show'])->names('backend.operational-expenses');
+    // Inventori, Mutasi Stok, Pengadaan, & Stock Opname
     Route::resource('backend/inventory-items', BackendInventoryItemController::class)->except(['show'])->names('backend.inventory-items');
     Route::get('backend/inventory-stocks', [BackendInventoryStockController::class, 'index'])->name('backend.inventory-stocks.index');
     Route::get('backend/inventory-stocks/{inventoryStock}/edit', [BackendInventoryStockController::class, 'edit'])->name('backend.inventory-stocks.edit');
     Route::put('backend/inventory-stocks/{inventoryStock}', [BackendInventoryStockController::class, 'update'])->name('backend.inventory-stocks.update');
     Route::get('backend/stock-movements', [BackendStockMovementController::class, 'index'])->name('backend.stock-movements.index');
     Route::get('backend/material-requests', [BackendMaterialRequestController::class, 'index'])->name('backend.material-requests.index');
+    Route::post('backend/material-requests/bulk-approve', [BackendMaterialRequestController::class, 'bulkApprove'])->name('backend.material-requests.bulk-approve');
     Route::get('backend/material-requests/{materialRequest}', [BackendMaterialRequestController::class, 'show'])->name('backend.material-requests.show');
+    Route::delete('backend/material-requests/{materialRequest}', [BackendMaterialRequestController::class, 'destroy'])->name('backend.material-requests.destroy');
     Route::post('backend/material-requests/{materialRequest}/issue-stock', [BackendMaterialRequestController::class, 'issueStock'])->name('backend.material-requests.issue-stock');
+    Route::post('backend/material-requests/{materialRequest}/receipt', [BackendMaterialRequestController::class, 'updateReceipt'])->name('backend.material-requests.receipt.update');
+    Route::delete('backend/material-requests/{materialRequest}/receipt', [BackendMaterialRequestController::class, 'deleteReceipt'])->name('backend.material-requests.receipt.destroy');
+    Route::get('backend/material-requests/{materialRequest}/receipt/download', [BackendMaterialRequestController::class, 'downloadReceipt'])->name('backend.material-requests.receipt.download');
     Route::get('backend/waste-records', [BackendWasteRecordController::class, 'index'])->name('backend.waste-records.index');
     Route::get('backend/waste-records/{wasteRecord}', [BackendWasteRecordController::class, 'show'])->name('backend.waste-records.show');
     Route::post('backend/waste-records/{wasteRecord}/apply-stock', [BackendWasteRecordController::class, 'applyStock'])->name('backend.waste-records.apply-stock');
     Route::get('backend/production-records', [BackendProductionRecordController::class, 'index'])->name('backend.production-records.index');
+    Route::post('backend/production-records/bulk-approve', [BackendProductionRecordController::class, 'bulkApprove'])->name('backend.production-records.bulk-approve');
     Route::get('backend/production-records/{productionRecord}', [BackendProductionRecordController::class, 'show'])->name('backend.production-records.show');
     Route::post('backend/production-records/{productionRecord}/apply-stock', [BackendProductionRecordController::class, 'applyStock'])->name('backend.production-records.apply-stock');
     Route::get('backend/stock-opnames', [BackendStockOpnameController::class, 'index'])->name('backend.stock-opnames.index');
@@ -262,6 +186,10 @@ Route::middleware(['auth', 'is.admin'])->group(function () {
     Route::get('backend/suppliers/{supplier}', [BackendSupplierController::class, 'show'])->name('backend.suppliers.show');
     Route::get('backend/suppliers/{supplier}/edit', [BackendSupplierController::class, 'edit'])->name('backend.suppliers.edit');
     Route::put('backend/suppliers/{supplier}', [BackendSupplierController::class, 'update'])->name('backend.suppliers.update');
+    // API Lookup Ringan (AJAX Remote Search Item & On-Demand PO Items)
+    Route::get('backend/api/inventory-items/search', [BackendInventoryLookupApiController::class, 'searchItems'])->name('backend.api.inventory-items.search');
+    Route::get('backend/api/purchase-orders/{purchaseOrder}/items', [BackendInventoryLookupApiController::class, 'purchaseOrderItems'])->name('backend.api.purchase-orders.items');
+
     Route::get('backend/purchase-orders', [BackendPurchaseOrderController::class, 'index'])->name('backend.purchase-orders.index');
     Route::get('backend/purchase-orders/create', [BackendPurchaseOrderController::class, 'create'])->name('backend.purchase-orders.create');
     Route::post('backend/purchase-orders', [BackendPurchaseOrderController::class, 'store'])->name('backend.purchase-orders.store');
@@ -281,60 +209,8 @@ Route::middleware(['auth', 'is.admin'])->group(function () {
     Route::get('backend/recipes/{recipe}', [BackendRecipeController::class, 'show'])->name('backend.recipes.show');
     Route::get('backend/recipes/{recipe}/edit', [BackendRecipeController::class, 'edit'])->name('backend.recipes.edit');
     Route::put('backend/recipes/{recipe}', [BackendRecipeController::class, 'update'])->name('backend.recipes.update');
-
-    Route::get('backend/chats', [ConversationController::class, 'index'])->name('backend.chat.index');
-    Route::get('backend/chats/{conversation}', [ConversationController::class, 'adminShow'])->name('backend.chat.show');
-    Route::post('backend/chats/{conversation}/messages', [MessageController::class, 'adminSend'])->name('backend.chat.send');
-    Route::get('backend/chats/{conversation}/messages', [MessageController::class, 'adminFetch'])->name('backend.chat.fetch');
-});
-
-// Halaman katalog publik.
-Route::get('/beranda', [BerandaController::class, 'index'])->name('beranda');
-Route::get('/products', [ProductController::class, 'catalog'])->name('product.index');
-Route::get('/products/category/{category:slug}', [ProductController::class, 'category'])->name('product.category');
-Route::get('/products/{product}', [ProductController::class, 'detail'])->name('product.detail');
-
-// Area customer setelah login: akun, alamat, cart, checkout, order, payment, dan chat.
-Route::middleware(['auth', 'is.customer'])->group(function () {
-    // Route untuk menampilkan halaman akun customer
-    Route::get('/customer/account', [CustomerController::class, 'account'])
-        ->name('customer.account');
-
-    // Route untuk mengupdate data akun customer
-    Route::put('/customer/account', [CustomerController::class, 'updateAccount'])
-        ->name('customer.account.update');
-
-    // Address book menjadi sumber alamat pengiriman untuk checkout shipping.
-    Route::get('/customer/addresses', [CustomerAddressController::class, 'index'])->name('customer.address.index');
-    Route::get('/customer/addresses/create', [CustomerAddressController::class, 'create'])->name('customer.address.create');
-    Route::post('/customer/addresses', [CustomerAddressController::class, 'store'])->name('customer.address.store');
-    Route::get('/customer/addresses/{address}/edit', [CustomerAddressController::class, 'edit'])->name('customer.address.edit');
-    Route::put('/customer/addresses/{address}', [CustomerAddressController::class, 'update'])->name('customer.address.update');
-    Route::delete('/customer/addresses/{address}', [CustomerAddressController::class, 'destroy'])->name('customer.address.destroy');
-    Route::patch('/customer/addresses/{address}/default', [CustomerAddressController::class, 'setDefault'])->name('customer.address.setDefault');
-
-    // Cart masih berupa keranjang aktif customer, bukan order.
-    Route::get('cart', [CartController::class, 'index'])->name('cart.index');
-    Route::post('cart/add/{product}', [CartController::class, 'add'])->name('cart.add');
-    Route::patch('cart/items/{cartItem}', [CartController::class, 'update'])->name('cart.update');
-    Route::delete('cart/items/{cartItem}', [CartController::class, 'remove'])->name('cart.remove');
-    Route::delete('cart/clear', [CartController::class, 'clear'])->name('cart.clear');
-    // Checkout mengubah cart menjadi order, payment, dan shipment.
-    Route::get('checkout', [CheckoutController::class, 'index'])->name('checkout.index');
-    Route::post('checkout', [CheckoutController::class, 'process'])->name('checkout.process');
-    // Endpoint AJAX RajaOngkir/Komerce untuk pilihan shipping di checkout dan address book.
-    Route::get('rajaongkir/provinces', [RajaOngkirController::class, 'provinces'])->name('rajaongkir.provinces');
-    Route::get('rajaongkir/cities', [RajaOngkirController::class, 'cities'])->name('rajaongkir.cities');
-    Route::get('rajaongkir/districts', [RajaOngkirController::class, 'districts'])->name('rajaongkir.districts');
-    Route::post('rajaongkir/cost', [RajaOngkirController::class, 'cost'])->name('rajaongkir.cost');
-    // Riwayat order customer dan chat per-order.
-    Route::get('orders', [OrderController::class, 'history'])->name('order.history');
-    Route::get('orders/{order}/chat', [ConversationController::class, 'show'])->name('chat.show');
-    Route::post('orders/{order}/chat/messages', [MessageController::class, 'send'])->name('chat.send');
-    Route::get('orders/{order}/chat/messages', [MessageController::class, 'fetch'])->name('chat.fetch');
-    Route::get('orders/{order}', [OrderController::class, 'detail'])->name('order.detail');
-    // Payment manual customer: lihat status dan upload bukti transfer.
-    Route::get('payments/{order}', [PaymentController::class, 'show'])->name('payment.show');
-    Route::get('payments/{order}/upload-proof', [PaymentController::class, 'uploadProof'])->name('payment.uploadProof');
-    Route::post('payments/{order}/upload-proof', [PaymentController::class, 'storeProof'])->name('payment.storeProof');
+    Route::get('backend/esb-imports', [EsbSalesImportController::class, 'index'])->name('backend.esb-imports.index');
+    Route::post('backend/esb-imports/preview', [EsbSalesImportController::class, 'preview'])->name('backend.esb-imports.preview');
+    Route::post('backend/esb-imports/execute', [EsbSalesImportController::class, 'execute'])->name('backend.esb-imports.execute');
+    Route::post('backend/esb-imports/quick-create-item', [EsbSalesImportController::class, 'quickCreateItem'])->name('backend.esb-imports.quick-create-item');
 });

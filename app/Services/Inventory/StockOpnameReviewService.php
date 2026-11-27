@@ -35,6 +35,7 @@ class StockOpnameReviewService
                 'adjusted' => 0,
                 'noop' => 0,
                 'duplicate' => 0,
+                'skipped' => 0,
                 'total_variance_value' => 0.0,
             ];
 
@@ -45,9 +46,17 @@ class StockOpnameReviewService
                     ?? collect($itemReviews)->firstWhere('id', $item->id)
                     ?? [];
 
-                $physicalStock = (isset($reviewRow['physical_stock']) && $reviewRow['physical_stock'] !== '' && $reviewRow['physical_stock'] !== null)
-                    ? (float) $reviewRow['physical_stock']
-                    : (float) $item->physical_stock;
+                // Dukungan Spot-Check: jika kolom physical_stock dikosongkan/tidak diisi,
+                // item dianggap tidak dihitung (diabaikan / saldo tidak diubah), bukan 0.
+                $hasReviewInput = is_array($reviewRow) && array_key_exists('physical_stock', $reviewRow);
+                $rawPhysical = $hasReviewInput ? $reviewRow['physical_stock'] : $item->physical_stock;
+
+                if ($rawPhysical === null || $rawPhysical === '') {
+                    $summary['skipped']++;
+                    continue;
+                }
+
+                $physicalStock = (float) $rawPhysical;
 
                 if (! $item->item || ! is_numeric($physicalStock) || $physicalStock < 0) {
                     throw new DomainException('Item opname tidak valid. Pastikan inventory item ada dan physical stock tidak negatif.');
@@ -76,14 +85,17 @@ class StockOpnameReviewService
                 $differenceQty = $physicalStock - $systemStock;
                 $unitCost = (float) $item->unit_cost > 0
                     ? (float) $item->unit_cost
-                    : (float) ($item->item->last_purchase_price ?? 0);
-                $varianceValue = $differenceQty * $unitCost;
+                    : ((float) ($item->item->unit_cost ?? 0) > 0
+                        ? (float) $item->item->unit_cost
+                        : (float) ($item->item->last_purchase_price ?? 0));
+                $varianceValue = round($differenceQty * $unitCost, 2);
 
                 $item->update([
                     'system_stock' => $systemStock,
                     'physical_stock' => $physicalStock,
                     'difference_qty' => $differenceQty,
                     'unit_cost' => $unitCost,
+                    'variance_cost' => $varianceValue,
                     'variance_value' => $varianceValue,
                     'variance_reason' => $varianceReason,
                     'notes' => $notes,

@@ -28,7 +28,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('production_record_id')->constrained()->cascadeOnDelete();
             $table->foreignId('inventory_item_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('product_id')->nullable()->constrained()->nullOnDelete();
             $table->string('item_name')->nullable();
             $table->string('item_type')->nullable();
             $table->decimal('qty', 15, 2);

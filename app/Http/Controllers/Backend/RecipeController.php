@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Backend;
 use App\Http\Controllers\Controller;
 use App\Models\Division;
 use App\Models\InventoryItem;
-use App\Models\Product;
 use App\Models\Recipe;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -26,11 +25,10 @@ class RecipeController extends Controller
 
         return view('backend.recipes.index', [
             'judul' => 'Recipe / BOM',
-            'recipes' => Recipe::with(['product', 'outputInventoryItem', 'division', 'items'])
+            'recipes' => Recipe::with(['outputInventoryItem', 'division', 'items'])
                 ->when($filters['search'] ?? null, fn ($query, $search) => $query->where(function ($inner) use ($search) {
                     $inner->where('name', 'like', "%{$search}%")
                         ->orWhere('recipe_code', 'like', "%{$search}%")
-                        ->orWhereHas('product', fn ($product) => $product->where('name', 'like', "%{$search}%"))
                         ->orWhereHas('outputInventoryItem', fn ($item) => $item->where('name', 'like', "%{$search}%"));
                 }))
                 ->when($filters['division_id'] ?? null, fn ($query, $divisionId) => $query->where('division_id', $divisionId))
@@ -67,7 +65,7 @@ class RecipeController extends Controller
     {
         return view('backend.recipes.show', [
             'judul' => 'Detail Recipe / BOM',
-            'recipe' => $recipe->load(['product', 'outputInventoryItem', 'division', 'createdBy', 'updatedBy', 'items.item']),
+            'recipe' => $recipe->load(['outputInventoryItem', 'division', 'createdBy', 'updatedBy', 'items.item']),
         ]);
     }
 
@@ -94,7 +92,6 @@ class RecipeController extends Controller
     {
         return [
             'recipe' => $recipe,
-            'products' => Product::orderBy('name')->get(),
             'inventoryItems' => InventoryItem::where('is_active', true)->orderBy('name')->get(),
             'divisions' => Division::where('is_active', true)->orderBy('name')->get(),
             'units' => self::UNITS,
@@ -106,7 +103,6 @@ class RecipeController extends Controller
         $data = $request->validate([
             'recipe_code' => ['nullable', 'string', 'max:255', Rule::unique('recipes', 'recipe_code')->ignore($recipe)],
             'name' => ['required', 'string', 'max:255'],
-            'product_id' => ['nullable', 'exists:products,id'],
             'output_inventory_item_id' => ['nullable', 'exists:inventory_items,id'],
             'output_qty' => ['required', 'numeric', 'min:0.01'],
             'output_unit' => ['nullable', 'string', 'max:50'],

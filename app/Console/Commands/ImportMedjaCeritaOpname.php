@@ -54,7 +54,15 @@ class ImportMedjaCeritaOpname extends Command
             'outlet' => ['code' => 'SLW', 'name' => 'Slawi'],
             'division' => ['code' => 'PKG', 'name' => 'Packaging'],
         ],
+        'SLAWI (FLOOR)' => [
+            'outlet' => ['code' => 'SLW', 'name' => 'Slawi'],
+            'division' => ['code' => 'PKG', 'name' => 'Packaging'],
+        ],
         'KAGOK CK' => [
+            'outlet' => ['code' => 'KGK', 'name' => 'Kagok CK'],
+            'division' => ['code' => 'CK', 'name' => 'Central Kitchen'],
+        ],
+        'KAGOK' => [
             'outlet' => ['code' => 'KGK', 'name' => 'Kagok CK'],
             'division' => ['code' => 'CK', 'name' => 'Central Kitchen'],
         ],
@@ -120,7 +128,11 @@ class ImportMedjaCeritaOpname extends Command
         $user = User::first();
 
         foreach ($sheets as $sheetName => $rows) {
-            $normalizedSheetName = trim(strtoupper($sheetName));
+            $normalizedSheetName = preg_replace(
+                ['/\s+/', '/\(\s+/', '/\s+\)/'],
+                [' ', '(', ')'],
+                trim(strtoupper($sheetName))
+            ) ?? trim(strtoupper($sheetName));
 
             if (! $this->isValidOpnameSheet($rows)) {
                 $this->line("Melewati sheet non-opname / pembatas: {$sheetName}");
@@ -332,7 +344,10 @@ class ImportMedjaCeritaOpname extends Command
                                     $division->name,
                                     $dateObj->format('d/m/Y')
                                 ),
-                                'review_notes' => 'Diverifikasi otomatis dari dataset Oktober Medja Cerita.',
+                                'review_notes' => sprintf(
+                                    'Diverifikasi otomatis dari dataset %s Medja Cerita.',
+                                    $dateObj->format('F Y')
+                                ),
                                 'submitted_at' => $dateObj->copy()->setTime(22, 0),
                                 'reviewed_by' => $user?->id,
                                 'reviewed_at' => $dateObj->copy()->setTime(22, 30),
@@ -441,14 +456,54 @@ class ImportMedjaCeritaOpname extends Command
         ];
     }
 
-    private function resolveItemType(string $itemName, string $divisionName): string
+    public static function resolveItemType(string $itemName, string $divisionName): string
     {
-        if (preg_match('/^WIP[\.\s]/i', $itemName) === 1) {
+        $normalized = strtolower(trim($itemName));
+        $division = strtolower(trim($divisionName));
+
+        if (preg_match('/^wip[\.\s]/i', $itemName) === 1) {
             return 'wip';
         }
 
-        if (in_array(strtolower(trim($divisionName)), ['packaging', 'floor'], true)) {
+        if (in_array($division, ['packaging', 'floor'], true)) {
             return 'packaging';
+        }
+
+        // Bahan kemasan / sirup komersial pabrikan tetap raw_material
+        $commercialRawPatterns = [
+            '/\b(dripp|monin|marjan|davici|sunquick|toffico|toffieco|multibev|bensdrop|colatta|collata|anchor|diamond|oatside|millac|carnation|nestle|cleo|le mineral|hydro coco|groovy|yakult|milo|morin)\b/i',
+            '/\b(ingredient|beans|powder|biji|tepung|gula|garam|minyak|salad oil|shortening|margarine|butter|improver|saf|kalsium|pectin|gelatin|gelatine|glukosa|glucose|rhum|pemutih|pewarna|dye|cinnamon stick|kayu manis|jahe|daun|jeruk|lemon fresh|fresh|frozen|canned|kaleng|galon|es batu|ice cube|air mineral|uht|teh bubuk|cone|meses|oreo|almond slice|kacang cacah)\b/i',
+        ];
+
+        $isCommercialRaw = false;
+        foreach ($commercialRawPatterns as $pattern) {
+            if (preg_match($pattern, $normalized) === 1) {
+                $isCommercialRaw = true;
+                break;
+            }
+        }
+
+        // Pola item hasil produksi / olahan / setengah jadi (WIP) lintas divisi
+        $wipPatterns = [
+            '/\b(homemade|compote|ganache|crumble|crumb|cremeux|mousse|mouse|sponge|dough|meringue|chantily|chantilly|mascarpone base|mascarpone cream)\b/i',
+            '/\b(simpel syrup|simple syrup|brown\s*sugar syrup|brown\s*sugar mix|coffee syrup|cofee syrup|jasmine tea mix|thai tea mix|creamer mix|caramel sauce|butterscoth sauce|cream sauce)\b/i',
+            '/\b(coklat filling|keju filling|lemon filling|base cheesecake|garlic butter|garlic bread|lemon slice|espresso)\b/i',
+            '/\b(puddle|salt bread|coffe bread|coffee bread|donat|donut|canele|cake|sable|pancake|bagguette|baguette|burger medium|burger small)\b/i',
+            '/\b(ayam asam manis|ayam mentega|ayam kemangi|ayam teriyaki|beef blackpapper|beef teriyaki|telur screamble|sambal terasi|sosis solo|samosa|risol sayur|tahu fantasy|kue lapis)\b/i',
+        ];
+
+        foreach ($wipPatterns as $pattern) {
+            if (preg_match($pattern, $normalized) === 1) {
+                if (preg_match('/\b(ingredient|margarine)\b/i', $normalized) === 1) {
+                    return 'raw_material';
+                }
+                // Hindari salah klasifikasi jika ada nama sirup pabrikan kecuali memang olahan spesifik
+                if ($isCommercialRaw && ! preg_match('/\b(creamer mix|compote|ganache|crumble|crumb|syrup tiramisu|sauce tiramisu|puddle|salt bread|coffe bread|donat|donut|cake)\b/i', $normalized)) {
+                    continue;
+                }
+
+                return 'wip';
+            }
         }
 
         return 'raw_material';
@@ -475,6 +530,17 @@ class ImportMedjaCeritaOpname extends Command
 
             $text = trim(strtolower((string) $cell));
             if ($text === '') {
+                continue;
+            }
+
+            // Dukungan Excel Serial Date (mis. 46327.0 = 2026-11-01)
+            if (is_numeric($text)) {
+                $serial = (float) $text;
+                if ($serial >= 30000 && $serial <= 70000) {
+                    $dates[$index] = Carbon::create(1899, 12, 30, 0, 0, 0)
+                        ->addDays((int) round($serial))
+                        ->startOfDay();
+                }
                 continue;
             }
 

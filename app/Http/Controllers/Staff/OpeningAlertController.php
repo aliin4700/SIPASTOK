@@ -22,7 +22,7 @@ class OpeningAlertController extends Controller
                 ->whereHas('item', fn ($query) => $query
                     ->where('is_active', true)
                     ->where('division_id', $divisionId)
-                    ->whereIn('item_type', ['wip', 'raw_material', 'packaging']))
+                    ->whereIn('item_type', ['wip', 'finished_goods', 'raw_material', 'packaging']))
                 ->get();
         }
 
@@ -32,9 +32,9 @@ class OpeningAlertController extends Controller
             $minimum = (float) $item->min_stock;
             $category = null;
 
-            if ($item->item_type === 'wip' && $current <= 0) {
+            if (in_array($item->item_type, ['wip', 'finished_goods'], true) && $current <= 0) {
                 $category = 'WIP_EMPTY';
-            } elseif ($item->item_type === 'wip' && $current <= $minimum) {
+            } elseif (in_array($item->item_type, ['wip', 'finished_goods'], true) && $current <= $minimum) {
                 $category = 'WIP_LOW';
             } elseif ($item->item_type === 'raw_material' && $current <= 0) {
                 $category = 'RAW_EMPTY';

@@ -9,7 +9,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement("ALTER TABLE users MODIFY role VARCHAR(50) NOT NULL DEFAULT 'customer'");
+        DB::statement("ALTER TABLE users MODIFY role VARCHAR(50) NOT NULL DEFAULT 'staff_outlet'");
 
         Schema::create('roles', function (Blueprint $table) {
             $table->id();
@@ -61,10 +61,8 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('outlet_id')->constrained()->cascadeOnDelete();
             $table->boolean('can_monitor')->default(false);
-            $table->boolean('can_cashier')->default(false);
             $table->boolean('can_manage_stock')->default(false);
             $table->boolean('can_manage_purchase')->default(false);
-            $table->boolean('can_manage_finance')->default(false);
             $table->timestamps();
 
             $table->unique(['user_id', 'outlet_id']);

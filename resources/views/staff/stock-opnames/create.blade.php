@@ -1,6 +1,8 @@
 @extends('staff.layouts.app')
 
 @section('content')
+@include('partials.searchable-select-assets')
+
 @php
     $opnameTypes = \App\Models\StockOpname::TYPES;
     $varianceReasons = \App\Models\StockOpnameItem::VARIANCE_REASONS;
@@ -186,23 +188,36 @@
                 <div class="card border mb-3 bg-white">
                     <div class="card-body py-3">
                         <div class="row g-2 align-items-center mb-2">
-                            <div class="col-md-6">
+                            <div class="col-md-5">
                                 <div class="input-group">
                                     <span class="input-group-text bg-light fw-semibold">Cari</span>
-                                    <input type="text" id="liveSearchInput" class="form-control" placeholder="Ketik nama bahan atau kode (contoh: Beras, KIT-001, WIP)..." autocomplete="off">
+                                    <input type="text" id="liveSearchInput" class="form-control" placeholder="Ketik nama bahan atau kode..." autocomplete="off">
                                     <button type="button" class="btn btn-outline-secondary" id="clearSearchBtn">Reset</button>
                                 </div>
                             </div>
-                            <div class="col-md-6 text-md-end small text-muted">
-                                Menampilkan <strong id="visibleItemCount">{{ $items->count() }}</strong> dari <strong>{{ $items->count() }}</strong> bahan baku
+                            <div class="col-md-4">
+                                <select id="quickJumpOpnameSelect" class="form-select sipastok-searchable-select">
+                                    <option value="">-- Lompat Cepat ke Item --</option>
+                                    @foreach($items as $item)
+                                        <option value="{{ $item->id }}" data-search="{{ strtolower($item->name . ' ' . ($item->code ?? '')) }}">{{ $item->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-3 text-md-end small text-muted">
+                                Tampil <strong id="visibleItemCount">{{ $items->count() }}</strong> / <strong>{{ $items->count() }}</strong> item
                             </div>
                         </div>
-                        <div class="d-flex flex-wrap gap-2" id="quickFilterPills">
-                            <button type="button" class="btn btn-primary filter-pill-btn active" data-filter="all">Semua ({{ $items->count() }})</button>
-                            <button type="button" class="btn btn-outline-secondary filter-pill-btn" data-filter="unfilled">Belum Diisi</button>
-                            <button type="button" class="btn btn-outline-success filter-pill-btn" data-filter="filled">Sudah Diisi</button>
-                            <button type="button" class="btn btn-outline-dark filter-pill-btn" data-filter="raw_material">Raw Material</button>
-                            <button type="button" class="btn btn-outline-info filter-pill-btn" data-filter="wip">WIP</button>
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div class="d-flex flex-wrap gap-2" id="quickFilterPills">
+                                <button type="button" class="btn btn-primary filter-pill-btn active" data-filter="all">Semua ({{ $items->count() }})</button>
+                                <button type="button" class="btn btn-outline-secondary filter-pill-btn" data-filter="unfilled">Belum Diisi</button>
+                                <button type="button" class="btn btn-outline-success filter-pill-btn" data-filter="filled">Sudah Diisi</button>
+                                <button type="button" class="btn btn-outline-dark filter-pill-btn" data-filter="raw_material">Raw Material</button>
+                                <button type="button" class="btn btn-outline-info filter-pill-btn" data-filter="wip">WIP</button>
+                            </div>
+                            <button type="button" id="resetAllOpnameInputsBtn" class="btn btn-sm btn-outline-danger">
+                                Reset / Kosongkan Form
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -233,6 +248,7 @@
                                     $hasExtra = !empty($oldReason) || !empty($oldNotes);
                                 @endphp
                                 <tr class="opname-item-row {{ $oldPhys !== null && $oldPhys !== '' ? 'is-filled' : '' }}"
+                                    data-item-id="{{ $item->id }}"
                                     data-system-stock="{{ $sysStock }}"
                                     data-name="{{ strtolower($item->name . ' ' . ($item->code ?? '')) }}"
                                     data-type="{{ strtolower($item->item_type) }}">
@@ -272,6 +288,7 @@
                                                    class="form-control text-center fw-bold physical-stock-input"
                                                    placeholder="Ketik stok...">
                                             <button type="button" class="btn btn-outline-secondary qty-step-btn" data-step="1" tabindex="-1">&plus;</button>
+                                            <button type="button" class="btn btn-outline-danger clear-opname-row-btn" title="Kosongkan baris ini" tabindex="-1">&times;</button>
                                         </div>
                                     </td>
                                     <td class="blind-col text-end diff-preview text-muted" @if($defaultBlindCount) style="display:none;" @endif>
@@ -453,6 +470,16 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
 
+        const clearRowBtn = row.querySelector('.clear-opname-row-btn');
+        if (clearRowBtn) {
+            clearRowBtn.addEventListener('click', function () {
+                if (input) input.value = '';
+                row.querySelectorAll('select, input[type="text"]').forEach(function (el) { el.value = ''; });
+                updateRowState(row);
+                updateFilledCounter();
+            });
+        }
+
         const toggleBtn = row.querySelector('.toggle-mobile-extra');
         if (toggleBtn) {
             toggleBtn.addEventListener('click', function () {
@@ -493,6 +520,35 @@ document.addEventListener('DOMContentLoaded', function () {
             applyFilters();
         });
     });
+
+    const resetAllBtn = document.getElementById('resetAllOpnameInputsBtn');
+    if (resetAllBtn) {
+        resetAllBtn.addEventListener('click', function () {
+            rows.forEach(function (row) {
+                const input = row.querySelector('.physical-stock-input');
+                if (input) input.value = '';
+                row.querySelectorAll('select, input[type="text"]').forEach(function (el) { el.value = ''; });
+                updateRowState(row);
+            });
+            updateFilledCounter();
+            applyFilters();
+        });
+    }
+
+    const quickJumpSelect = document.getElementById('quickJumpOpnameSelect');
+    if (quickJumpSelect) {
+        quickJumpSelect.addEventListener('change', function () {
+            const targetId = quickJumpSelect.value;
+            if (!targetId) return;
+            const targetRow = rows.find(function (r) { return r.getAttribute('data-item-id') === String(targetId); });
+            if (targetRow) {
+                targetRow.style.display = '';
+                targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const inp = targetRow.querySelector('.physical-stock-input');
+                if (inp) inp.focus();
+            }
+        });
+    }
 
     updateFilledCounter();
 });

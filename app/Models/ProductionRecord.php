@@ -9,7 +9,7 @@ class ProductionRecord extends Model
 {
     use HasFactory;
 
-    public const STATUSES = ['draft', 'submitted', 'cancelled', 'applied'];
+    public const STATUSES = ['draft', 'submitted', 'approved', 'applied', 'cancelled'];
     public const TYPES = ['wip', 'finished_goods', 'prep'];
 
     protected $fillable = [

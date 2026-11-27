@@ -22,10 +22,8 @@
                     <span class="badge badge-info">{{ str_replace('_', ' ', ucfirst((string) $user->role)) }}</span>
                     @php
                         $roleGuides = [
-                            'cashier' => 'Kasir biasanya membutuhkan akses outlet dengan centang Kasir.',
                             'staff_outlet' => 'Staff outlet biasanya membutuhkan akses divisi sesuai outlet kerja.',
-                            'manager' => 'Manager biasanya membutuhkan akses outlet Monitor untuk melihat operasional.',
-                            'customer' => 'Customer biasanya tidak membutuhkan akses outlet atau divisi.',
+                            'manager' => 'Manager biasanya membutuhkan akses outlet Monitor & Kelola Stok untuk audit operasional.',
                         ];
                     @endphp
                     @if (isset($roleGuides[(string) $user->role]))
@@ -44,10 +42,8 @@
                                 <tr>
                                     <th>Outlet</th>
                                     <th class="text-center">Monitor</th>
-                                    <th class="text-center">Kasir</th>
                                     <th class="text-center">Kelola Stok</th>
                                     <th class="text-center">Kelola Pembelian</th>
-                                    <th class="text-center">Kelola Finance</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -59,14 +55,12 @@
                                             <div class="text-muted small">{{ $outlet->code }}</div>
                                         </td>
                                         <td class="text-center"><input type="checkbox" name="outlet_access[{{ $outlet->id }}][can_monitor]" value="1" @checked(optional($access)->can_monitor)></td>
-                                        <td class="text-center"><input type="checkbox" name="outlet_access[{{ $outlet->id }}][can_cashier]" value="1" @checked(optional($access)->can_cashier)></td>
                                         <td class="text-center"><input type="checkbox" name="outlet_access[{{ $outlet->id }}][can_manage_stock]" value="1" @checked(optional($access)->can_manage_stock)></td>
                                         <td class="text-center"><input type="checkbox" name="outlet_access[{{ $outlet->id }}][can_manage_purchase]" value="1" @checked(optional($access)->can_manage_purchase)></td>
-                                        <td class="text-center"><input type="checkbox" name="outlet_access[{{ $outlet->id }}][can_manage_finance]" value="1" @checked(optional($access)->can_manage_finance)></td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="text-center text-muted">Belum ada outlet aktif.</td>
+                                        <td colspan="4" class="text-center text-muted">Belum ada outlet aktif.</td>
                                     </tr>
                                 @endforelse
                             </tbody>

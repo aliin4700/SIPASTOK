@@ -23,7 +23,11 @@ class PurchaseOrderController extends Controller
 
         return view('backend.purchase-orders.index', [
             'judul' => 'Purchase Order',
-            'purchaseOrders' => PurchaseOrder::with(['supplier', 'outlet', 'items'])
+            'purchaseOrders' => PurchaseOrder::query()
+                ->select(['id', 'po_number', 'supplier_id', 'outlet_id', 'ordered_by', 'order_date', 'status', 'created_at'])
+                ->with(['supplier:id,name', 'outlet:id,name', 'orderedBy:id,name'])
+                ->withCount('items')
+                ->withSum('items', 'ordered_qty')
                 ->when($filters['search'] ?? null, fn ($query, $search) => $query->where(function ($inner) use ($search) {
                     $inner->where('po_number', 'like', "%{$search}%")
                         ->orWhereHas('supplier', fn ($supplier) => $supplier->where('name', 'like', "%{$search}%"));
@@ -33,18 +37,30 @@ class PurchaseOrderController extends Controller
                 ->latest()
                 ->paginate(20)
                 ->withQueryString(),
-            'outlets' => Outlet::where('is_active', true)->orderBy('name')->get(),
+            'outlets' => Outlet::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'statuses' => PurchaseOrder::STATUSES,
         ]);
     }
 
     public function create()
     {
+        $oldItemIds = collect(old('items', []))
+            ->pluck('inventory_item_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $prefilledItems = $oldItemIds->isNotEmpty()
+            ? InventoryItem::whereIn('id', $oldItemIds)
+                ->get(['id', 'code', 'name', 'base_unit', 'unit_cost'])
+                ->keyBy('id')
+            : collect();
+
         return view('backend.purchase-orders.create', [
             'judul' => 'Tambah Purchase Order',
-            'suppliers' => Supplier::where('is_active', true)->orderBy('name')->get(),
-            'outlets' => Outlet::where('is_active', true)->orderBy('name')->get(),
-            'items' => InventoryItem::where('is_active', true)->orderBy('name')->get(),
+            'suppliers' => Supplier::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'outlets' => Outlet::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'prefilledItems' => $prefilledItems,
         ]);
     }
 
@@ -145,6 +161,6 @@ class PurchaseOrderController extends Controller
     {
         $code = $purchaseOrder->outlet?->code ?: 'OUT';
 
-        return "BL-{$code}-{$prefix}-" . now()->format('Ymd') . '-' . str_pad((string) $purchaseOrder->id, 4, '0', STR_PAD_LEFT);
+        return "SP-{$code}-{$prefix}-" . now()->format('Ymd') . '-' . str_pad((string) $purchaseOrder->id, 4, '0', STR_PAD_LEFT);
     }
 }

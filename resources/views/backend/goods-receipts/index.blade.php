@@ -53,6 +53,7 @@
                         <th>Tanggal</th>
                         <th>Status</th>
                         <th>Total Item</th>
+                        <th class="text-right">Total Qty</th>
                         <th>Aksi</th>
                     </tr>
                 </thead>
@@ -65,11 +66,12 @@
                             <td>{{ $goodsReceipt->outlet->name ?? '-' }}</td>
                             <td>{{ $goodsReceipt->receipt_date?->format('d/m/Y') }}</td>
                             <td><span class="badge badge-info">{{ $goodsReceipt->status }}</span></td>
-                            <td>{{ $goodsReceipt->items->count() }}</td>
+                            <td>{{ $goodsReceipt->items_count }}</td>
+                            <td class="text-right">{{ number_format((float) ($goodsReceipt->items_sum_received_qty ?? 0), 2, ',', '.') }}</td>
                             <td><a href="{{ route('backend.goods-receipts.show', $goodsReceipt) }}" class="btn btn-info btn-sm">Detail</a></td>
                         </tr>
                     @empty
-                        <tr><td colspan="8" class="text-center text-muted">Belum ada goods receipt.</td></tr>
+                        <tr><td colspan="9" class="text-center text-muted">Belum ada goods receipt.</td></tr>
                     @endforelse
                 </tbody>
             </table>

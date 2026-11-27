@@ -32,7 +32,11 @@ class GoodsReceiptController extends Controller
 
         return view('backend.goods-receipts.index', [
             'judul' => 'Goods Receipt',
-            'goodsReceipts' => GoodsReceipt::with(['supplier', 'outlet', 'purchaseOrder', 'items'])
+            'goodsReceipts' => GoodsReceipt::query()
+                ->select(['id', 'receipt_number', 'purchase_order_id', 'supplier_id', 'outlet_id', 'received_by', 'applied_by', 'receipt_date', 'status', 'created_at'])
+                ->with(['supplier:id,name', 'outlet:id,name', 'purchaseOrder:id,po_number', 'receivedBy:id,name', 'appliedBy:id,name'])
+                ->withCount('items')
+                ->withSum('items', 'received_qty')
                 ->when($filters['search'] ?? null, fn ($query, $search) => $query->where(function ($inner) use ($search) {
                     $inner->where('receipt_number', 'like', "%{$search}%")
                         ->orWhereHas('supplier', fn ($supplier) => $supplier->where('name', 'like', "%{$search}%"))
@@ -43,23 +47,42 @@ class GoodsReceiptController extends Controller
                 ->latest()
                 ->paginate(20)
                 ->withQueryString(),
-            'outlets' => Outlet::where('is_active', true)->orderBy('name')->get(),
+            'outlets' => Outlet::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'statuses' => GoodsReceipt::STATUSES,
         ]);
     }
 
     public function create(Request $request)
     {
-        $selectedPurchaseOrder = PurchaseOrder::with(['supplier', 'outlet', 'items.item'])
-            ->find($request->integer('purchase_order_id'));
+        $selectedPurchaseOrder = $request->filled('purchase_order_id')
+            ? PurchaseOrder::select(['id', 'po_number', 'supplier_id', 'outlet_id', 'status'])
+                ->with(['items.item:id,code,name,base_unit,unit_cost'])
+                ->find($request->integer('purchase_order_id'))
+            : null;
+
+        $oldItemIds = collect(old('items', []))
+            ->pluck('inventory_item_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $prefilledItems = $oldItemIds->isNotEmpty()
+            ? InventoryItem::whereIn('id', $oldItemIds)
+                ->get(['id', 'code', 'name', 'base_unit', 'unit_cost'])
+                ->keyBy('id')
+            : collect();
 
         return view('backend.goods-receipts.create', [
             'judul' => 'Tambah Goods Receipt',
-            'suppliers' => Supplier::where('is_active', true)->orderBy('name')->get(),
-            'outlets' => Outlet::where('is_active', true)->orderBy('name')->get(),
-            'items' => InventoryItem::where('is_active', true)->orderBy('name')->get(),
-            'purchaseOrders' => PurchaseOrder::whereIn('status', ['submitted', 'partially_received'])->latest()->get(),
+            'suppliers' => Supplier::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'outlets' => Outlet::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'purchaseOrders' => PurchaseOrder::select(['id', 'po_number', 'outlet_id', 'supplier_id'])
+                ->whereIn('status', ['submitted', 'partially_received'])
+                ->latest()
+                ->limit(100)
+                ->get(),
             'selectedPurchaseOrder' => $selectedPurchaseOrder,
+            'prefilledItems' => $prefilledItems,
         ]);
     }
 
@@ -262,6 +285,6 @@ class GoodsReceiptController extends Controller
     {
         $code = $goodsReceipt->outlet?->code ?: 'OUT';
 
-        return 'BL-' . $code . '-GR-' . now()->format('Ymd') . '-' . str_pad((string) $goodsReceipt->id, 4, '0', STR_PAD_LEFT);
+        return 'SP-' . $code . '-GR-' . now()->format('Ymd') . '-' . str_pad((string) $goodsReceipt->id, 4, '0', STR_PAD_LEFT);
     }
 }
